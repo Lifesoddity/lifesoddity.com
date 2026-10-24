@@ -1,7 +1,8 @@
 ---
 // LIFE'S ODDITY RADIO, docked. As soon as the visitor scrolls, a yellow strip rises along the
-// bottom of the screen with the soundtrack's name and PLAY (browsers allow sound only after a
-// tap, so it waits for one; nothing from Spotify loads before it). From the first PLAY on,
+// bottom of the screen with the soundtrack's name and PLAY. Browsers allow sound only once the
+// page has had a tap or click: a scroll after one starts the music by itself, before one the
+// strip waits for PLAY (nothing from Spotify loads before it). From the first PLAY on,
 // Spotify's own player lives here, outside the part of the page that changes (data-keep,
 // Base.astro), so moving to another page never stops the music. While the box it was played
 // from is on screen, the player sits in that box's white print and scrolls with the page; once

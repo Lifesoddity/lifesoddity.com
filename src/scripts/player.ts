@@ -7,8 +7,9 @@
 //
 // Where the player shows:
 // - "ready": the visitor has scrolled and nothing plays yet. The strip along the bottom offers
-//   the soundtrack (layout/Radio.astro) with PLAY. Browsers allow sound only after a tap, so it
-//   waits for one; Spotify is not loaded until then.
+//   the soundtrack (layout/Radio.astro) with PLAY. Browsers allow sound only once the page has
+//   had a tap or click, so the first scroll after one starts it by itself; until then it waits
+//   for PLAY, and Spotify is not loaded.
 // - "box": the box it was played from is on screen. The radio is laid over that box's print,
 //   placed in the page (not on the screen), so it scrolls with it at no cost.
 // - "dock": that box has scrolled away, or the visitor went to another page. A strip along the
@@ -237,15 +238,21 @@ if (radio && frame) {
     slap(playBtn);
     if (offer) start(offer.url, offer.name, boxFor(offer.url));
   });
-  // the strip comes up as soon as the visitor scrolls
+  // the strip comes up as soon as the visitor scrolls, and a scroll after they have tapped or
+  // clicked anything on the site starts the music by itself (browsers allow sound only once the
+  // page has had a tap or click: navigator.userActivation.hasBeenActive). Without one the strip
+  // just offers PLAY, and the next scroll tries again.
   if (offer && !away) {
-    const reveal = () => {
+    const onScroll = () => {
+      if (on || away) { removeEventListener('scroll', onScroll); return; }
       if (scrollY < 12) return;
-      revealed = true;
-      removeEventListener('scroll', reveal);
-      if (!on) setMode();
+      if (!revealed) { revealed = true; setMode(); }
+      if (navigator.userActivation?.hasBeenActive) {
+        removeEventListener('scroll', onScroll);
+        start(offer.url, offer.name, boxFor(offer.url));
+      }
     };
-    addEventListener('scroll', reveal, { passive: true });
+    addEventListener('scroll', onScroll, { passive: true });
   }
   // the box moved (a picture above it loaded, the window changed): follow it
   const follow = () => { if (radio.dataset.mode === 'box') place(); else if (strip(radio.dataset.mode)) setMode(); };
