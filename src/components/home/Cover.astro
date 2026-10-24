@@ -1,0 +1,188 @@
+---
+// THE COVER. The magazine's front page and the first screen's buy control: the masthead, the
+// issue line, the cover star (the live piece, cut out and flash-lit), coverlines in his words,
+// and the price box where a real cover prints its price and barcode.
+import { Image } from 'astro:assets';
+import { brand, campaign } from '../../assets';
+import BuyBox from '../ui/BuyBox.astro';
+import Print from '../ui/Print.astro';
+import type { Piece } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { actBySlug } from '../../content/acts';
+import { site } from '../../content/site';
+import { home } from '../../content/copy/home';
+import { status } from '../../content/copy/common';
+
+interface Props { piece: Piece }
+const { piece } = Astro.props;
+const product = piece.product!;
+const c = home.cover;
+const art = piece.art;
+const archiveAct = actBySlug('party-animal');
+const issue = `The ${piece.act.title} issue · ${piece.act.openedLabel} · ${site.tagline}`;
+const lead = piece.word.lines.map((l) => l.join(''));
+---
+
+<section class="cover halftone" aria-labelledby="cover-title">
+  <div class="cv-mast">
+    <h1 class="cv-logo" id="cover-title"><Image src={brand.logo} alt={site.name} widths={[640, 1100]} sizes="(min-width: 1000px) 44vw, 90vw" loading="eager" /></h1>
+    <p class="cv-strap">{c.strap.map((line, i) => <>{i > 0 && <br />}{line}</>)}</p>
+    <p class="issue">{issue}</p>
+  </div>
+
+  <div class="cv-star">
+    {art.cutout ? (
+      <a class="star ph" href={piece.href} aria-label={`${piece.title}, see the piece`} data-flash data-flash-first style={`--overhang:${art.cutout.overhang};--shadow-img:url(${art.cutout.shadow.src})`}>
+        <span class="ph-sh star-sh" aria-hidden="true"></span>
+        <Image src={art.cutout.front} alt={art.cutout.alt} widths={[600, 1000]} sizes="(min-width: 1000px) 42vw, 84vw" loading="eager" fetchpriority="high" />
+        <span class="ph-flash star-flash" aria-hidden="true" style={`--cut:url(${art.cutout.front.src})`}></span>
+      </a>
+    ) : (
+      piece.photo && <Print class="star" photo={piece.photo} sizes="(min-width: 1000px) 42vw, 84vw" href={piece.href} label={piece.title} ratio={1} eager first />
+    )}
+    <h2 class="cv-lead">{lead.map((l) => <span>{l}</span>)}</h2>
+    <p class="tape cv-tape" aria-hidden="true">{status.exclusive}</p>
+  </div>
+
+  {art.line && <p class="cv-deck">{art.line.includes(':') ? <><b>{art.line.split(':')[0]}:</b>{art.line.slice(art.line.indexOf(':') + 1)}</> : art.line}</p>}
+
+  <div class="pricebox" data-live={product.handle}>
+    <div class="pb-top">
+      <p class="pb-price num" data-live-price>{formatPrice(product.price)}</p>
+      <p class="pb-name"><a href={piece.href}>{piece.title}</a></p>
+      <svg class="pb-bars" viewBox="0 0 64 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h2v40H0zM3 0h1v40H3zM5 0h1v40H5zM8 0h3v40H8zM12 0h1v40h-1zM14 0h2v40h-2zM17 0h1v40h-1zM19 0h1v40h-1zM22 0h3v40h-3zM26 0h2v40h-2zM29 0h1v40h-1zM31 0h1v40h-1zM34 0h2v40h-2zM37 0h3v40h-3zM41 0h1v40h-1zM43 0h1v40h-1zM46 0h2v40h-2zM49 0h1v40h-1zM51 0h3v40h-3zM55 0h1v40h-1zM57 0h2v40h-2zM60 0h1v40h-1zM62 0h2v40h-2z"></path></svg>
+    </div>
+    <BuyBox product={product} />
+  </div>
+
+  <div class="cv-lines on-dark halftone">
+    {archiveAct && (
+      <div class="cl cl-act">
+        <h2>{c.actLead}</h2>
+        <p><b>{archiveAct.title}.</b> {c.actBody}</p>
+        <figure class="snap"><Image src={campaign.gluttonyReelStill} alt="Still from the Gluttony reel: a crowded party with red cups" width={240} /></figure>
+      </div>
+    )}
+    <blockquote class="cl cl-quote"><p>{c.quoteLead} <em>{c.quoteHit}</em></p></blockquote>
+    <a class="cl cl-play" href="#soundtrack">
+      <svg class="cl-play-i" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18"></circle><path d="M16 12.5v15l12-7.5z"></path></svg>
+      <span class="cl-play-h">{c.playTitle}</span>
+      <span class="cl-play-d">{c.playLine}</span>
+    </a>
+  </div>
+</section>
+
+<style>
+  .cover {
+    --dot: rgb(81 42 52 / .34);
+    --fade: radial-gradient(95% 55% at 0% 100%, #000 5%, transparent 72%), radial-gradient(70% 40% at 100% 0%, #000 0%, transparent 70%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "mast" "star" "deck" "price" "lines";
+    background: var(--cover);
+    overflow: clip;
+  }
+  .cover > * { position: relative; z-index: 1; }
+  .cv-mast { grid-area: mast; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; column-gap: 12px; padding: 12px var(--pad) 0; }
+  .cv-logo :global(img) { width: 100%; max-width: 640px; }
+  .cv-strap { padding-bottom: 4px; color: var(--white); font: 400 24px/.9 var(--gothic); letter-spacing: .01em; text-align: right; text-transform: uppercase; }
+  .issue { grid-column: 1 / -1; margin-top: 10px; padding: 6px 0 5px; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); font: 800 9.5px/1.2 var(--sans); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .cv-star { grid-area: star; display: grid; grid-template-columns: minmax(0, 1fr); padding: 4px var(--pad) 0; }
+  .star { grid-area: 1 / 1; justify-self: end; width: 86%; margin: 8px -9% 0 0; rotate: -4deg; }
+  .star > :global(img) { position: relative; width: 100%; }
+  /* the tee's shadow is its own silhouette, blurred once into an image: no blur at run time */
+  .star-sh { inset: var(--overhang, 0); background: var(--shadow-img) center / 100% 100% no-repeat; box-shadow: none; translate: 13px 15px; }
+  .star-flash { -webkit-mask: var(--cut) center / 100% 100% no-repeat; mask: var(--cut) center / 100% 100% no-repeat; }
+  .cv-lead { grid-area: 1 / 1; align-self: start; z-index: 2; margin-top: 6px; color: var(--white); font: 400 clamp(96px, 27vw, 260px)/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; pointer-events: none; }
+  .cv-lead span { display: block; }
+  .cv-tape { right: calc(var(--pad) + 2%); bottom: 14%; font-size: 34px; }
+
+  .cv-deck { grid-area: deck; max-width: 44ch; padding: 8px var(--pad) 0; font: 600 14.5px/1.42 var(--sans); }
+  .cv-deck b { font-weight: 800; font-style: italic; }
+
+  .pricebox { grid-area: price; display: grid; gap: 10px; margin: 12px var(--pad) 22px; padding: 12px 12px 10px; background: var(--white); border: 3px solid var(--ink); box-shadow: 0 12px 20px -8px rgb(60 0 18 / .55); }
+  .pricebox :global(.buybox) { display: grid; gap: 10px; }
+  .pricebox :global(.buy-note) { text-align: center; }
+  .pb-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+  .pb-price { font: 400 60px/.78 var(--gothic); letter-spacing: -.01em; }
+  .pb-name { font: 800 13px/1.15 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+  .pb-bars { width: 52px; height: 38px; fill: var(--ink); }
+
+  .cv-lines { --dot: rgb(255 46 110 / .2); --fade: linear-gradient(160deg, #000, transparent 55%); grid-area: lines; display: grid; gap: 30px; padding: 30px var(--pad) 36px; background: var(--ink); color: var(--white); }
+  .cl { position: relative; }
+  .cl-act { display: grid; grid-template-columns: minmax(0, 1fr) 31%; column-gap: 16px; align-items: start; }
+  .cl-act h2 { grid-column: 1 / -1; margin-bottom: 10px; color: var(--yellow); font: 400 68px/.82 var(--gothic); text-transform: uppercase; }
+  .cl-act p { font: 500 14.5px/1.45 var(--sans); }
+  .cl-act b { color: var(--yellow); font-weight: 800; }
+  .snap { rotate: 4deg; margin-top: -6px; border: 5px solid var(--white); box-shadow: 0 8px 14px rgb(0 0 0 / .5); }
+  .snap :global(img) { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: 100% 50%; }
+  .cl-quote p { font: 400 48px/.9 var(--gothic); text-transform: uppercase; }
+  .cl-quote::before { content: "\201C"; display: block; height: 38px; color: var(--pink); font: 400 120px/.9 var(--gothic); }
+  .cl-quote em { font-style: normal; color: var(--pink); }
+  .cl-play { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: center; text-decoration: none; }
+  .cl-play-i { grid-row: 1 / 3; width: 50px; height: 50px; fill: none; stroke: var(--yellow); stroke-width: 2; stroke-linejoin: round; transition: scale var(--base) ease-out; }
+  .cl-play-h { color: var(--yellow); font: 400 50px/.86 var(--gothic); text-transform: uppercase; }
+  .cl-play-d { font: 600 14px/1.35 var(--sans); }
+
+  @media (min-width: 700px) {
+    .cover { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "mast mast" "star star" "deck price" "lines lines"; }
+    .cv-mast { padding-top: 22px; }
+    .cv-logo :global(img) { width: 74%; }
+    .cv-strap { font-size: 34px; }
+    .issue { font-size: 11px; }
+    .star { width: 70%; margin: -4px 1% 0 0; }
+    .cv-lead { font-size: 20vw; margin-top: 18px; }
+    .cv-tape { right: calc(var(--pad) + 4%); bottom: 8%; font-size: 42px; }
+    .cv-deck { align-self: start; max-width: 36ch; padding: 22px var(--pad) 30px; font-size: 16px; }
+    .pricebox { align-self: end; margin: 18px var(--pad) 30px 0; }
+    .cv-lines { grid-template-columns: 1.25fr 1fr 1fr; column-gap: 30px; align-items: start; }
+    .cl-act h2 { font-size: 60px; }
+    .cl-quote p { font-size: 42px; }
+    .cl-play { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
+    .cl-play-i { grid-row: auto; }
+  }
+
+  @media (min-width: 1000px) {
+    .cover { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: none; }
+    /* the right third of the spread: coverlines on black */
+    .cover::after {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      width: 33.3333%;
+      background:
+        radial-gradient(circle, rgb(255 46 110 / .2) 1.15px, transparent 1.7px) 0 0 / 7px 7px,
+        radial-gradient(circle, rgb(255 46 110 / .2) 1.15px, transparent 1.7px) 3.5px 3.5px / 7px 7px,
+        var(--ink);
+    }
+    .cv-mast { grid-area: 1 / 1 / 2 / 2; padding: 26px 3vw 0; }
+    .cv-logo :global(img) { width: 66%; max-width: none; }
+    .cv-strap { font-size: 3.2vw; padding-bottom: 8px; }
+    .issue { font-size: 12px; margin-top: 14px; }
+    .cv-star { grid-area: 2 / 1 / 4 / 2; padding: 0 3vw; }
+    .star { width: 64%; margin: 0 1% 0 0; rotate: -5deg; align-self: start; }
+    .cv-lead { font-size: 14.5vw; margin-top: 2.2vw; }
+    .cv-tape { right: auto; left: 39%; bottom: 3%; font-size: 3.6vw; }
+    .cv-deck { grid-area: 3 / 1 / 4 / 2; align-self: end; justify-self: start; max-width: 26ch; padding: 0 0 34px 3vw; font-size: max(14px, 1.2vw); }
+    .cv-lines { grid-area: 1 / 2 / 3 / 3; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 2.4vw; padding: 30px 2.6vw 26px; background: none; }
+    .cv-lines::before { display: none; }
+    .cl-act h2 { font-size: 5.4vw; }
+    .cl-act p { font-size: 14px; }
+    .cl-quote p { font-size: 3.5vw; }
+    .cl-quote::before { height: 2.8vw; font-size: 8vw; }
+    .cl-play { grid-template-columns: auto minmax(0, 1fr); }
+    .cl-play-i { grid-row: 1 / 3; }
+    .cl-play-h { font-size: 3.8vw; }
+    .pricebox { grid-area: 3 / 2 / 4 / 3; align-self: end; margin: 0 2.6vw 2.6vw -5vw; }
+    .pb-price { font-size: 4.6vw; }
+  }
+  @media (hover: hover) {
+    .cl-play:hover .cl-play-i { scale: 1.08; }
+    .cl-play-d { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: .25em; transition: text-decoration-color var(--fast); }
+    .cl-play:hover .cl-play-d { text-decoration-color: var(--pink); }
+  }
+</style>

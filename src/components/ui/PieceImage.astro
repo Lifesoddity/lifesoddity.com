@@ -1,0 +1,48 @@
+---
+// One photo of a piece: from Shopify's image CDN (resized there, never copied into this repo)
+// or one of his campaign photos (resized by Astro at build time).
+import { Image } from 'astro:assets';
+import type { Piece } from '../../lib/pieces';
+import { shopifyImage, shopifySrcset } from '../../lib/shopify';
+
+interface Props {
+  photo: NonNullable<Piece['photo']>;
+  /** The sizes attribute: how wide the image shows at each screen width. */
+  sizes: string;
+  alt?: string;
+  class?: string;
+  eager?: boolean;
+  /** Crop to this aspect ratio (width / height) with object-fit. */
+  ratio?: number;
+}
+
+const { photo, sizes, alt, class: cls, eager = false, ratio } = Astro.props;
+const style = ratio ? `aspect-ratio:${ratio};object-fit:cover` : undefined;
+---
+
+{photo.kind === 'shopify' ? (
+  <img
+    class={cls}
+    src={shopifyImage(photo.image.src, 900)}
+    srcset={shopifySrcset(photo.image.src)}
+    sizes={sizes}
+    width={photo.image.width}
+    height={photo.image.height}
+    alt={alt ?? photo.image.alt}
+    loading={eager ? 'eager' : 'lazy'}
+    fetchpriority={eager ? 'high' : undefined}
+    decoding="async"
+    style={style}
+  />
+) : (
+  <Image
+    class={cls}
+    src={photo.image}
+    widths={[400, 640, 900, 1200]}
+    sizes={sizes}
+    alt={alt ?? photo.alt}
+    loading={eager ? 'eager' : 'lazy'}
+    fetchpriority={eager ? 'high' : undefined}
+    style={style}
+  />
+)}

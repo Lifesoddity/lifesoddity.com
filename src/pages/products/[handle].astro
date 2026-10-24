@@ -1,0 +1,32 @@
+---
+// One page per Shopify product, built from Shopify at build time. A product added in Shopify
+// gets its page on the next build (the product webhook triggers one).
+import Base from '../../components/layout/Base.astro';
+import ProductPage from '../../components/product/ProductPage.astro';
+import { getPieces, type Piece } from '../../lib/pieces';
+import { shopifyImage } from '../../lib/shopify';
+import { productGroupLd, breadcrumbLd, productSummary } from '../../lib/seo';
+
+export async function getStaticPaths() {
+  const pieces = await getPieces();
+  return pieces.filter((p) => p.product).map((piece) => ({ params: { handle: piece.product!.handle }, props: { piece } }));
+}
+
+interface Props { piece: Piece }
+const { piece } = Astro.props;
+const product = piece.product!;
+const image = product.images[0];
+const preview = image ? `${shopifyImage(image.src, 1200)}&height=630&crop=center` : undefined;
+---
+
+<Base
+  title={product.title}
+  description={productSummary(product)}
+  image={preview}
+  imageAlt={image?.alt || product.title}
+  type="product"
+  price={{ amount: (product.price / 100).toFixed(2), currency: product.currency }}
+  ld={[productGroupLd(product), breadcrumbLd([{ name: 'Shop', path: '/shop' }, { name: product.title, path: `/products/${product.handle}` }])]}
+>
+  <ProductPage piece={piece} />
+</Base>

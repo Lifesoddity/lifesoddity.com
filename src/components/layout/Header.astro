@@ -1,0 +1,43 @@
+---
+// The masthead strip: the logo, the four sections, the bag. On a phone the sections drop from
+// a yellow MENU tab.
+import { Image } from 'astro:assets';
+import { brand } from '../../assets';
+import { nav } from '../../content/site';
+import { header } from '../../content/copy/common';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<header class="mast">
+  <a class="mast-logo" href="/"><Image src={brand.logo} alt={header.home} height={84} width={223} loading="eager" /></a>
+  <nav class="mast-nav" id="mast-nav" aria-label="Main">
+    {nav.map((item) => (
+      <a href={item.href} aria-current={path === item.href || path.startsWith(item.href + '/') ? 'page' : undefined}>{item.label}</a>
+    ))}
+  </nav>
+  <button class="mast-menu" type="button" aria-expanded="false" aria-controls="mast-nav">
+    <span>{header.menu}</span>
+    <svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5 6 6.5 11 1.5"></path></svg>
+  </button>
+  <button class="bag" type="button" data-bag-button data-open-bag aria-label="Bag, 0 items" aria-haspopup="dialog">
+    <span>{header.bag} (<span data-bag-count>0</span>)</span>
+    <span class="bag-added" aria-hidden="true">{header.added}</span>
+  </button>
+</header>
+
+<script>
+  const mast = document.querySelector<HTMLElement>('.mast');
+  const menu = mast?.querySelector<HTMLButtonElement>('.mast-menu');
+  if (mast && menu) {
+    const set = (on: boolean) => {
+      mast.classList.toggle('is-open', on);
+      menu.setAttribute('aria-expanded', String(on));
+    };
+    menu.addEventListener('click', () => set(!mast.classList.contains('is-open')));
+    mast.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mast.classList.contains('is-open')) { set(false); menu.focus(); }
+    });
+    mast.querySelectorAll('.mast-nav a').forEach((a) => a.addEventListener('click', () => set(false)));
+  }
+</script>

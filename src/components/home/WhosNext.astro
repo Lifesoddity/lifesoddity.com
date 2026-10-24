@@ -1,0 +1,56 @@
+---
+// WHO'S NEXT? The next drop has no name or date yet, so no countdown: a mystery silhouette, a
+// pink question mark, and the waitlist.
+import WaitlistForm from '../ui/WaitlistForm.astro';
+import { cutouts } from '../../assets';
+import { nextDrop } from '../../content/acts';
+import { home } from '../../content/copy/home';
+
+const n = home.next;
+const deck = nextDrop.name ? `Next drop: ${nextDrop.name}${nextDrop.opensLabel ? `, ${nextDrop.opensLabel}` : ''}. Be the first to know.` : n.deck;
+---
+
+<section class="next halftone" aria-labelledby="next-title">
+  <div class="mystery" aria-hidden="true" style={`--bust:url(${cutouts.bustShadow.src})`}>
+    <span class="mystery-sh"></span>
+    <svg class="mystery-fig" viewBox="0 0 300 340"><path d="M150 30c42 0 64 34 64 78 0 38-16 62-32 74l2 22c42 10 78 28 92 58 12 26 16 56 18 78H6c2-22 6-52 18-78 14-30 50-48 92-58l2-22c-16-12-32-36-32-74 0-44 22-78 64-78z"></path></svg>
+    <span class="mystery-q">?</span>
+  </div>
+  <div class="next-copy">
+    <h2 class="next-title" id="next-title">{n.title}</h2>
+    <p class="next-deck">{deck}</p>
+    <WaitlistForm act={nextDrop.name ? nextDrop.name.toLowerCase().replace(/\s+/g, '-') : 'next-drop'} />
+  </div>
+</section>
+
+<style>
+  .next {
+    --dot: rgb(255 46 110 / .45);
+    --fade: radial-gradient(60% 50% at 50% 30%, #000, transparent 70%);
+    display: grid;
+    gap: 26px;
+    padding: 48px var(--pad) 56px;
+    background: var(--white);
+    overflow: clip;
+  }
+  .mystery { position: relative; width: 64%; max-width: 380px; margin: 0 auto; aspect-ratio: 300 / 340; }
+  .mystery-fig, .mystery-sh { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .mystery-sh { background: var(--bust) center / 100% 100% no-repeat; translate: 14px 12px; }
+  .mystery-fig { fill: var(--ink); }
+  .mystery-q { position: absolute; left: 50%; top: -4%; translate: -50% 0; rotate: 9deg; color: var(--pink); font: 400 clamp(150px, 44vw, 290px)/1 var(--script); }
+  .next-copy { position: relative; display: grid; gap: 14px; align-content: start; }
+  .next-title { font: 400 clamp(100px, 29vw, 230px)/.8 var(--gothic); text-transform: uppercase; }
+  .next-deck { max-width: 26ch; font: 700 18px/1.35 var(--sans); }
+  @media (min-width: 700px) {
+    .next { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: center; column-gap: 36px; }
+    .mystery { width: 100%; }
+    .mystery-q { font-size: 28vw; }
+    .next-title { font-size: 15vw; }
+  }
+  @media (min-width: 1000px) {
+    .next { padding: 5vw var(--pad); grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); column-gap: 5vw; }
+    .mystery { max-width: 420px; }
+    .mystery-q { font-size: 17vw; }
+    .next-title { font-size: 11vw; }
+  }
+</style>

@@ -1,0 +1,125 @@
+---
+// ON HIS PLAYLIST: the act's soundtrack. Our box, the radio cover print and the PLAY sticker
+// are ours; pressing PLAY sets Spotify's own player into the white print below (its design,
+// loaded only then). Until he gives the Spotify link, the box says the link is not in yet and
+// nothing pretends to play.
+import { Image } from 'astro:assets';
+import { campaign } from '../../assets';
+import type { Act } from '../../content/acts';
+import { knownTrack } from '../../content/acts';
+import { home } from '../../content/copy/home';
+import { pending } from '../../content/copy/common';
+
+interface Props {
+  act: Act;
+  class?: string;
+}
+
+const { act, class: cls } = Astro.props;
+const copy = home.soundtrack;
+const spotify = act.playlist.spotify;
+const track = knownTrack.act === act.slug ? knownTrack : null;
+const title = act.playlist.name;
+const sub = act.number ? `The soundtrack of Act ${act.number}: ${act.title}` : `The soundtrack of ${act.title}`;
+---
+
+<div class:list={['pl-box', 'halftone', cls]} data-player={spotify ? '' : undefined} data-spotify={spotify ?? undefined} data-name={`the ${title} playlist`}>
+  <h3 class="pl-bar">{copy.bar}</h3>
+  <div class="pl-body">
+    <div class="pl-info">
+      <h4 class="pl-title">{title}</h4>
+      <p class="pl-sub">{sub}</p>
+    </div>
+
+    <div class="pl-art">
+      <figure class="ph print pl-cover" data-flash>
+        <span class="ph-sh" aria-hidden="true"></span>
+        <Image src={campaign.partyAnimalRadio} widths={[400, 640, 800]} sizes="(min-width: 1000px) 28vw, 70vw" alt="Illustrated cover for Life's Oddity radio: a house party under two spotlights, PARTY ANIMAL bunting" />
+        <span class="ph-flash" aria-hidden="true"></span>
+      </figure>
+      {spotify ? (
+        <button class="pl-play sticker" type="button" data-play aria-label={`Play the ${title} playlist`}>
+          <svg class="pl-play-i" viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l10.5-6.5z"></path><path class="i-pause" d="M8.5 5v14M15.5 5v14"></path></svg>
+          <span class="pl-play-l" data-play-label>{copy.play}</span>
+        </button>
+      ) : (
+        <p class="pl-soon sticker"><span class="stamp">{pending.stamp}</span> {pending.playlist}</p>
+      )}
+    </div>
+
+    <div class="pl-now-box">
+      {track && <p class="pl-now"><span class="pl-now-k">{copy.heardOn}</span> <span class="pl-now-t">{track.title}, {track.artist}</span></p>}
+      <p class="pl-state" data-now aria-live="polite"></p>
+    </div>
+
+    {spotify && (
+      <div class="pl-slot" data-slot hidden>
+        <p class="pl-here" aria-hidden="true">{copy.here}</p>
+        <div class="ph pl-print">
+          <span class="ph-sh" aria-hidden="true"></span>
+          <div class="pl-frame"><div class="pl-mount" data-mount></div></div>
+          <span class="ph-flash" aria-hidden="true"></span>
+          <svg class="mark pl-arrow" viewBox="0 0 70 80" aria-hidden="true"><path d="M60 4C62 40 40 62 12 72M27.7 74.8 12 72 22.3 59.8"></path></svg>
+        </div>
+        <p class="pl-cap">{copy.caption}</p>
+        <p class="pl-honest">{copy.honest} <a class="pl-open" href={spotify} rel="noopener">{copy.open}</a></p>
+        <p class="pl-error" data-error hidden>{copy.error} <a href={spotify} rel="noopener">{copy.open}</a></p>
+      </div>
+    )}
+  </div>
+</div>
+
+<style>
+  .pl-box { --dot: rgb(11 11 11 / .1); --fade: radial-gradient(70% 50% at 100% 0%, #000, transparent 75%); --shadow: rgb(11 11 11 / .55); position: relative; border: 4px solid var(--ink); background: var(--yellow); color: var(--ink); }
+  .pl-box :focus-visible { outline-color: var(--ink); }
+  .pl-bar { position: relative; padding: 10px 16px 6px; background: var(--red); color: var(--white); font: 400 34px/1 var(--gothic); letter-spacing: .06em; text-transform: uppercase; }
+  .pl-body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "info" "art" "now" "slot"; gap: 18px; padding: 18px 14px 22px; }
+  .pl-info { grid-area: info; display: grid; gap: 6px; }
+  .pl-title { font: 400 min(22vw, 120px)/.8 var(--gothic); text-transform: uppercase; }
+  .pl-sub { font: 700 15px/1.35 var(--sans); }
+  .pl-art { grid-area: art; align-self: start; display: grid; grid-template-columns: minmax(0, 1fr); padding-bottom: 12px; }
+  .pl-cover { grid-area: 1 / 1; width: 70%; rotate: -3deg; }
+  .pl-play {
+    grid-area: 1 / 1; justify-self: end; align-self: end; display: grid; place-items: center; align-content: center; gap: 2px;
+    width: 116px; height: 116px; margin: 0 3% -14px 0; border-radius: 50%; background: var(--red); color: var(--white);
+    box-shadow: inset 0 0 0 4px var(--red), inset 0 0 0 6px var(--white), 0 8px 14px rgb(11 11 11 / .35);
+  }
+  .pl-play:active { translate: 0 1px; }
+  .pl-play-i { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pl-play .i-pause, :global(.is-playing) .pl-play .i-play { display: none; }
+  :global(.is-playing) .pl-play .i-pause { display: inline; }
+  .pl-play-l { font: 400 40px/.85 var(--gothic); letter-spacing: .06em; text-transform: uppercase; }
+  .pl-soon { grid-area: 1 / 1; justify-self: end; align-self: end; display: grid; gap: 6px; justify-items: start; max-width: 230px; margin: 0 2% -14px 0; padding: 12px 14px 12px; background: var(--white); font: 700 13.5px/1.35 var(--sans); box-shadow: 0 8px 14px rgb(11 11 11 / .3); }
+  .pl-now-box { grid-area: now; display: grid; gap: 8px; }
+  .pl-now { display: grid; gap: 4px; }
+  .pl-now-k { font: 800 11.5px/1.2 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+  .pl-now-t { font: 400 34px/.92 var(--gothic); text-transform: uppercase; }
+  .pl-state { font: 800 12px/1.3 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+  .pl-state:empty { display: none; }
+  .pl-slot { grid-area: slot; display: grid; gap: 10px; }
+  .pl-here { justify-self: end; margin-right: calc(12% + 46px); font: 400 30px/1 var(--script); rotate: -4deg; }
+  .pl-print { position: relative; display: block; margin-top: 4px; }
+  .pl-frame { position: relative; padding: 8px; background: var(--white); }
+  .pl-mount { min-height: 152px; border-radius: 12px; background: #282828; }
+  .pl-arrow { inset: auto 12% auto auto; top: -62px; width: 70px; height: 80px; }
+  .pl-cap { margin-top: 6px; font: 800 11px/1.35 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+  .pl-honest, .pl-error { font: 600 13.5px/1.45 var(--sans); }
+  .pl-open { font-weight: 800; white-space: nowrap; }
+  @media (min-width: 700px) {
+    .pl-body { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-areas: "art info" "art now" "slot slot"; column-gap: 28px; padding: 24px 24px 28px; }
+    .pl-info { align-self: end; }
+    .pl-now-box { align-self: start; }
+    .pl-cover { width: 92%; }
+    .pl-title { font-size: min(9vw, 96px); }
+  }
+  @media (min-width: 1000px) {
+    .pl-bar { padding: 14px 24px 9px; font-size: min(3.4vw, 48px); }
+    .pl-body { column-gap: 3vw; row-gap: 2vw; padding: 2.4vw; }
+    .pl-title { font-size: min(6.2vw, 96px); }
+    .pl-play { width: min(9.6vw, 140px); height: min(9.6vw, 140px); margin: 0 -2% -10px 0; }
+    .pl-play-l { font-size: min(3.1vw, 44px); }
+  }
+  @media (hover: hover) {
+    .pl-play:hover { background: var(--red-press); box-shadow: inset 0 0 0 4px var(--red-press), inset 0 0 0 6px var(--white), 0 8px 14px rgb(11 11 11 / .35); }
+  }
+</style>

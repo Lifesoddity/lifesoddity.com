@@ -1,0 +1,51 @@
+---
+// The title card every inner page opens with: a field of one of the magazine's colours, the
+// page's name in giant League Gothic, an optional script overlay and one deck line. The colour
+// and the overlay change per page; the grammar stays.
+interface Props {
+  title: string;
+  /** A short pink script word over the title ("exclusive", "spotted"). */
+  script?: string;
+  deck?: string;
+  tone?: 'yellow' | 'pink' | 'black' | 'red' | 'white';
+  /** Extra content under the deck (filters, a date, a stamp). */
+  class?: string;
+}
+
+const { title, script, deck, tone = 'yellow', class: cls } = Astro.props;
+const dark = tone === 'black' || tone === 'red';
+---
+
+<header class:list={['phead', 'halftone', `tone-${tone}`, dark && 'on-dark', cls]}>
+  <h1 class="phead-title">{title}</h1>
+  {script && <p class="phead-script" aria-hidden="true">{script}</p>}
+  {deck && <p class="phead-deck">{deck}</p>}
+  <slot />
+</header>
+
+<style>
+  .phead {
+    --dot: rgb(11 11 11 / .1);
+    --fade: radial-gradient(70% 60% at 100% 0%, #000, transparent 75%);
+    position: relative;
+    display: grid;
+    gap: 12px;
+    padding: 28px var(--pad) 30px;
+    overflow: clip;
+    border-bottom: 3px solid var(--ink);
+  }
+  .tone-yellow { background: var(--yellow); color: var(--ink); }
+  .tone-pink { background: var(--cover); color: var(--ink); --dot: rgb(81 42 52 / .34); }
+  .tone-black { background: var(--ink); color: var(--white); --dot: rgb(255 46 110 / .22); }
+  .tone-red { background: var(--red); color: var(--white); --dot: rgb(0 0 0 / .22); }
+  .tone-white { background: var(--white); color: var(--ink); --dot: rgb(255 46 110 / .35); }
+  .phead-title { font: 400 clamp(84px, 24vw, 220px)/.8 var(--gothic); text-transform: uppercase; letter-spacing: .005em; text-wrap: balance; }
+  .phead-script { position: absolute; right: var(--pad); top: 18px; color: var(--pink); font: 400 clamp(40px, 9vw, 96px)/1 var(--script); rotate: -8deg; }
+  .tone-pink .phead-script { color: var(--white); }
+  .phead-deck { max-width: 46ch; font: 700 17px/1.4 var(--sans); }
+  @media (min-width: 1000px) {
+    .phead { padding: 3.4vw var(--pad) 3vw; }
+    .phead-title { font-size: min(13vw, 220px); }
+    .phead-deck { font-size: 19px; }
+  }
+</style>

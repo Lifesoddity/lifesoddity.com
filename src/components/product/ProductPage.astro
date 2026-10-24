@@ -1,0 +1,10 @@
+---
+// Placeholder until the product page's clone builds it. Owned by the product page.
+import PageHead from '../ui/PageHead.astro';
+import type { Piece } from '../../lib/pieces';
+
+interface Props { piece: Piece }
+const { piece } = Astro.props;
+---
+
+<PageHead title={piece.title} />

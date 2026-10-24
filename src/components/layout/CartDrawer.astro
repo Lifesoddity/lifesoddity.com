@@ -1,0 +1,165 @@
+---
+// The bag: a drawer from the right (a native dialog: focus stays inside, Escape closes it).
+// It lists what is in the bag, lets the visitor change quantities, and sends them to Shopify's
+// checkout in the same tab.
+import { bag } from '../../content/copy/common';
+import { site } from '../../content/site';
+---
+
+<dialog class="drawer" aria-labelledby="drawer-title" data-domain={site.checkoutDomain}>
+  <div class="drawer-in halftone">
+    <div class="drawer-head">
+      <h2 class="drawer-title" id="drawer-title">{bag.title}</h2>
+      <button class="drawer-close" type="button" data-close-bag aria-label={bag.close}>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4 4 16"></path></svg>
+      </button>
+    </div>
+
+    <ul class="drawer-list" data-list></ul>
+
+    <div class="drawer-empty" data-empty>
+      <p>{bag.empty}</p>
+      <a class="drawer-empty-link" href="/shop">{bag.emptyLink}</a>
+    </div>
+
+    <div class="drawer-foot" data-foot hidden>
+      <p class="drawer-sub"><span>{bag.subtotal}</span> <b class="num" data-subtotal></b></p>
+      <p class="drawer-ship">{bag.shipping}</p>
+      <a class="addbag drawer-checkout" href="#" data-checkout><span>{bag.checkout}</span></a>
+      <p class="drawer-note">{bag.checkoutNote}</p>
+    </div>
+  </div>
+
+  <template data-row>
+    <li class="drawer-item">
+      <div class="drawer-meta">
+        <a class="drawer-name"></a>
+        <span class="drawer-size"></span>
+        <span class="drawer-price num"></span>
+      </div>
+      <div class="drawer-qty" role="group">
+        <button class="drawer-step" type="button" data-step="-1" aria-label={bag.less}>−</button>
+        <span class="drawer-n num" aria-live="polite"></span>
+        <button class="drawer-step" type="button" data-step="1" aria-label={bag.more}>+</button>
+      </div>
+      <button class="drawer-remove" type="button" data-remove>{bag.remove}</button>
+    </li>
+  </template>
+</dialog>
+
+<script>
+  import { bagItems, checkoutUrl, setQty } from '../../scripts/bag';
+  import { formatPrice } from '../../lib/money';
+
+  const drawer = document.querySelector<HTMLDialogElement>('dialog.drawer');
+  if (drawer) {
+    const list = drawer.querySelector<HTMLUListElement>('[data-list]')!;
+    const empty = drawer.querySelector<HTMLElement>('[data-empty]')!;
+    const foot = drawer.querySelector<HTMLElement>('[data-foot]')!;
+    const subtotal = drawer.querySelector<HTMLElement>('[data-subtotal]')!;
+    const checkout = drawer.querySelector<HTMLAnchorElement>('[data-checkout]')!;
+    const row = drawer.querySelector<HTMLTemplateElement>('template[data-row]')!;
+    const domain = drawer.dataset.domain!;
+
+    const render = () => {
+      const items = bagItems();
+      list.replaceChildren();
+      for (const it of items) {
+        const li = row.content.firstElementChild!.cloneNode(true) as HTMLLIElement;
+        if (it.i) {
+          const img = document.createElement('img');
+          img.className = 'drawer-thumb';
+          img.alt = '';
+          img.width = 72;
+          img.height = 72;
+          img.loading = 'lazy';
+          img.src = it.i;
+          li.prepend(img);
+        }
+        const name = li.querySelector<HTMLAnchorElement>('.drawer-name')!;
+        name.textContent = it.t;
+        if (it.h) name.href = `/products/${it.h}`; else name.removeAttribute('href');
+        li.querySelector('.drawer-size')!.textContent = it.s ? `Size ${it.s}` : '';
+        li.querySelector('.drawer-price')!.textContent = it.p ? formatPrice(it.p * it.q) : '';
+        li.querySelector('.drawer-n')!.textContent = String(it.q);
+        li.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) =>
+          b.addEventListener('click', () => setQty(it.v, it.q + Number(b.dataset.step))),
+        );
+        li.querySelector<HTMLButtonElement>('[data-remove]')!.addEventListener('click', () => setQty(it.v, 0));
+        list.appendChild(li);
+      }
+      const total = items.reduce((n, i) => n + i.p * i.q, 0);
+      subtotal.textContent = formatPrice(total);
+      empty.hidden = items.length > 0;
+      foot.hidden = items.length === 0;
+      checkout.href = items.length ? checkoutUrl(domain) : '#';
+    };
+
+    document.addEventListener('lo:bag', render);
+    document.addEventListener('lo:bag-render', render);
+    document.querySelectorAll('[data-open-bag]').forEach((b) =>
+      b.addEventListener('click', () => { render(); drawer.showModal(); }),
+    );
+    drawer.querySelector('[data-close-bag]')?.addEventListener('click', () => drawer.close());
+    drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.close(); });
+    checkout.addEventListener('click', (e) => {
+      if (!bagItems().length) { e.preventDefault(); return; }
+      e.preventDefault();
+      location.assign(checkoutUrl(domain));
+    });
+    render();
+  }
+</script>
+
+<style>
+  .drawer {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(440px, 100%);
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-left: 4px solid var(--ink);
+    background: var(--yellow);
+    color: var(--ink);
+    overscroll-behavior: contain;
+  }
+  .drawer[open] { animation: drawer-in 220ms var(--ease-out); }
+  .drawer::backdrop { background: rgb(11 11 11 / .45); }
+  @keyframes drawer-in { from { transform: translateX(100%); } }
+  .drawer-in {
+    --dot: rgb(11 11 11 / .1);
+    --fade: radial-gradient(80% 50% at 100% 0%, #000, transparent 75%);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    height: 100%;
+    padding: max(16px, env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    overflow: auto;
+  }
+  .drawer-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 3px solid var(--ink); }
+  .drawer-title { font: 400 48px/.9 var(--gothic); text-transform: uppercase; }
+  .drawer-close { display: grid; place-items: center; width: 44px; height: 44px; }
+  .drawer-close svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
+  .drawer-list { display: grid; align-content: start; }
+  .drawer-item { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; grid-template-areas: "thumb meta qty" "thumb remove remove"; column-gap: 12px; row-gap: 4px; padding: 14px 0; border-bottom: 1px solid var(--ink); }
+  .drawer-thumb { grid-area: thumb; width: 72px; height: 72px; object-fit: cover; border: 3px solid var(--white); box-shadow: 4px 5px 4px -1px rgb(11 11 11 / .35); }
+  .drawer-meta { grid-area: meta; display: grid; gap: 3px; align-content: start; min-width: 0; }
+  .drawer-name { font: 400 26px/.95 var(--gothic); text-transform: uppercase; text-decoration: none; }
+  .drawer-name[href]:hover { text-decoration: underline; }
+  .drawer-size, .drawer-price { font: 700 13px/1.2 var(--sans); }
+  .drawer-qty { grid-area: qty; display: flex; align-items: center; gap: 4px; }
+  .drawer-step { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid var(--ink); background: var(--white); font: 800 18px/1 var(--sans); }
+  .drawer-n { min-width: 1.5ch; text-align: center; font: 800 15px/1 var(--sans); }
+  .drawer-remove { grid-area: remove; justify-self: start; padding: 6px 0; font: 700 12px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; text-decoration: underline; text-underline-offset: .25em; }
+  .drawer-empty { display: grid; gap: 14px; align-content: start; padding-top: 22px; font: 700 17px/1.35 var(--sans); }
+  .drawer-empty-link { font: 400 34px/1 var(--gothic); text-transform: uppercase; }
+  .drawer-foot { display: grid; gap: 10px; padding-top: 16px; border-top: 3px solid var(--ink); }
+  .drawer-sub { display: flex; justify-content: space-between; align-items: baseline; font: 800 13px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+  .drawer-sub b { font: 400 40px/.85 var(--gothic); letter-spacing: 0; }
+  .drawer-ship, .drawer-note { font: 600 13px/1.4 var(--sans); }
+  .drawer-checkout { display: grid; place-items: center; text-decoration: none; }
+  @media (prefers-reduced-motion: reduce) { .drawer[open] { animation: none; } }
+</style>

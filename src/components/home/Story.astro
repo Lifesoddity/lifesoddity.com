@@ -1,0 +1,292 @@
+---
+// SPOTTED!, the pinned scroll story (after henrietta.wearetattoodigital.com, in the magazine's
+// grammar). One scene per piece: live products first, then the archive. Each scene floods its
+// ground up, rolls its giant word in, flies its piece in tilted and lands it with a flash, then
+// hands over to the next. Scenes are built from the data, so a new product gets one by itself.
+//
+// Base styles are the still version (reduced motion): one screen-tall panel per scene. With
+// motion welcome, the scenes stack in one sticky stage and story.ts writes --p (0 to 1) per
+// scene; CSS turns that one number into every transform.
+import { Image } from 'astro:assets';
+import BuyBox from '../ui/BuyBox.astro';
+import PieceImage from '../ui/PieceImage.astro';
+import type { Piece } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { WORD_GAP } from '../../lib/words';
+import { home } from '../../content/copy/home';
+import { status as statusCopy } from '../../content/copy/common';
+
+interface Props { pieces: Piece[] }
+const { pieces } = Astro.props;
+const s = home.story;
+
+// the opening card: SPOTTED! on yellow, on one line everywhere (its width measured once: 2.586em)
+const open = { letters: [...s.openWord.toUpperCase()], w: 2.586 };
+
+const scenes = pieces.filter((p) => p.photo || p.art.cutout);
+const total = scenes.length + 1;
+
+function sceneStyle(p: Piece, i: number) {
+  const cut = p.art.cutout;
+  const ar = cut ? cut.front.width / cut.front.height : 0.75;
+  const vars: Record<string, string | number> = {
+    '--g': p.art.ground,
+    '--lc': p.art.ink === 'white' ? 'var(--white)' : 'var(--ink)',
+    '--dot': p.art.dot,
+    '--ar': Math.round(ar * 1000) / 1000,
+    '--dir': i % 2 === 0 ? 1 : -1,
+    '--w': p.word.w,
+    '--wl': p.word.wl,
+    '--gap': `${p.word.gap}em`,
+  };
+  if (cut) {
+    vars['--shadow-img'] = `url(${cut.shadow.src})`;
+    vars['--overhang'] = cut.overhang;
+    vars['--cut'] = `url(${cut.front.src})`;
+  }
+  return Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';');
+}
+const kind = (p: Piece) => (p.art.cutout ? (p.art.cutout.front.width >= p.art.cutout.front.height ? 'is-cut-wide' : 'is-cut-tall') : 'is-print');
+const firstSentence = (t: string | null) => (t ? t.split(/(?<=[.!?])\s/)[0] : null);
+let k = 0;
+---
+
+<section class="ss" aria-label={s.label} style={`--n:${total}`}>
+  <div class="ss-track">
+    <div class="ss-stage">
+      <div class="ss-scene ss-open" style={`--g:var(--yellow);--lc:var(--ink);--w:${open.w};--wl:${open.w};--gap:0em`}>
+        <div class="ss-flood halftone" aria-hidden="true"></div>
+        <h2 class="ss-word" aria-label={s.openWord}><span class="ss-l" aria-hidden="true">{open.letters.map((ch, j) => <i style={`--k:${j}`}>{ch}</i>)}</span></h2>
+        <p class="ss-line">{s.openLine}</p>
+      </div>
+
+      {scenes.map((p, i) => {
+        k = 0;
+        const buyable = p.product && p.status === 'live';
+        const line = p.art.line ?? firstSentence(p.description) ?? p.act.definition;
+        return (
+          <article class:list={['ss-scene', kind(p), p.art.ink === 'white' && 'on-dark']} style={sceneStyle(p, i)} aria-label={p.title}>
+            <div class="ss-flood halftone" aria-hidden="true"></div>
+            <p class="ss-word" aria-hidden="true">
+              {p.word.lines.map((line) => (
+                <span class="ss-l">{line.map((ch) => <i style={`--k:${k++}`}>{ch === ' ' ? ' ' : ch}</i>)}</span>
+              ))}
+            </p>
+
+            {p.art.cutout ? (
+              <a class="ss-prod ss-cut ph" href={p.href ?? undefined} aria-label={p.href ? `${p.title}, see the piece` : undefined}>
+                <span class="ph-sh ss-sh" aria-hidden="true"></span>
+                <Image class="ss-front" src={p.art.cutout.front} alt={p.art.cutout.alt} widths={[500, 900]} sizes="(min-width: 700px) 46vw, 92vw" />
+                {p.art.cutout.back && <Image class="ss-back" src={p.art.cutout.back} alt={p.art.cutout.backAlt ?? ''} widths={[500, 900]} sizes="(min-width: 700px) 46vw, 92vw" />}
+                <span class="ph-flash" aria-hidden="true"></span>
+              </a>
+            ) : (
+              <figure class="ss-prod ss-print print ph">
+                <span class="ph-sh" aria-hidden="true"></span>
+                {p.photo && <PieceImage photo={p.photo} sizes="(min-width: 700px) 32vw, 64vw" ratio={0.75} />}
+                <span class="ph-flash" aria-hidden="true"></span>
+                {p.art.mark && (
+                  <svg class="mark" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
+                    <path transform={`translate(${p.art.mark.x} ${p.art.mark.y}) scale(${p.art.mark.rx} ${p.art.mark.ry})`} d="M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05.6-1.02.02-1-.5-.55-.95.1-1.05"></path>
+                  </svg>
+                )}
+              </figure>
+            )}
+
+            <h3 class="tape ss-tag">{p.art.tag}</h3>
+
+            {buyable ? (
+              <div class="ss-buy">
+                <button class="ss-badge ss-badge-buy" type="button" aria-expanded="false" aria-controls={`ss-sizes-${p.key}`}>
+                  <b class="num">{formatPrice(p.product!.price)}</b><span>{s.buyLabel}</span>
+                </button>
+                <div class="ss-sizes" id={`ss-sizes-${p.key}`} role="group" aria-label={s.sizesTitle} hidden>
+                  <p class="ss-sizes-h">{s.sizesTitle}</p>
+                  <BuyBox product={p.product!} mode="quick" />
+                </div>
+                <p class="ss-note" aria-live="polite"></p>
+              </div>
+            ) : (
+              <span class="ss-badge ss-stamp" aria-hidden="true">
+                <b>{p.status === 'soldout' ? statusCopy.soldout : statusCopy.archive}</b>
+                <span>{p.act.number ? `Act ${p.act.number}` : p.act.title}</span>
+              </span>
+            )}
+
+            {line && <p class="ss-line">{line.includes(':') ? <><b>{line.split(':')[0]}:</b>{line.slice(line.indexOf(':') + 1)}</> : line}</p>}
+          </article>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<style>
+  .ss {
+    --sh: var(--lo-screen-h, 100svh);
+    --hd: var(--header-h);
+    --cy: calc(var(--hd) + (var(--sh) - var(--hd)) * .5);
+    position: relative;
+  }
+  .ss-scene {
+    --g: var(--yellow);
+    --lc: var(--ink);
+    --wt: rgb(255 255 255 / .34);
+    --dot: rgb(11 11 11 / .1);
+    --fade: radial-gradient(80% 50% at 100% 0%, #000, transparent 75%), radial-gradient(70% 45% at 0% 100%, #000, transparent 75%);
+    --ar: .75;
+    position: relative;
+    height: var(--sh);
+    overflow: clip;
+    color: var(--lc);
+  }
+  .is-cut-wide { --pw: min(92vw, calc(var(--sh) * .42 * var(--ar))); }
+  .is-cut-tall { --pw: min(70vw, calc(var(--sh) * .46 * var(--ar))); }
+  .is-print { --ar: .75; --pw: min(64vw, calc(var(--sh) * .46 * .75)); }
+  .ss-scene { --ph: calc(var(--pw, 60vw) / var(--ar)); }
+
+  /* the ground: a full-stage panel, the halftone printed on it */
+  .ss-flood { position: absolute; inset: 0; background: var(--g); }
+
+  /* the giant word: two lines on a phone, one at 700 and up; each line clips its rolling letters */
+  .ss-word {
+    position: absolute;
+    z-index: 1;
+    left: 50%;
+    top: var(--cy);
+    translate: -50% -50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    color: var(--wt);
+    font: 400 min(calc(92vw / var(--wl)), calc(var(--sh) * .3)) / .86 var(--gothic);
+    letter-spacing: 0;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .ss-open .ss-word { color: var(--ink); }
+  .ss-l { display: block; padding-top: .07em; overflow: clip; }
+  .ss-word i { display: inline-block; font-style: normal; }
+
+  /* the piece, centred under the header, over the word */
+  .ss-prod { position: absolute; z-index: 2; left: 50%; top: var(--cy); width: var(--pw); translate: -50% -50%; margin: 0; }
+  .ss-scene:nth-of-type(even) .ss-print { rotate: -3deg; }
+  .ss-scene:nth-of-type(odd) .ss-print { rotate: 3deg; }
+  .ss-print :global(img) { aspect-ratio: 3 / 4; object-fit: cover; }
+  .ss-cut :global(img) { position: relative; width: 100%; }
+  .ss-sh { inset: var(--overhang, 0); background: var(--shadow-img, none) center / 100% 100% no-repeat; box-shadow: none; translate: 13px 15px; }
+  .ss-cut .ph-flash { -webkit-mask: var(--cut) center / 100% 100% no-repeat; mask: var(--cut) center / 100% 100% no-repeat; }
+  .ss-cut :global(.ss-back) { display: none; }
+
+  /* the tag: the black tape strip with his pink script, on the word above the piece */
+  .ss-tag { z-index: 3; left: var(--pad); top: calc(var(--cy) - var(--ph) / 2 - 34px); margin: 0; font-size: 30px; font-weight: 400; }
+
+  /* the round badge: the buy shortcut on a live piece, a rubber stamp on the archive */
+  .ss-badge {
+    position: absolute;
+    z-index: 3;
+    left: min(calc(50% + var(--pw) / 2 - 64px), calc(100% - 112px - var(--pad)));
+    top: calc(var(--cy) + var(--ph) / 2 - 92px);
+    display: grid;
+    place-content: center;
+    gap: 2px;
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    text-align: center;
+    rotate: -8deg;
+  }
+  .ss-badge-buy { background: var(--yellow); color: var(--ink); box-shadow: inset 0 0 0 4px var(--yellow), inset 0 0 0 6px var(--ink), 0 8px 14px rgb(60 0 18 / .4); }
+  .ss-badge-buy b { font: 400 44px/.8 var(--gothic); }
+  .ss-badge-buy span { font: 800 10.5px/1.1 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+  .ss-badge-buy:active { translate: 0 1px; }
+  .ss-badge-buy[aria-expanded="true"] { background: var(--ink); color: var(--yellow); box-shadow: inset 0 0 0 4px var(--ink), inset 0 0 0 6px var(--yellow), 0 8px 14px rgb(60 0 18 / .4); }
+  .ss-stamp { color: var(--lc); border: 2px solid currentColor; background: var(--g); background-size: 400% 100%; box-shadow: 0 6px 12px rgb(0 0 0 / .25); }
+  .ss-stamp::before { content: ""; position: absolute; inset: 5px; border: 1.5px solid currentColor; border-radius: 50%; }
+  .ss-stamp b { font: 400 30px/.85 var(--gothic); letter-spacing: .04em; text-transform: uppercase; }
+  .ss-stamp span { font: 800 10px/1 var(--sans); letter-spacing: .16em; text-transform: uppercase; }
+
+  /* the sizes, opened in place by the price badge */
+  .ss-sizes { position: absolute; z-index: 5; left: var(--pad); right: var(--pad); bottom: 96px; display: grid; gap: 10px; padding: 12px; border: 3px solid var(--ink); background: var(--white); color: var(--ink); box-shadow: 0 12px 20px -8px rgb(60 0 18 / .55); }
+  .ss-sizes :global(.buy-note:empty) { display: none; }
+  .ss-sizes-h { font: 400 28px/.9 var(--gothic); text-transform: uppercase; }
+  .ss-note { position: absolute; z-index: 4; right: var(--pad); top: calc(var(--hd) + 16px); max-width: calc(100% - 2 * var(--pad)); padding: 8px 12px 7px; background: var(--yellow); color: var(--ink); font: 800 12px/1.3 var(--sans); letter-spacing: .04em; text-transform: uppercase; rotate: -4deg; box-shadow: 0 4px 8px rgb(11 11 11 / .3); }
+  .ss-note:empty { display: none; }
+
+  /* the line along the bottom */
+  .ss-line { position: absolute; z-index: 3; left: var(--pad); right: var(--pad); bottom: max(20px, 4.5%); max-width: 62ch; margin: 0 auto; color: var(--lc); font: 600 14px/1.42 var(--sans); text-align: center; text-wrap: balance; }
+  .ss-line b { font-weight: 800; font-style: italic; }
+  .ss-open .ss-line { font-size: 17px; font-weight: 700; }
+  .ss-scene :focus-visible { outline-color: var(--lc); }
+  .ss-sizes :focus-visible { outline-color: var(--ink); }
+
+  @media (min-width: 700px) {
+    .ss-word { flex-direction: row; column-gap: var(--gap, 0); font-size: min(calc(92vw / var(--w)), calc(var(--sh) * .5)); }
+    .is-cut-wide { --pw: min(46vw, calc(var(--sh) * .54 * var(--ar))); }
+    .is-cut-tall { --pw: min(36vw, calc(var(--sh) * .62 * var(--ar))); }
+    .is-print { --pw: min(32vw, calc(var(--sh) * .6 * .75)); }
+    .ss-tag { left: auto; right: calc(50% + var(--pw) / 2 - 3vw); top: calc(var(--cy) - var(--ph) / 2 + 4vw); font-size: clamp(30px, 3.2vw, 46px); }
+    .ss-badge { left: calc(50% + var(--pw) / 2 - 3vw); top: calc(var(--cy) - var(--ph) / 2 + 10vw); width: clamp(112px, 10vw, 150px); height: clamp(112px, 10vw, 150px); }
+    .ss-badge-buy b { font-size: clamp(44px, 4vw, 58px); }
+    .ss-badge-buy span { font-size: clamp(10.5px, .9vw, 13px); }
+    .ss-stamp b { font-size: clamp(30px, 2.7vw, 40px); }
+    .ss-sizes { left: auto; right: var(--pad); bottom: auto; top: calc(var(--cy) - var(--ph) / 2 + 10vw + clamp(112px, 10vw, 150px) + 14px); width: 360px; }
+    .ss-line { font-size: 16px; }
+    .ss-open .ss-line { font-size: 20px; }
+  }
+
+  /* ---------- the pin and the motion, only when motion is welcome ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    .ss-track { height: calc(var(--sh) * ((var(--n) - .5) * 1.5 + 1)); }
+    .ss-stage { position: sticky; top: 0; height: var(--sh); overflow: clip; }
+    .ss-scene {
+      --p: 0;
+      --e: clamp(0, var(--p) * 3, 1);
+      --x: clamp(0, (var(--p) - .6667) * 3, 1);
+      --eF: clamp(0, var(--e) * 1.7, 1);
+      --eP: clamp(0, (var(--e) - .2) * 1.25, 1);
+      --rP: calc((1 - var(--eP)) * (1 - var(--eP)) * (1 - var(--eP)));
+      --xP: clamp(0, var(--x) / .6, 1);
+      --eT: clamp(0, (var(--e) - .7) / .3, 1);
+      --xT: clamp(0, var(--x) / .3, 1);
+      position: absolute;
+      inset: 0;
+      height: auto;
+    }
+    /* the ground floods up from below: one composited panel sliding, nothing repainted */
+    .ss-flood { transform: translate3d(0, calc((1 - var(--eF)) * (1 - var(--eF)) * 100%), 0); will-change: transform; }
+    /* letters roll up through their line, staggered; on the way out the word rolls down nearly as one */
+    .ss-word i {
+      --eL: clamp(0, (var(--e) - .35 - var(--k) * .025) / .4, 1);
+      --xL: clamp(0, (var(--x) - var(--k) * .01) / .3, 1);
+      transform: translate3d(0, calc(((1 - var(--eL)) * (1 - var(--eL)) + var(--xL) * var(--xL)) * 112%), 0);
+      will-change: transform;
+    }
+    /* the piece flies in tilted from below, lands, and flies off the other way */
+    .ss-prod {
+      transform: translate3d(
+          calc(var(--dir, 1) * (var(--rP) * 24vw - var(--xP) * var(--xP) * 30vw)),
+          calc(var(--rP) * var(--sh) * .9 - var(--xP) * var(--xP) * var(--sh) * 1.1),
+          0)
+        rotate(calc(var(--dir, 1) * (var(--rP) * 26deg - var(--xP) * var(--xP) * 32deg)));
+      will-change: transform;
+    }
+    /* tag, badge and line arrive last and leave first */
+    .ss-tag { opacity: calc(var(--eT) - var(--xT)); transform: translate3d(0, calc(var(--xT) * -24px), 0) scale(calc(1.3 - .3 * var(--eT))); will-change: transform, opacity; }
+    .ss-badge { opacity: calc(var(--eT) - var(--xT)); transform: scale(calc(.35 + .65 * (1 - (1 - var(--eT)) * (1 - var(--eT))))) rotate(calc((1 - var(--eT)) * -70deg)); will-change: transform, opacity; }
+    .ss-line { opacity: calc(var(--eT) - var(--xT)); transform: translate3d(0, calc((1 - var(--eT)) * 18px), 0); will-change: transform, opacity; }
+    .ss-open .ss-line { opacity: calc(1 - var(--xT)); transform: none; }
+    /* a piece with a back turns in the middle of its hold, in real perspective */
+    .ss-scene { --t0: clamp(0, (var(--p) - .42) / .16, 1); --tr: calc(var(--t0) * var(--t0) * (3 - 2 * var(--t0))); }
+    .ss-cut :global(.ss-back) { display: block; position: absolute; inset: 0; width: 100%; }
+    .ss-cut :global(.ss-front), .ss-cut :global(.ss-back) { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .ss-cut:has(:global(.ss-back)) :global(.ss-front) { transform: perspective(1400px) rotateY(calc(var(--tr) * 180deg)); }
+    .ss-cut :global(.ss-back) { transform: perspective(1400px) rotateY(calc(var(--tr) * 180deg - 180deg)); }
+    .ss-cut:has(:global(.ss-back)) .ss-sh { transform: scaleX(cos(calc(var(--tr) * 180deg))); }
+    /* a scene not started (0) or finished and covered (1) draws nothing */
+    @container style(--p: 0) { .ss-scene > * { visibility: hidden; } }
+    @container style(--p: 1) { .ss-scene > * { visibility: hidden; } }
+  }
+</style>

@@ -1,0 +1,43 @@
+---
+// A photo printed on white with its hard flash shadow; it flashes on hover or tap. Optionally
+// a link, a tilt, and a pink marker circle drawn on it.
+import PieceImage from './PieceImage.astro';
+import type { Piece } from '../../lib/pieces';
+
+interface Props {
+  photo: NonNullable<Piece['photo']>;
+  sizes: string;
+  alt?: string;
+  href?: string | null;
+  label?: string;
+  tilt?: number;
+  ratio?: number;
+  mark?: { x: number; y: number; rx: number; ry: number };
+  class?: string;
+  eager?: boolean;
+  /** Flash once when the page first renders. */
+  first?: boolean;
+}
+
+const { photo, sizes, alt, href, label, tilt = 0, ratio = 3 / 4, mark, class: cls, eager, first = false } = Astro.props;
+const Tag = href ? 'a' : 'figure';
+---
+
+<Tag
+  class:list={['ph', 'print', cls]}
+  href={href ?? undefined}
+  aria-label={href ? label : undefined}
+  data-flash
+  data-flash-first={first ? '' : undefined}
+  style={tilt ? `rotate:${tilt}deg` : undefined}
+>
+  <span class="ph-sh" aria-hidden="true"></span>
+  <PieceImage photo={photo} sizes={sizes} alt={alt} ratio={ratio} eager={eager} />
+  <span class="ph-flash" aria-hidden="true"></span>
+  {mark && (
+    <svg class="mark" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
+      <path transform={`translate(${mark.x} ${mark.y}) scale(${mark.rx} ${mark.ry})`} d="M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05.6-1.02.02-1-.5-.55-.95.1-1.05"></path>
+    </svg>
+  )}
+  <slot />
+</Tag>

@@ -1,0 +1,57 @@
+---
+// The buy control for one Shopify product: price, the size stamps (XS to 2XL, in that order)
+// and ADD TO BAG, disabled until a size is chosen. The price and stock refresh from Shopify
+// after the page loads (data-live). Sold-out sizes are struck through and cannot be chosen.
+//
+// mode "box": stamps choose a size, then ADD TO BAG adds it (cover, product page).
+// mode "quick": each stamp adds its size at once (the story's badge, shop cards).
+import type { Product } from '../../lib/shopify';
+import { formatPrice } from '../../lib/money';
+import { shopifyImage } from '../../lib/shopify';
+import { home } from '../../content/copy/home';
+import { status } from '../../content/copy/common';
+
+interface Props {
+  product: Product;
+  mode?: 'box' | 'quick';
+  class?: string;
+  /** Show the price inside the box (the cover's price box) or leave it to the page. */
+  showPrice?: boolean;
+  addLabel?: string;
+  sizeLabel?: string;
+}
+
+const { product, mode = 'box', class: cls, showPrice = false, addLabel = home.cover.addToBag, sizeLabel = 'Size' } = Astro.props;
+const thumb = product.images[0] ? shopifyImage(product.images[0].src, 200) : '';
+---
+
+<div
+  class:list={['buybox', cls]}
+  data-buy
+  data-quick={mode === 'quick' ? '' : undefined}
+  data-live={product.handle}
+  data-handle={product.handle}
+  data-title={product.title}
+  data-price={product.price}
+  data-image={thumb}
+>
+  {showPrice && <p class="buybox-price num" data-live-price>{formatPrice(product.price)}</p>}
+  <div class="sizes" role="group" aria-label={sizeLabel}>
+    {product.variants.map((v) => (
+      <button
+        class="sz"
+        type="button"
+        aria-pressed={mode === 'box' ? 'false' : undefined}
+        aria-disabled={v.available ? undefined : 'true'}
+        data-variant={v.id}
+        data-size={v.size}
+        data-price={v.price}
+        title={v.available ? undefined : status.soldout}
+      >{v.size}<span class="vh">{v.available ? '' : `, ${status.soldout.toLowerCase()}`}</span></button>
+    ))}
+  </div>
+  {mode === 'box' && (
+    <button class="addbag" type="button" data-add disabled={!product.available}><span>{product.available ? addLabel : status.soldout}</span></button>
+  )}
+  <p class="buy-note" data-note aria-live="polite">{mode === 'box' && product.available ? home.cover.pickSize : ''}</p>
+</div>

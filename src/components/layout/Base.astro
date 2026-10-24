@@ -1,0 +1,94 @@
+---
+// Every page: the head (title, description, link previews, structured data, fonts), the skip
+// link, the masthead, the page, the footer and the bag. Pages pass their own title and image.
+import { Font } from 'astro:assets';
+import '../../styles/global.css';
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+import CartDrawer from './CartDrawer.astro';
+import { site } from '../../content/site';
+import { header } from '../../content/copy/common';
+
+interface Props {
+  /** The page's own name, e.g. "She Devil Tee [Black]". The home page passes its full title. */
+  title: string;
+  description?: string;
+  /** Absolute URL of a 1200x630 preview image. */
+  image?: string;
+  imageAlt?: string;
+  type?: 'website' | 'product';
+  /** Structured data objects, written as JSON-LD. */
+  ld?: object[];
+  /** Product price for link previews. */
+  price?: { amount: string; currency: string };
+  noindex?: boolean;
+  /** The whole title, without " | Life's Oddity" appended (the home page). */
+  bare?: boolean;
+}
+
+const { title, description = site.description, image, imageAlt, type = 'website', ld = [], price, noindex = false, bare = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const fullTitle = bare ? title : `${title} | ${site.name}`;
+const previewImage = image ?? new URL('/og.png', Astro.site).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
+    <meta name="theme-color" content="#FFE500" />
+
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={previewImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    {imageAlt && <meta property="og:image:alt" content={imageAlt} />}
+    {price && <meta property="og:price:amount" content={price.amount} />}
+    {price && <meta property="og:price:currency" content={price.currency} />}
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <Font cssVariable="--font-gothic" preload />
+    <Font cssVariable="--font-sans" />
+    <Font cssVariable="--font-script" />
+
+    {ld.map((obj) => <script type="application/ld+json" set:html={JSON.stringify(obj)} />)}
+  </head>
+  <body>
+    <a class="skip" href="#page">{header.skip}</a>
+    <Header />
+    <main id="page" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+    <CartDrawer />
+    <script>
+      import { initBag } from '../../scripts/bag';
+      import { initBuy } from '../../scripts/buy';
+      import { initLive } from '../../scripts/live';
+      import { bindFlash } from '../../scripts/motion';
+      import { initStory } from '../../scripts/story';
+      import { initPlayers } from '../../scripts/player';
+      import { initWaitlists } from '../../scripts/waitlist';
+
+      const domain = document.documentElement.dataset.store ?? document.body.dataset.store ?? 'lifesoddity.myshopify.com';
+      initBag();
+      initBuy();
+      initLive(domain);
+      bindFlash();
+      initStory();
+      initPlayers();
+      initWaitlists();
+    </script>
+  </body>
+</html>

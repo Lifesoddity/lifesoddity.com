@@ -1,0 +1,54 @@
+---
+// The soundtrack page: PRESS PLAY. SHOWTIME STARTS NOW. set large on black, beside the act's
+// playlist box. PRESS PLAY on the cover jumps here.
+import Player from '../ui/Player.astro';
+import type { Act } from '../../content/acts';
+import { home } from '../../content/copy/home';
+
+interface Props { act: Act }
+const { act } = Astro.props;
+const s = home.soundtrack;
+---
+
+<section class="sound on-dark halftone" id="soundtrack" aria-label={s.label}>
+  <div class="sound-head">
+    <h2 class="sound-line"><span>{s.lead}</span> <span>{s.follow}</span></h2>
+    <p class="sound-deck">{s.deck}</p>
+  </div>
+  <Player act={act} class="sound-box" />
+</section>
+
+<style>
+  .sound {
+    --dot: rgb(225 6 0 / .42);
+    --fade: radial-gradient(60% 45% at 0% 0%, #000, transparent 75%), radial-gradient(55% 40% at 100% 100%, #000, transparent 75%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+    padding: 30px var(--pad) 48px;
+    background: var(--ink);
+    color: var(--white);
+    overflow: clip;
+    scroll-margin-top: var(--header-h);
+  }
+  .sound-head { display: grid; gap: 12px; }
+  .sound-line { font: 400 min(24vw, 140px)/.84 var(--gothic); text-transform: uppercase; }
+  .sound-line span { display: block; }
+  .sound-line span:first-child { color: var(--yellow); }
+  .sound-line span:last-child { margin-top: 4px; font-size: .5em; line-height: .95; }
+  .sound-deck { max-width: 32ch; font: 600 16px/1.4 var(--sans); }
+  @media (min-width: 700px) {
+    .sound-line { font-size: 12vw; }
+    .sound-line span:first-child { font-size: 1.25em; }
+    .sound-line span:last-child { margin-top: .08em; font-size: 1em; line-height: .84; }
+    .sound-deck { font-size: 18px; }
+  }
+  @media (min-width: 1000px) {
+    .sound { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 1.7vw; row-gap: 2.6vw; padding: 4.4vw var(--pad) 5.4vw; }
+    .sound-head { grid-column: 1 / 6; align-self: start; }
+    .sound-line { font-size: 8vw; }
+    .sound-line span:first-child { font-size: 1.4em; }
+    .sound-deck { font-size: max(16px, 1.3vw); }
+    .sound :global(.sound-box) { grid-column: 6 / 13; }
+  }
+</style>
