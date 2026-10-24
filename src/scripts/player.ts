@@ -6,11 +6,14 @@
 // through Spotify's iFrame API.
 //
 // Where the player shows:
+// - "ready": the visitor has scrolled and nothing plays yet. The strip along the bottom offers
+//   the soundtrack (layout/Radio.astro) with PLAY. Browsers allow sound only after a tap, so it
+//   waits for one; Spotify is not loaded until then.
 // - "box": the box it was played from is on screen. The radio is laid over that box's print,
 //   placed in the page (not on the screen), so it scrolls with it at no cost.
 // - "dock": that box has scrolled away, or the visitor went to another page. A strip along the
 //   bottom, with Open in Spotify and a stop.
-// - "off": never played, or stopped.
+// - "off": before the first scroll, or put away with the ✕ (for the rest of the visit).
 // Visitors not logged into Spotify in this browser (most, inside Instagram) hear 30-second
 // previews; the honest line under the box says so, and Open in Spotify has the full songs.
 
@@ -55,11 +58,17 @@ const dark = (url: string) => {
   return u.href;
 };
 
-type Mode = 'off' | 'box' | 'dock';
+type Mode = 'off' | 'ready' | 'box' | 'dock';
+const strip = (m: string | undefined) => m === 'ready' || m === 'dock';
 
 const radio = document.querySelector<HTMLElement>('[data-radio]');
 const frame = radio?.querySelector<HTMLElement>('.radio-frame') ?? null;
 const openLink = radio?.querySelector<HTMLAnchorElement>('[data-radio-open]') ?? null;
+const stopBtn = radio?.querySelector<HTMLButtonElement>('[data-radio-stop]') ?? null;
+const playBtn = radio?.querySelector<HTMLButtonElement>('[data-radio-play]') ?? null;
+/** What the strip offers before anything plays: the home page's soundtrack (acts.ts radioAct). */
+const offer = radio?.dataset.url ? { url: radio.dataset.url, name: radio.dataset.name ?? player.name('') } : null;
+const AWAY = 'lo-radio-away';
 
 let controller: Controller | null = null;
 let making: Promise<Controller> | null = null;
@@ -67,6 +76,9 @@ let making: Promise<Controller> | null = null;
 let current: { url: string; name: string } | null = null;
 let on = false;
 let paused = true;
+/** The strip has come up (first scroll), or was put away for this visit. */
+let revealed = false;
+let away = (() => { try { return sessionStorage.getItem(AWAY) === '1'; } catch { return false; } })();
 /** The print of this page's box for the loaded playlist, and whether it is on screen. */
 let anchor: HTMLElement | null = null;
 let anchorSeen = false;
@@ -107,9 +119,10 @@ function place() {
 function setMode() {
   if (!radio) return;
   const was = radio.dataset.mode as Mode;
-  const mode: Mode = !on ? 'off' : anchor && anchorSeen ? 'box' : 'dock';
+  const mode: Mode = on ? (anchor && anchorSeen ? 'box' : 'dock') : revealed && offer && !away ? 'ready' : 'off';
   radio.dataset.mode = mode;
   radio.hidden = mode === 'off';
+  stopBtn?.setAttribute('aria-label', mode === 'ready' ? player.close : player.stop);
   if (mode === 'box') {
     place();
   } else {
@@ -117,15 +130,16 @@ function setMode() {
     radio.style.removeProperty('translate');
     radio.style.removeProperty('--frame-h');
   }
-  // docked along the bottom: the page keeps that much room at its end, so nothing stays hidden
-  const docked = mode === 'dock';
-  document.documentElement.style.setProperty('--radio-b', docked ? `${radio.offsetHeight}px` : '0px');
-  if (docked && was !== 'dock' && !reduceMotion()) {
+  // the strip along the bottom: the page keeps that much room at its end, so nothing stays hidden
+  document.documentElement.style.setProperty('--radio-b', strip(mode) ? `${radio.offsetHeight}px` : '0px');
+  if (strip(mode) && !strip(was) && !reduceMotion()) {
     radio.animate(
       [{ transform: 'translateY(100%)' }, { transform: 'none' }],
       { duration: 160, easing: 'cubic-bezier(.2, .7, .2, 1)' },
     );
   }
+  // PLAY slaps on once as the strip comes up
+  if (mode === 'ready' && was !== 'ready') window.setTimeout(() => slap(playBtn), 120);
 }
 
 /** This page's box for the loaded playlist holds the radio while it is on screen. */
@@ -165,16 +179,15 @@ function make(url: string): Promise<Controller> {
   return making;
 }
 
-async function start(box: HTMLElement) {
-  const url = box.dataset.spotify;
-  if (!url || !radio) return;
-  const name = box.dataset.name ?? player.name('');
+/** Play a playlist; this page's box for it, when there is one, holds the radio while on screen. */
+async function start(url: string, name: string, box: HTMLElement | null) {
+  if (!radio) return;
   const fresh = !controller;
   on = true;
   attach(box);
-  const now = box.querySelector<HTMLElement>('[data-now]');
+  const now = box?.querySelector<HTMLElement>('[data-now]') ?? null;
   if (fresh && now) now.textContent = player.loading;
-  flash(box.querySelector('[data-slot] .ph'));
+  if (box) flash(box.querySelector('[data-slot] .ph'));
   try {
     const c = controller ?? (controller = await make(url));
     if (current?.url !== url) {
@@ -194,15 +207,18 @@ async function start(box: HTMLElement) {
   } catch {
     on = false;
     setMode();
-    const err = box.querySelector<HTMLElement>('[data-error]');
+    const err = box?.querySelector<HTMLElement>('[data-error]');
     if (err) err.hidden = false;
     if (now) now.textContent = '';
   }
 }
 
+/** The ✕: the music stops and the radio goes away for the rest of the visit (a box's PLAY still works). */
 function stop() {
   controller?.pause();
   on = false;
+  away = true;
+  try { sessionStorage.setItem(AWAY, '1'); } catch { /* storage blocked: away for this page's life */ }
   watch?.disconnect();
   watch = null;
   anchor = null;
@@ -216,9 +232,23 @@ function stop() {
 
 // once per visit: the radio itself, which outlives every page
 if (radio && frame) {
-  radio.querySelector('[data-radio-stop]')?.addEventListener('click', stop);
+  stopBtn?.addEventListener('click', stop);
+  playBtn?.addEventListener('click', () => {
+    slap(playBtn);
+    if (offer) start(offer.url, offer.name, boxFor(offer.url));
+  });
+  // the strip comes up as soon as the visitor scrolls
+  if (offer && !away) {
+    const reveal = () => {
+      if (scrollY < 12) return;
+      revealed = true;
+      removeEventListener('scroll', reveal);
+      if (!on) setMode();
+    };
+    addEventListener('scroll', reveal, { passive: true });
+  }
   // the box moved (a picture above it loaded, the window changed): follow it
-  const follow = () => { if (radio.dataset.mode === 'box') place(); else if (radio.dataset.mode === 'dock') setMode(); };
+  const follow = () => { if (radio.dataset.mode === 'box') place(); else if (strip(radio.dataset.mode)) setMode(); };
   addEventListener('resize', follow, { passive: true });
   new ResizeObserver(follow).observe(document.body);
 }
@@ -230,7 +260,7 @@ export function initPlayers(signal: AbortSignal) {
     btn?.addEventListener('click', () => {
       slap(btn);
       const mine = current?.url === box.dataset.spotify;
-      if (!on || !mine || !controller) { start(box); return; }
+      if (!on || !mine || !controller) { start(box.dataset.spotify ?? '', box.dataset.name ?? player.name(''), box); return; }
       if (paused) controller.resume(); else controller.pause();
     });
   }
@@ -239,11 +269,12 @@ export function initPlayers(signal: AbortSignal) {
     link.addEventListener('click', () => {
       const box = document.querySelector<HTMLElement>(`${link.hash} [data-player]`);
       // after the jump, so the radio opens in the box, not docked first
-      if (box && !(on && current?.url === box.dataset.spotify && !paused)) requestAnimationFrame(() => start(box));
+      if (box && !(on && current?.url === box.dataset.spotify && !paused)) requestAnimationFrame(() => start(box.dataset.spotify ?? '', box.dataset.name ?? player.name(''), box));
     });
   });
 
   if (on && current) attach(boxFor(current.url));
+  else setMode();
   sync();
   // the page is about to go: its box goes with it, and the radio docks
   signal.addEventListener('abort', () => {

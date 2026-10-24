@@ -124,3 +124,6 @@ export const newDropAct: Act = {
 
 export const actBySlug = (slug: string) => acts.find((a) => a.slug === slug);
 export const liveAct = () => acts.find((a) => a.status === 'live') ?? acts[0];
+/** The playlist the docked radio offers before anything plays (layout/Radio.astro): the home
+ *  page's soundtrack, Act 1's Showtime, while it has a link, else any act's that has one. */
+export const radioAct = () => [actBySlug('party-animal'), ...acts].find((a) => a?.playlist.spotify) ?? null;

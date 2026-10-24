@@ -1,23 +1,44 @@
 ---
-// LIFE'S ODDITY RADIO, docked. From the first PLAY on, Spotify's own player lives here, outside
-// the part of the page that changes (data-keep, Base.astro), so moving to another page never
-// stops the music. While the box it was played from is on screen, the player sits in that box's
-// white print and scrolls with the page; once the box is gone it docks: a yellow strip along the
-// bottom of the screen, with the way out to the Spotify app (full songs) and a stop. The page keeps
-// that much room at its end, so the strip never hides anything for good. On a phone's product
-// page it rides just above the buy bar. scripts/player.ts runs it.
+// LIFE'S ODDITY RADIO, docked. As soon as the visitor scrolls, a yellow strip rises along the
+// bottom of the screen with the soundtrack's name and PLAY (browsers allow sound only after a
+// tap, so it waits for one; nothing from Spotify loads before it). From the first PLAY on,
+// Spotify's own player lives here, outside the part of the page that changes (data-keep,
+// Base.astro), so moving to another page never stops the music. While the box it was played
+// from is on screen, the player sits in that box's white print and scrolls with the page; once
+// the box is gone it docks in the strip, with the way out to the Spotify app (full songs) and a
+// stop. The page keeps room for the strip at its end; on a phone's product page it rides just
+// above the buy bar. The ✕ puts the radio away for the visit. scripts/player.ts runs it.
 import { player } from '../../content/copy/common';
+import { radioAct } from '../../content/acts';
+
+const act = radioAct();
+const url = act?.playlist.spotify ?? null;
+const title = act?.playlist.name ?? '';
+const name = player.name(title);
 ---
 
-<aside class="radio" data-keep data-radio data-mode="off" aria-label={player.bar} hidden>
+<aside class="radio" data-keep data-radio data-mode="off" data-url={url} data-name={name} aria-label={player.bar} hidden>
   <p class="radio-bar" aria-hidden="true">{player.bar}</p>
+  {act && url && (
+    <div class="radio-ready">
+      <p class="radio-now">
+        <b class="radio-title">{title}</b>
+        <span class="radio-sub is-short">{player.bar}</span>
+        <span class="radio-sub is-long">{player.sub(act.number, act.title)}</span>
+      </p>
+      <button class="radio-play" type="button" data-radio-play aria-label={player.playName(name)}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"></path></svg>
+        <span>{player.play}</span>
+      </button>
+    </div>
+  )}
   <div class="radio-frame"><div data-radio-mount></div></div>
   <div class="radio-ctl">
-    <a class="radio-open" href="https://open.spotify.com/" rel="noopener" data-radio-open>
+    <a class="radio-open" href={url ?? 'https://open.spotify.com/'} rel="noopener" data-radio-open>
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4H4v12h12v-4M11 3h6v6M17 3l-8 8"></path></svg>
       <span class="radio-open-l">{player.open}</span>
     </a>
-    <button class="radio-stop" type="button" data-radio-stop aria-label={player.stop}>
+    <button class="radio-stop" type="button" data-radio-stop aria-label={player.close}>
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"></path></svg>
     </button>
   </div>
@@ -28,16 +49,16 @@ import { player } from '../../content/copy/common';
   .radio :focus-visible { outline-color: var(--ink); }
   .radio-frame { position: relative; min-width: 0; height: var(--frame-h); border-radius: 12px; background: #282828; }
   .radio-frame :global(iframe) { display: block; width: 100%; height: 100%; border: 0; border-radius: 12px; }
+  .radio-bar, .radio-ready { display: none; }
 
   /* in the box: only Spotify's player, laid exactly over the box's print by player.ts; it scrolls
      with the page because it is placed in the page, not on the screen */
   .radio[data-mode="box"] { position: absolute; z-index: 20; top: 0; left: 0; }
-  .radio[data-mode="box"] .radio-bar,
   .radio[data-mode="box"] .radio-ctl { display: none; }
 
-  /* docked: a strip along the bottom; on a phone's product page it rides above the buy bar
-     (--sb-up, StickyBuy.astro), moving with it */
-  .radio[data-mode="dock"] {
+  /* the strip along the bottom, waiting (ready) or playing (dock); on a phone's product page it
+     rides above the buy bar (--sb-up, StickyBuy.astro), moving with it */
+  .radio:is([data-mode="ready"], [data-mode="dock"]) {
     position: fixed;
     z-index: 28;
     left: 0;
@@ -53,15 +74,43 @@ import { player } from '../../content/copy/common';
     translate: 0 calc(-1 * var(--sb-up, 0px));
     transition: translate var(--slap) var(--ease-out);
   }
-  .radio-bar { display: none; }
   .radio-ctl { display: grid; grid-template-rows: 1fr 1fr; height: var(--frame-h); margin-right: -8px; }
   .radio-open, .radio-stop { display: grid; place-items: center; width: 44px; min-height: 40px; color: var(--ink); text-decoration: none; }
   .radio-open svg, .radio-stop svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
   .radio-open-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
+  /* waiting: the soundtrack's name and PLAY; Spotify is not loaded yet */
+  .radio[data-mode="ready"] .radio-ready { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 2px 0; }
+  .radio[data-mode="ready"] .radio-frame,
+  .radio[data-mode="ready"] .radio-open { display: none; }
+  .radio[data-mode="ready"] .radio-ctl { grid-template-rows: auto; height: auto; }
+  .radio-now { display: grid; gap: 3px; min-width: 0; }
+  .radio-title { font: 400 30px/.86 var(--gothic); text-transform: uppercase; }
+  .radio-sub { overflow: hidden; font: 700 12px/1.25 var(--sans); text-overflow: ellipsis; white-space: nowrap; }
+  /* a phone has room for the radio's own name under the playlist's, not the act's whole line */
+  .radio-sub.is-long { display: none; }
+  .radio-play {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    height: 46px;
+    padding: 2px 18px 0 13px;
+    background: var(--red);
+    color: var(--white);
+    font: 400 28px/1 var(--gothic);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    rotate: -2deg;
+    box-shadow: 0 3px 0 var(--ink);
+  }
+  .radio-play svg { width: 18px; height: 18px; margin-top: -2px; fill: currentColor; }
+  .radio-play:active { translate: 0 2px; box-shadow: 0 1px 0 var(--ink); }
+  .radio[data-mode="ready"] :focus-visible { outline-offset: 4px; }
+
   /* wider screens: the controls get their words */
   @media (min-width: 700px) {
-    .radio[data-mode="dock"] {
+    .radio:is([data-mode="ready"], [data-mode="dock"]) {
       grid-template-columns: minmax(0, 600px) auto;
       justify-content: space-between;
       column-gap: 20px;
@@ -70,11 +119,16 @@ import { player } from '../../content/copy/common';
     .radio-open { width: auto; gap: 8px; grid-auto-flow: column; padding: 0 10px; font: 800 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
     .radio-open svg { width: 15px; height: 15px; }
     .radio-open-l { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+    .radio-ready { gap: 24px; }
+    .radio-sub.is-short { display: none; }
+    .radio-sub.is-long { display: block; }
+    .radio-title { font-size: 34px; }
+    .radio-sub { font-size: 13px; }
   }
   /* wide enough for the radio's own name, on red, as on the box */
   @media (min-width: 1000px) {
-    .radio[data-mode="dock"] { grid-template-columns: auto minmax(0, 600px) minmax(max-content, 1fr); }
-    .radio[data-mode="dock"] .radio-bar {
+    .radio:is([data-mode="ready"], [data-mode="dock"]) { grid-template-columns: auto minmax(0, 600px) minmax(max-content, 1fr); }
+    .radio:is([data-mode="ready"], [data-mode="dock"]) .radio-bar {
       display: block;
       padding: 10px 14px 6px;
       background: var(--red);
@@ -84,10 +138,11 @@ import { player } from '../../content/copy/common';
       text-transform: uppercase;
       white-space: nowrap;
     }
-    .radio[data-mode="dock"] .radio-ctl { justify-self: end; }
+    .radio:is([data-mode="ready"], [data-mode="dock"]) .radio-ctl { justify-self: end; }
   }
   @media (hover: hover) {
     .radio-open:hover .radio-open-l { text-decoration: underline; }
     .radio-stop:hover { color: var(--red); }
+    .radio-play:hover { background: var(--red-press); }
   }
 </style>
