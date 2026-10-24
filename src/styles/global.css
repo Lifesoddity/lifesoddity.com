@@ -11,7 +11,6 @@
   --ink: #0B0B0B;
   --red: #E10600;
   --red-press: #C10500;
-  --wine: #512A34;
   --paper: #EEEDE6;
   --muted: rgb(11 11 11 / .68);
   --cover: linear-gradient(100deg, #D74570 0%, #E3416F 26%, #FC2E5F 50%, #FD1A3E 74%, #FD0522 100%);
@@ -235,7 +234,8 @@ html { scrollbar-color: var(--ink) var(--paper); }
   font: 800 12px/1 var(--sans);
   letter-spacing: .12em;
   text-transform: uppercase;
-  filter: drop-shadow(0 2px 2px rgb(11 11 11 / .28));
+  /* a hard printed shadow under the notched tab (no blur, per the contract) */
+  filter: drop-shadow(0 2px 0 rgb(11 11 11 / .28));
 }
 .mast-menu::before {
   content: "";
@@ -254,7 +254,6 @@ html { scrollbar-color: var(--ink) var(--paper); }
   z-index: 1;
   min-height: 44px;
   padding: 10px 12px 9px;
-  border-radius: 4px;
   background: var(--red);
   color: var(--white);
   font: 800 12.5px/1 var(--sans);

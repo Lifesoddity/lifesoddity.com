@@ -209,14 +209,23 @@ async function fetchStorefront(token: string): Promise<Product[]> {
 
 let cache: Promise<Product[]> | null = null;
 
+/** Where this build read its products from, once getProducts() has run (src/lib/launch.ts). */
+export const productSource: { from: 'storefront' | 'public' | 'snapshot' | null } = { from: null };
+
 /** Every published product, newest first. Fetched once per build. */
 export function getProducts(): Promise<Product[]> {
   cache ??= (async () => {
     try {
-      if (TOKEN) return await fetchStorefront(TOKEN);
+      if (TOKEN) {
+        const list = await fetchStorefront(TOKEN);
+        productSource.from = 'storefront';
+        return list;
+      }
       const raw = await fetchPublicRaw();
+      productSource.from = 'public';
       return raw.map(fromPublic);
     } catch (err) {
+      productSource.from = 'snapshot';
       console.warn(`[shopify] Could not read products from Shopify (${(err as Error).message}). Using the saved snapshot from src/data/products.snapshot.json.`);
       return (snapshot as unknown as RawPublicProduct[]).map(fromPublic);
     }

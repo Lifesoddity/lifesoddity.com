@@ -8,6 +8,7 @@ import Footer from './Footer.astro';
 import CartDrawer from './CartDrawer.astro';
 import { site } from '../../content/site';
 import { header } from '../../content/copy/common';
+import { launchCheck } from '../../lib/launch';
 
 interface Props {
   /** The page's own name, e.g. "She Devil Tee [Black]". The home page passes its full title. */
@@ -34,6 +35,8 @@ const previewImage = image ?? new URL('/og.jpg', Astro.site).href;
 const previewAlt = imageAlt ?? (image ? undefined : `${site.name}: ${site.tagline}`);
 /** JSON-LD inside a script tag: a "<" typed into a Shopify title cannot close the tag. */
 const jsonLd = (obj: object) => JSON.stringify(obj).replace(/</g, '\\u003c');
+// once per build: lists in the log what the site still waits on (src/lib/launch.ts)
+await launchCheck();
 ---
 
 <!doctype html>

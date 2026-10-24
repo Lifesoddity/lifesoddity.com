@@ -33,8 +33,10 @@ every drop is the cover story). Not live yet: lifesoddity.com still shows the Sh
    2. Make the `shop` subdomain the store's primary domain, and check that the store and its
       checkout open there.
    3. In Netlify (Project configuration → Environment variables), set `PUBLIC_SHOPIFY_DOMAIN` to
-      the shop subdomain, redeploy, and check on the deploy that a bag's CHECKOUT opens
-      Shopify's checkout page.
+      the shop subdomain and `LAUNCH_STRICT` to `1`, redeploy, and check on the deploy that a
+      bag's CHECKOUT opens Shopify's checkout page. With `LAUNCH_STRICT` on, a build that would
+      go live without the shop address, or with products it could not read from Shopify, stops
+      instead of deploying. Every build log lists what the site still waits on under `[launch]`.
    4. Only then, in Shopify's DNS settings for lifesoddity.com, point the main domain and www at
       Netlify (Netlify shows the values when the domain is added). Leave the email records as
       they are.

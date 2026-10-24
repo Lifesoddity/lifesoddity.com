@@ -52,6 +52,7 @@ import { site } from '../../content/site';
   import { bagItems, checkoutUrl, setQty, type BagItem } from '../../scripts/bag';
   import { formatPrice } from '../../lib/money';
   import { bag } from '../../content/copy/common';
+  import { reduceMotion } from '../../scripts/motion';
 
   const drawer = document.querySelector<HTMLDialogElement>('dialog.drawer');
   if (drawer) {
@@ -158,8 +159,19 @@ import { site } from '../../content/site';
     document.addEventListener('lo:bag-render', render);
     document.addEventListener('lo:open-bag', open);
     document.querySelectorAll('[data-open-bag]').forEach((b) => b.addEventListener('click', open));
-    closeBtn.addEventListener('click', () => drawer.close());
-    drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.close(); });
+    // it leaves the way it came: back out to the right in 160 ms, then the dialog closes
+    let closing = false;
+    const shut = () => {
+      if (!drawer.open || closing) return;
+      if (reduceMotion()) { drawer.close(); return; }
+      closing = true;
+      drawer.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(100%)' }], { duration: 160, easing: 'cubic-bezier(.4, 0, 1, 1)' }).finished
+        .catch(() => {})
+        .then(() => { closing = false; if (drawer.open) drawer.close(); });
+    };
+    closeBtn.addEventListener('click', shut);
+    drawer.addEventListener('click', (e) => { if (e.target === drawer) shut(); });
+    drawer.addEventListener('cancel', (e) => { e.preventDefault(); shut(); });
     checkout.addEventListener('click', (e) => {
       e.preventDefault();
       if (!bagItems().length) return;
