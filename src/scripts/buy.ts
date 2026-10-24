@@ -14,7 +14,7 @@ import { bag, buy, status } from '../content/copy/common';
 
 type State = 'pick' | 'add' | 'added' | 'soldout';
 
-export function initBuy(root: ParentNode = document) {
+export function initBuy(signal: AbortSignal, root: ParentNode = document) {
   const announcer = document.querySelector<HTMLElement>('[data-announce]');
   const variantParam = new URLSearchParams(location.search).get('variant');
 
@@ -111,7 +111,7 @@ export function initBuy(root: ParentNode = document) {
       // the bag was emptied: nothing to check out, the chosen size can go in again
       if (bagCount() === 0) set(chosen ? 'add' : 'pick');
       else set('added');
-    });
+    }, { signal });
 
     // the live stock check answered: a chosen size that has just sold out is un-chosen, a piece
     // that sold out since the build is disabled, one restocked since the build comes back

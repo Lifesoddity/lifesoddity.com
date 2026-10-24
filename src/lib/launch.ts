@@ -41,6 +41,8 @@ export function launchCheck(): Promise<void> {
     for (const act of acts) {
       if (!act.playlist.spotify) {
         waiting.push({ fact: `the Spotify link of "${act.playlist.name}" (shown as a strip until then)`, where: `src/content/acts.ts ${act.slug}.playlist.spotify` });
+      } else if (act.playlist.standIn) {
+        waiting.push({ fact: `the real Spotify link of "${act.playlist.name}" (a stand-in playlist plays until then)`, where: `src/content/acts.ts ${act.slug}.playlist` });
       }
       if (act.subtitle && !act.subtitleConfirmed) {
         waiting.push({ fact: `an OK to print "${act.subtitle}" large (kept small until then)`, where: `src/content/acts.ts ${act.slug}.subtitleConfirmed` });

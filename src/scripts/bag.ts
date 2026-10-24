@@ -102,15 +102,17 @@ export function checkoutUrl(domain: string): string {
   return `https://${domain}/cart/${lines}${ref ? `?ref=${encodeURIComponent(ref)}` : ''}`;
 }
 
+/** The count in the masthead. Run again on every page: each page brings its own masthead. */
+export function syncBag() {
+  const n = bagCount();
+  document.querySelectorAll('[data-bag-count]').forEach((el) => { el.textContent = String(n); });
+  document.querySelectorAll('[data-bag-button]').forEach((el) => el.setAttribute('aria-label', `Bag, ${n} ${n === 1 ? 'item' : 'items'}`));
+}
+
+/** Once per visit: the stored bag and the listeners that keep the count true. */
 export function initBag() {
   load();
   rememberRef();
-  const sync = () => {
-    const n = bagCount();
-    document.querySelectorAll('[data-bag-count]').forEach((el) => { el.textContent = String(n); });
-    document.querySelectorAll('[data-bag-button]').forEach((el) => el.setAttribute('aria-label', `Bag, ${n} ${n === 1 ? 'item' : 'items'}`));
-  };
-  document.addEventListener('lo:bag', sync);
-  window.addEventListener('storage', (e) => { if (e.key === KEY) { load(); sync(); document.dispatchEvent(new CustomEvent('lo:bag-render')); } });
-  sync();
+  document.addEventListener('lo:bag', syncBag);
+  window.addEventListener('storage', (e) => { if (e.key === KEY) { load(); syncBag(); document.dispatchEvent(new CustomEvent('lo:bag-render')); } });
 }

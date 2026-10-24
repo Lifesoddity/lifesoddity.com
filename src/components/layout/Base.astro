@@ -1,11 +1,17 @@
 ---
 // Every page: the head (title, description, link previews, structured data, fonts), the skip
-// link, the masthead, the page, the footer and the bag. Pages pass their own title and image.
+// link, the masthead, the page, the footer, the bag and the radio. Pages pass their own title
+// and image.
+// Pages change without a reload (ClientRouter) so the radio keeps playing: the new page's head
+// and body replace the old ones, except what is marked data-keep (the bag, the radio, the
+// polite announcer), which stays as it is. No animation between pages: a hard cut, as before.
 import { Font } from 'astro:assets';
 import '../../styles/global.css';
 import Header from './Header.astro';
 import Footer from './Footer.astro';
 import CartDrawer from './CartDrawer.astro';
+import Radio from './Radio.astro';
+import { ClientRouter } from 'astro:transitions';
 import { site } from '../../content/site';
 import { header } from '../../content/copy/common';
 import { launchCheck } from '../../lib/launch';
@@ -40,7 +46,7 @@ await launchCheck();
 ---
 
 <!doctype html>
-<html lang="en" data-store={site.checkoutDomain}>
+<html lang="en" data-store={site.checkoutDomain} transition:animate="none">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -70,6 +76,7 @@ await launchCheck();
     <Font cssVariable="--font-script" />
 
     {ld.map((obj) => <script type="application/ld+json" set:html={jsonLd(obj)} />)}
+    <ClientRouter fallback="swap" />
   </head>
   <body>
     <a class="skip" href="#page">{header.skip}</a>
@@ -78,29 +85,52 @@ await launchCheck();
       <slot />
     </main>
     <Footer />
-    <p class="vh" aria-live="polite" data-announce></p>
+    <p class="vh" aria-live="polite" data-announce data-keep></p>
     <CartDrawer />
+    <Radio />
     <script>
-      import { initBag } from '../../scripts/bag';
+      import { swapFunctions, type TransitionBeforeSwapEvent } from 'astro:transitions/client';
+      import { initBag, syncBag } from '../../scripts/bag';
       import { initBuy } from '../../scripts/buy';
       import { initLive } from '../../scripts/live';
       import { bindFlash } from '../../scripts/motion';
       import { initStory } from '../../scripts/story';
       import { initPlayers } from '../../scripts/player';
       import { initWaitlists } from '../../scripts/waitlist';
+      import { onPage } from '../../scripts/page';
+
+      // a page change swaps everything but the data-keep parts, which never leave the page
+      const kept = (n: Node) => n instanceof Element && n.hasAttribute('data-keep');
+      document.addEventListener('astro:before-swap', (e) => {
+        const ev = e as TransitionBeforeSwapEvent;
+        ev.swap = () => {
+          const doc = ev.newDocument;
+          swapFunctions.deselectScripts(doc);
+          // the radio's room (--radio-top, --radio-h, --radio-b) lives on the root and stays
+          const rootStyle = document.documentElement.getAttribute('style');
+          swapFunctions.swapRootAttributes(doc);
+          if (rootStyle) document.documentElement.setAttribute('style', rootStyle);
+          swapFunctions.swapHeadElements(doc);
+          const body = document.body;
+          for (const n of [...body.childNodes]) if (!kept(n)) n.remove();
+          body.prepend(...[...doc.body.childNodes].filter((n) => !kept(n)));
+        };
+      });
+      // like a fresh page: the next Tab starts in the new page, not where the old link was
+      document.addEventListener('astro:after-swap', () => {
+        if (!location.hash) document.getElementById('page')?.focus({ preventScroll: true });
+      });
 
       const domain = document.documentElement.dataset.store || 'lifesoddity.myshopify.com';
-      // each one on its own: one failure cannot stop the others
-      const run = (name: string, init: () => void) => {
-        try { init(); } catch (err) { console.error(`[${name}]`, err); }
-      };
-      run('bag', () => initBag());
-      run('buy', () => initBuy());
-      run('live', () => initLive(domain));
-      run('flash', () => bindFlash());
-      run('story', () => initStory());
-      run('players', () => initPlayers());
-      run('waitlists', () => initWaitlists());
+      initBag();
+      // each one on its own (one failure cannot stop the others), on every page
+      onPage('bag', () => syncBag());
+      onPage('buy', (signal) => initBuy(signal));
+      onPage('live', () => initLive(domain));
+      onPage('flash', (signal) => bindFlash(signal));
+      onPage('story', (signal) => initStory(signal));
+      onPage('players', (signal) => initPlayers(signal));
+      onPage('waitlists', () => initWaitlists());
     </script>
   </body>
 </html>

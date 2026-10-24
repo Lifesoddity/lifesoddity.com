@@ -42,79 +42,83 @@ const thumb = product.images[0];
   import { slap } from '../../scripts/motion';
   import { bagCount } from '../../scripts/bag';
   import { bag as bagCopy } from '../../content/copy/common';
+  import { onPage } from '../../scripts/page';
 
-  const bar = document.querySelector<HTMLElement>('[data-sb]');
-  const buy = document.querySelector<HTMLElement>('[data-sb-buy]');
-  const end = document.querySelector<HTMLElement>('[data-sb-end]');
-  const sheet = bar?.querySelector<HTMLElement>('.sb-sheet');
-  const go = bar?.querySelector<HTMLButtonElement>('[data-sb-go]');
-  const note = bar?.querySelector<HTMLElement>('[data-sb-note]');
+  onPage('sticky-buy', (signal) => {
+    const bar = document.querySelector<HTMLElement>('[data-sb]');
+    const buy = document.querySelector<HTMLElement>('[data-sb-buy]');
+    const end = document.querySelector<HTMLElement>('[data-sb-end]');
+    const sheet = bar?.querySelector<HTMLElement>('.sb-sheet');
+    const go = bar?.querySelector<HTMLButtonElement>('[data-sb-go]');
+    const note = bar?.querySelector<HTMLElement>('[data-sb-note]');
 
-  if (bar && buy && sheet && go && 'IntersectionObserver' in window) {
-    let past = false;
-    let atEnd = false;
-    let clear = 0;
-    const goLabel = go.querySelector<HTMLElement>('span');
-    const pickText = goLabel?.textContent ?? '';
-    // "pick": the button opens the sizes. "added": it reads CHECKOUT · BAG (n) and opens the bag.
-    const setGo = (state: 'pick' | 'added') => {
-      go.dataset.state = state;
-      if (goLabel) goLabel.textContent = state === 'added' ? bagCopy.goCheckout(bagCount()) : pickText;
-      if (state === 'added') {
-        go.removeAttribute('aria-expanded');
-        go.removeAttribute('aria-controls');
-      } else {
-        go.setAttribute('aria-expanded', String(!sheet.hidden));
-        go.setAttribute('aria-controls', sheet.id);
-      }
-    };
-    const open = (on: boolean, focus = true) => {
-      sheet.hidden = !on;
-      if (go.dataset.state !== 'added') go.setAttribute('aria-expanded', String(on));
-      if (on && focus) sheet.querySelector<HTMLButtonElement>('[data-variant]:not([aria-disabled="true"])')?.focus();
-    };
-    const sync = () => {
-      const on = past && !atEnd;
-      if (!on && !sheet.hasAttribute('hidden')) open(false, false);
-      bar.classList.toggle('is-on', on);
-    };
-    // the header covers the top of the screen: the price box is gone once it slides under it
-    const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 60;
-    new IntersectionObserver(([e]) => {
-      past = !e.isIntersecting && e.boundingClientRect.top < (e.rootBounds?.top ?? head);
-      sync();
-    }, { rootMargin: `-${head}px 0px 0px 0px` }).observe(buy);
-    if (end) {
-      new IntersectionObserver(([e]) => {
+    if (bar && buy && sheet && go && 'IntersectionObserver' in window) {
+      let past = false;
+      let atEnd = false;
+      let clear = 0;
+      const goLabel = go.querySelector<HTMLElement>('span');
+      const pickText = goLabel?.textContent ?? '';
+      // "pick": the button opens the sizes. "added": it reads CHECKOUT · BAG (n) and opens the bag.
+      const setGo = (state: 'pick' | 'added') => {
+        go.dataset.state = state;
+        if (goLabel) goLabel.textContent = state === 'added' ? bagCopy.goCheckout(bagCount()) : pickText;
+        if (state === 'added') {
+          go.removeAttribute('aria-expanded');
+          go.removeAttribute('aria-controls');
+        } else {
+          go.setAttribute('aria-expanded', String(!sheet.hidden));
+          go.setAttribute('aria-controls', sheet.id);
+        }
+      };
+      const open = (on: boolean, focus = true) => {
+        sheet.hidden = !on;
+        if (go.dataset.state !== 'added') go.setAttribute('aria-expanded', String(on));
+        if (on && focus) sheet.querySelector<HTMLButtonElement>('[data-variant]:not([aria-disabled="true"])')?.focus();
+      };
+      const sync = () => {
+        const on = past && !atEnd;
+        if (!on && !sheet.hasAttribute('hidden')) open(false, false);
+        bar.classList.toggle('is-on', on);
+      };
+      // the header covers the top of the screen: the price box is gone once it slides under it
+      const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 60;
+      const pastIo = new IntersectionObserver(([e]) => {
+        past = !e.isIntersecting && e.boundingClientRect.top < (e.rootBounds?.top ?? head);
+        sync();
+      }, { rootMargin: `-${head}px 0px 0px 0px` });
+      pastIo.observe(buy);
+      const endIo = new IntersectionObserver(([e]) => {
         atEnd = e.isIntersecting || e.boundingClientRect.top < 0;
         sync();
-      }).observe(end);
-    }
+      });
+      if (end) endIo.observe(end);
+      signal.addEventListener('abort', () => { pastIo.disconnect(); endIo.disconnect(); });
 
-    go.addEventListener('click', () => {
-      if (go.dataset.state === 'added') { document.dispatchEvent(new CustomEvent('lo:open-bag')); return; }
-      open(sheet.hasAttribute('hidden'));
-    });
-    // the bag changed elsewhere: keep the count true; an emptied bag puts PICK A SIZE back
-    document.addEventListener('lo:bag', () => {
-      if (go.dataset.state !== 'added') return;
-      setGo(bagCount() > 0 ? 'added' : 'pick');
-    });
-    bar.querySelector('[data-sb-close]')?.addEventListener('click', () => { open(false); go.focus(); });
-    bar.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hasAttribute('hidden')) { open(false); go.focus(); } });
-    sheet.addEventListener('lo:added', (e) => {
-      const { title, size } = (e as CustomEvent<{ title: string; size: string }>).detail;
-      open(false);
-      setGo('added');
-      go.focus();
-      if (note) {
-        note.textContent = (bar.dataset.msgAdded ?? '').replace('{title}', title).replace('{size}', size);
-        slap(note);
-        window.clearTimeout(clear);
-        clear = window.setTimeout(() => { note.textContent = ''; }, 2600);
-      }
-    });
-  }
+      go.addEventListener('click', () => {
+        if (go.dataset.state === 'added') { document.dispatchEvent(new CustomEvent('lo:open-bag')); return; }
+        open(sheet.hasAttribute('hidden'));
+      });
+      // the bag changed elsewhere: keep the count true; an emptied bag puts PICK A SIZE back
+      document.addEventListener('lo:bag', () => {
+        if (go.dataset.state !== 'added') return;
+        setGo(bagCount() > 0 ? 'added' : 'pick');
+      }, { signal });
+      bar.querySelector('[data-sb-close]')?.addEventListener('click', () => { open(false); go.focus(); });
+      bar.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hasAttribute('hidden')) { open(false); go.focus(); } });
+      sheet.addEventListener('lo:added', (e) => {
+        const { title, size } = (e as CustomEvent<{ title: string; size: string }>).detail;
+        open(false);
+        setGo('added');
+        go.focus();
+        if (note) {
+          note.textContent = (bar.dataset.msgAdded ?? '').replace('{title}', title).replace('{size}', size);
+          slap(note);
+          window.clearTimeout(clear);
+          clear = window.setTimeout(() => { note.textContent = ''; }, 2600);
+        }
+      });
+    }
+  });
 </script>
 
 <style>

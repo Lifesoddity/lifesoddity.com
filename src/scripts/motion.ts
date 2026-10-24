@@ -51,7 +51,7 @@ export function nudge(el: Element | null) {
 }
 
 /** Photos flash when they first appear, when the pointer arrives (mouse) or on touch. */
-export function bindFlash(root: ParentNode = document) {
+export function bindFlash(signal: AbortSignal, root: ParentNode = document) {
   const prints = [...root.querySelectorAll<HTMLElement>('.ph[data-flash]')];
   prints.forEach((ph) => {
     snap(ph.querySelector('.ph-sh'));
@@ -68,6 +68,7 @@ export function bindFlash(root: ParentNode = document) {
       }
     }, { threshold: 0.45 });
     prints.filter((ph) => !ph.hasAttribute('data-flash-first')).forEach((ph) => seen.observe(ph));
+    signal.addEventListener('abort', () => seen.disconnect());
   }
   const hero = root.querySelector('.ph[data-flash-first]');
   if (hero) {

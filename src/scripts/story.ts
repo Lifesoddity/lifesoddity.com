@@ -1,12 +1,13 @@
 // SPOTTED!, the pinned scroll story. One passive scroll listener; inside requestAnimationFrame
 // it reads the track's position and writes one number per scene, --p from 0 to 1 over its
 // stretch of scroll. CSS turns that number into every transform. With reduced motion there is
-// no listener and no pin: the scenes stand still, one after another.
+// no listener and no pin: the scenes stand still, one after another. The listener leaves with
+// the page (signal, scripts/page.ts).
 
 import { flash, reduceMotion, slap } from './motion';
 import { buy } from '../content/copy/common';
 
-export function initStory() {
+export function initStory(signal: AbortSignal) {
   const track = document.querySelector<HTMLElement>('.ss-track');
   const stage = track?.querySelector<HTMLElement>('.ss-stage');
   const scenes = track ? [...track.querySelectorAll<HTMLElement>('.ss-scene')] : [];
@@ -48,8 +49,8 @@ export function initStory() {
       });
     };
     const queue = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };
-    window.addEventListener('scroll', queue, { passive: true });
-    window.addEventListener('resize', queue, { passive: true });
+    window.addEventListener('scroll', queue, { passive: true, signal });
+    window.addEventListener('resize', queue, { passive: true, signal });
     queue();
   }
 

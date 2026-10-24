@@ -33,8 +33,9 @@ export interface Act {
   quote: string | null;
   /** A line from a personal caption, kept off every page until he says yes. To print it, move it into quote. */
   heldQuote?: string;
-  /** The act's soundtrack; `cover` is its playlist artwork when he has one. */
-  playlist: { name: string; spotify: string | null; apple: string | null; cover?: { image: ImageMetadata; alt: string } };
+  /** The act's soundtrack; `cover` is its playlist artwork when he has one. `standIn`: the
+   *  link is a placeholder playlist so the player can be seen; the launch check lists it. */
+  playlist: { name: string; spotify: string | null; apple: string | null; standIn?: boolean; cover?: { image: ImageMetadata; alt: string } };
   credits: Credit[];
   photos: { image: ImageMetadata; alt: string; credit: string | null }[];
 }
@@ -75,7 +76,7 @@ export const acts: Act[] = [
     status: 'archive',
     line: 'This concludes Act 1.',
     quote: 'Have you ever wanted to be him? The one who walks into the room and everything stops.',
-    playlist: { name: 'Showtime', spotify: null, apple: null, cover: { image: campaign.partyAnimalRadio, alt: "Illustrated cover for Life's Oddity radio: a house party under two spotlights, PARTY ANIMAL bunting" } },
+    playlist: { name: 'Showtime', spotify: 'https://open.spotify.com/playlist/340JJSSTULljlnDn9FrMmd', standIn: true, apple: null, cover: { image: campaign.partyAnimalRadio, alt: "Illustrated cover for Life's Oddity radio: a house party under two spotlights, PARTY ANIMAL bunting" } },
     credits: [
       { role: 'Act 1 film shot by', names: ['sixomo'] },
       { role: 'Gluttony reel shot by', names: ['flyceoproductions'] },

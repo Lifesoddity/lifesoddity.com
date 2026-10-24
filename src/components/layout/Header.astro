@@ -28,21 +28,25 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 </header>
 
 <script>
-  const mast = document.querySelector<HTMLElement>('.mast');
-  const menu = mast?.querySelector<HTMLButtonElement>('.mast-menu');
-  if (mast && menu) {
+  import { onPage } from '../../scripts/page';
+
+  // every page brings its own masthead
+  onPage('masthead', (signal) => {
+    const mast = document.querySelector<HTMLElement>('.mast');
+    const menu = mast?.querySelector<HTMLButtonElement>('.mast-menu');
+    if (!mast || !menu) return;
     const onScroll = () => set(false);
     const set = (on: boolean) => {
       mast.classList.toggle('is-open', on);
       menu.setAttribute('aria-expanded', String(on));
-      if (on) window.addEventListener('scroll', onScroll, { passive: true, once: true });
+      if (on) window.addEventListener('scroll', onScroll, { passive: true, once: true, signal });
       else window.removeEventListener('scroll', onScroll);
     };
     const isOpen = () => mast.classList.contains('is-open');
     // an open menu closes on a tap outside the masthead, on focus leaving it, and on scroll
     document.addEventListener('pointerdown', (e) => {
       if (isOpen() && !mast.contains(e.target as Node)) set(false);
-    });
+    }, { signal });
     mast.addEventListener('focusout', (e) => {
       const to = e.relatedTarget as Node | null;
       if (isOpen() && to && !mast.contains(to)) set(false);
@@ -52,5 +56,5 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
       if (e.key === 'Escape' && mast.classList.contains('is-open')) { set(false); menu.focus(); }
     });
     mast.querySelectorAll('.mast-nav a').forEach((a) => a.addEventListener('click', () => set(false)));
-  }
+  });
 </script>

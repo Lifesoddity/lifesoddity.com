@@ -40,9 +40,10 @@ const title = twoLines(j.title);
 
 <script>
   import { slap } from '../../scripts/motion';
+  import { onPage } from '../../scripts/page';
 
   // the sticker slaps on once, as it does on the form (no overshoot under reduced motion)
-  slap(document.querySelector('.jn [data-slap]'));
+  onPage('joined', () => slap(document.querySelector('.jn [data-slap]')));
 </script>
 
 <style>

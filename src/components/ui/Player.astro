@@ -7,7 +7,8 @@
 //   ("A love letter to Mutsumi") stays small.
 // With a link (acts.ts playlist.spotify): the full box. The bar, the name, the cover print (no
 //   art at all without one), the PLAY sticker; pressing PLAY sets Spotify's own player (its
-//   design, loaded only then) into the white print below (scripts/player.ts).
+//   design, loaded only then) over the white print below; it docks when the box is scrolled away
+//   and keeps playing from page to page (layout/Radio.astro, scripts/player.ts).
 //
 // The box comes back by itself once the link is set: no change here.
 import { Image } from 'astro:assets';
@@ -69,7 +70,7 @@ const nameW = title ? layoutWord(title).w : 1;
         <p class="pl-here" aria-hidden="true">{player.here}</p>
         <div class="ph pl-print">
           <span class="ph-sh" aria-hidden="true"></span>
-          <div class="pl-frame"><div class="pl-mount" data-mount></div></div>
+          <div class="pl-frame"><div class="pl-mount" data-anchor></div></div>
           <span class="ph-flash" aria-hidden="true"></span>
           <svg class="mark pl-arrow" viewBox="0 0 70 80" aria-hidden="true"><path d="M60 4C62 40 40 62 12 72M27.7 74.8 12 72 22.3 59.8"></path></svg>
         </div>

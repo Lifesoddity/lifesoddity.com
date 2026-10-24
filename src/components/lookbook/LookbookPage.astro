@@ -52,30 +52,34 @@ const ld = {
   // from a steeper tilt into its own, one after another, and the first one flashes. The
   // prints are visible by default; this only runs when motion is welcome.
   import { flash, reduceMotion } from '../../scripts/motion';
+  import { onPage } from '../../scripts/page';
 
-  const sheets = document.querySelectorAll<HTMLElement>('.lb [data-sheet]');
-  if (sheets.length && !reduceMotion() && 'IntersectionObserver' in window) {
-    const io = new IntersectionObserver((entries) => {
-      for (const en of entries) {
-        if (!en.isIntersecting) continue;
-        io.unobserve(en.target);
-        const shots = [...en.target.querySelectorAll<HTMLElement>('.lb-shot')];
-        shots.forEach((el, i) => {
-          const lean = Number(el.dataset.tilt ?? 0) < 0 ? -7 : 7;
-          el.animate(
-            [
-              { opacity: 0, transform: `translate3d(0, 34px, 0) rotate(${lean}deg) scale(1.07)` },
-              { opacity: 1, transform: 'none' },
-            ],
-            { duration: 240, delay: i * 60, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' },
-          );
-        });
-        const lead = en.target.querySelector('.lb-print');
-        window.setTimeout(() => flash(lead), 240);
-      }
-    }, { rootMargin: '0px 0px -10% 0px' });
-    sheets.forEach((s) => io.observe(s));
-  }
+  onPage('lookbook', (signal) => {
+    const sheets = document.querySelectorAll<HTMLElement>('.lb [data-sheet]');
+    if (sheets.length && !reduceMotion() && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        for (const en of entries) {
+          if (!en.isIntersecting) continue;
+          io.unobserve(en.target);
+          const shots = [...en.target.querySelectorAll<HTMLElement>('.lb-shot')];
+          shots.forEach((el, i) => {
+            const lean = Number(el.dataset.tilt ?? 0) < 0 ? -7 : 7;
+            el.animate(
+              [
+                { opacity: 0, transform: `translate3d(0, 34px, 0) rotate(${lean}deg) scale(1.07)` },
+                { opacity: 1, transform: 'none' },
+              ],
+              { duration: 240, delay: i * 60, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' },
+            );
+          });
+          const lead = en.target.querySelector('.lb-print');
+          window.setTimeout(() => flash(lead), 240);
+        }
+      }, { rootMargin: '0px 0px -10% 0px' });
+      sheets.forEach((s) => io.observe(s));
+      signal.addEventListener('abort', () => io.disconnect());
+    }
+  });
 </script>
 
 <style>

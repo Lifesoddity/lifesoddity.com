@@ -116,13 +116,16 @@ const id = `pc-${piece.key}`;
   // ADDED! slaps onto the price box when a size goes in the bag (the note under the sizes says
   // which one, for screen readers too).
   import { slap } from '../../scripts/motion';
+  import { onPage } from '../../scripts/page';
 
-  document.querySelectorAll<HTMLElement>('[data-shop-piece]').forEach((pc) => {
-    const sticker = pc.querySelector<HTMLElement>('.pc-added');
-    pc.addEventListener('lo:added', () => {
-      if (!sticker) return;
-      sticker.hidden = false;
-      slap(sticker);
+  onPage('shop-piece', () => {
+    document.querySelectorAll<HTMLElement>('[data-shop-piece]').forEach((pc) => {
+      const sticker = pc.querySelector<HTMLElement>('.pc-added');
+      pc.addEventListener('lo:added', () => {
+        if (!sticker) return;
+        sticker.hidden = false;
+        slap(sticker);
+      });
     });
   });
 </script>

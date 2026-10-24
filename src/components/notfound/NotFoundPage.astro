@@ -24,12 +24,15 @@ const piece = await getCoverPiece();
 
 <script>
   import { reduceMotion } from '../../scripts/motion';
+  import { onPage } from '../../scripts/page';
 
   // the rubber stamp comes down once, pressed flat onto the page (it is never hidden first)
-  const stamp = document.querySelector<HTMLElement>('.nf [data-stamp]');
-  if (stamp && !reduceMotion()) {
-    stamp.animate([{ scale: 1.22 }, { scale: 1 }], { duration: 200, easing: 'cubic-bezier(.2, .7, .2, 1)' });
-  }
+  onPage('not-found', () => {
+    const stamp = document.querySelector<HTMLElement>('.nf [data-stamp]');
+    if (stamp && !reduceMotion()) {
+      stamp.animate([{ scale: 1.22 }, { scale: 1 }], { duration: 200, easing: 'cubic-bezier(.2, .7, .2, 1)' });
+    }
+  });
 </script>
 
 <style>

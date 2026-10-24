@@ -40,6 +40,7 @@ newer Node than the owner's machine has.
 | A page's layout | `src/components/<page>/`. The route files in `src/pages/` only assemble them. |
 | Parts every page uses (buy box, player, page head, print, waitlist form, header, footer, bag) | `src/components/ui/` and `src/components/layout/`. A change there shows on every page: check them all. |
 | Behaviour in the browser (bag, buy button, live price, scroll story, player, waitlist) | `src/scripts/`. |
+| The radio that keeps playing between pages | `src/components/layout/Radio.astro` (the docked strip) and `src/scripts/player.ts`. A playlist marked `standIn` in `acts.ts` is a placeholder until the real link is in. |
 | Reading Shopify | `src/lib/shopify.ts`. It uses the Storefront API when `SHOPIFY_STOREFRONT_TOKEN` is set, otherwise the store's public product pages, and falls back to `src/data/products.snapshot.json` if Shopify cannot be reached. |
 | Headers, redirects, build settings | `netlify.toml`. |
 
@@ -58,6 +59,17 @@ newer Node than the owner's machine has.
   every effect has a still version under reduced motion. The owner notices lag.
 - The buy button is never greyed out unless the piece is sold out: PICK A SIZE, then ADD TO BAG,
   then CHECKOUT · BAG (n).
+
+## Pages change without a reload
+
+So the radio keeps playing, moving between pages swaps the page in place (Astro's ClientRouter,
+set up in `Base.astro`). The bag drawer, the radio and the announcer are marked `data-keep` and
+never leave. Two rules follow:
+
+- A script that binds to the page runs through `onPage()` from `src/scripts/page.ts`, never just
+  once at load: it runs again after every page change. Listeners on `window` or `document` take
+  the `signal` it gives, and observers and timers stop on that signal's `abort`.
+- A form or link that must do a full page load gets `data-astro-reload` (the waitlist form has it).
 
 ## Writing rules
 

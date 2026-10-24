@@ -90,6 +90,8 @@ export const player = {
   honest: 'Not logged in to Spotify here? You’ll hear previews. Open in Spotify for the full songs.',
   open: 'Open in Spotify',
   error: 'Spotify did not load here. Open the playlist in Spotify instead.',
+  /** The docked radio (components/layout/Radio.astro): it stops and goes away. */
+  stop: 'Stop the radio',
 };
 
 export const status = {

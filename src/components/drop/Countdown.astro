@@ -35,56 +35,62 @@ const past = Date.parse(opens) <= Date.now();
 <script>
   import { formatWhen, timeLeft } from './when';
   import { reduceMotion, slap } from '../../scripts/motion';
+  import { onPage } from '../../scripts/page';
 
-  document.querySelectorAll<HTMLElement>('[data-countdown]').forEach((root) => {
-    const target = Date.parse(root.dataset.opens ?? '');
-    if (Number.isNaN(target)) return;
-    const box = root.querySelector<HTMLElement>('[data-box]');
-    const out = root.querySelector<HTMLElement>('[data-out]');
-    const local = root.querySelector<HTMLElement>('[data-local]');
-    const cells = new Map<string, HTMLElement>();
-    root.querySelectorAll<HTMLElement>('[data-unit]').forEach((el) => cells.set(el.dataset.unit!, el));
+  onPage('countdown', (signal) => {
+    document.querySelectorAll<HTMLElement>('[data-countdown]').forEach((root) => {
+      const target = Date.parse(root.dataset.opens ?? '');
+      if (Number.isNaN(target)) return;
+      const box = root.querySelector<HTMLElement>('[data-box]');
+      const out = root.querySelector<HTMLElement>('[data-out]');
+      const local = root.querySelector<HTMLElement>('[data-local]');
+      const cells = new Map<string, HTMLElement>();
+      root.querySelectorAll<HTMLElement>('[data-unit]').forEach((el) => cells.set(el.dataset.unit!, el));
 
-    // the visitor's own time, when it differs from Eastern
-    const mine = formatWhen(target);
-    if (local && mine && mine !== root.dataset.eastern) {
-      local.textContent = `${root.dataset.your ?? ''} ${mine}`.trim();
-      local.hidden = false;
-    }
+      // the visitor's own time, when it differs from Eastern
+      const mine = formatWhen(target);
+      if (local && mine && mine !== root.dataset.eastern) {
+        local.textContent = `${root.dataset.your ?? ''} ${mine}`.trim();
+        local.hidden = false;
+      }
 
-    const roll = (el: HTMLElement) => {
-      if (reduceMotion()) return;
-      el.animate(
-        [{ transform: 'translate3d(0, -55%, 0)', opacity: 0 }, { transform: 'translate3d(0, 0, 0)', opacity: 1 }],
-        { duration: 180, easing: 'cubic-bezier(.2, .7, .2, 1)' },
-      );
-    };
+      const roll = (el: HTMLElement) => {
+        if (reduceMotion()) return;
+        el.animate(
+          [{ transform: 'translate3d(0, -55%, 0)', opacity: 0 }, { transform: 'translate3d(0, 0, 0)', opacity: 1 }],
+          { duration: 180, easing: 'cubic-bezier(.2, .7, .2, 1)' },
+        );
+      };
 
-    const word = root.querySelector<HTMLElement>('[data-word]');
-    const finish = () => {
-      if (box) box.hidden = true;
-      if (word && root.dataset.opened) word.textContent = root.dataset.opened;
-      if (out && out.hidden) { out.hidden = false; slap(out); }
-    };
+      const word = root.querySelector<HTMLElement>('[data-word]');
+      const finish = () => {
+        if (box) box.hidden = true;
+        if (word && root.dataset.opened) word.textContent = root.dataset.opened;
+        if (out && out.hidden) { out.hidden = false; slap(out); }
+      };
 
-    let first = true;
-    const tick = () => {
-      const t = timeLeft(target);
-      if (t.done) { finish(); return; }
-      const values: Record<string, number> = { d: t.d, h: t.h, m: t.m, s: t.s };
-      cells.forEach((el, key) => {
-        const next = String(values[key] ?? 0).padStart(2, '0');
-        if (el.textContent !== next) {
-          el.textContent = next;
-          if (!first) roll(el);
-        }
-      });
-      if (box && box.hidden) box.hidden = false;
-      first = false;
-      // the next whole second, so the digits never drift
-      setTimeout(tick, 1000 - (Date.now() % 1000) + 8);
-    };
-    tick();
+      let first = true;
+      let timer = 0;
+      // the clock stops with the page
+      signal.addEventListener('abort', () => clearTimeout(timer));
+      const tick = () => {
+        const t = timeLeft(target);
+        if (t.done) { finish(); return; }
+        const values: Record<string, number> = { d: t.d, h: t.h, m: t.m, s: t.s };
+        cells.forEach((el, key) => {
+          const next = String(values[key] ?? 0).padStart(2, '0');
+          if (el.textContent !== next) {
+            el.textContent = next;
+            if (!first) roll(el);
+          }
+        });
+        if (box && box.hidden) box.hidden = false;
+        first = false;
+        // the next whole second, so the digits never drift
+        timer = window.setTimeout(tick, 1000 - (Date.now() % 1000) + 8);
+      };
+      tick();
+    });
   });
 </script>
 

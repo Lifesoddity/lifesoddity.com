@@ -2,7 +2,7 @@
 // The waitlist: one email field. A Netlify Form (Netlify finds it in the built HTML), with a
 // honeypot for bots and two hidden fields (which act it is for, where the visitor came from).
 // Posted by script so the page stays put; without script the browser checks the field and it
-// lands on /joined.
+// lands on /joined (as a full page load: data-astro-reload keeps the page router out of it).
 import { waitlist } from '../../content/copy/common';
 import { contact } from '../../content/site';
 
@@ -25,6 +25,7 @@ const id = `email-${act}`;
   data-netlify="true"
   netlify-honeypot="company"
   data-waitlist
+  data-astro-reload
   data-msg-invalid={waitlist.invalid}
   data-msg-empty={waitlist.empty}
   data-msg-failed={waitlist.failed}

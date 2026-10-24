@@ -1,0 +1,94 @@
+---
+// LIFE'S ODDITY RADIO, docked. From the first PLAY on, Spotify's own player lives here, outside
+// the part of the page that changes (data-keep, Base.astro), so moving to another page never
+// stops the music. While the box it was played from is on screen, the player sits in that box's
+// white print and scrolls with the page; once the box is gone it docks: a yellow strip under
+// the masthead on phones, along the bottom on wider screens, with the way out to the Spotify app
+// (full songs) and a stop. scripts/player.ts runs it.
+import { player } from '../../content/copy/common';
+---
+
+<aside class="radio" data-keep data-radio data-mode="off" aria-label={player.bar} hidden>
+  <p class="radio-bar" aria-hidden="true">{player.bar}</p>
+  <div class="radio-frame"><div data-radio-mount></div></div>
+  <div class="radio-ctl">
+    <a class="radio-open" href="https://open.spotify.com/" rel="noopener" data-radio-open>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4H4v12h12v-4M11 3h6v6M17 3l-8 8"></path></svg>
+      <span class="radio-open-l">{player.open}</span>
+    </a>
+    <button class="radio-stop" type="button" data-radio-stop aria-label={player.stop}>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15"></path></svg>
+    </button>
+  </div>
+</aside>
+
+<style>
+  .radio { --frame-h: 80px; color: var(--ink); }
+  .radio :focus-visible { outline-color: var(--ink); }
+  .radio-frame { position: relative; min-width: 0; height: var(--frame-h); border-radius: 12px; background: #282828; }
+  .radio-frame :global(iframe) { display: block; width: 100%; height: 100%; border: 0; border-radius: 12px; }
+
+  /* in the box: only Spotify's player, laid exactly over the box's print by player.ts; it scrolls
+     with the page because it is placed in the page, not on the screen */
+  .radio[data-mode="box"] { position: absolute; z-index: 20; top: 0; left: 0; }
+  .radio[data-mode="box"] .radio-bar,
+  .radio[data-mode="box"] .radio-ctl { display: none; }
+
+  /* docked: a strip right under the masthead on phones (player.ts measures the masthead) */
+  .radio[data-mode="dock"] {
+    position: fixed;
+    z-index: 28;
+    top: var(--radio-top, var(--header-h));
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 6px;
+    padding: 6px max(var(--pad), env(safe-area-inset-right, 0px)) 6px max(var(--pad), env(safe-area-inset-left, 0px));
+    border-bottom: 3px solid var(--ink);
+    background: var(--yellow);
+  }
+  .radio-bar { display: none; }
+  .radio-ctl { display: grid; grid-template-rows: 1fr 1fr; height: var(--frame-h); margin-right: -8px; }
+  .radio-open, .radio-stop { display: grid; place-items: center; width: 44px; min-height: 40px; color: var(--ink); text-decoration: none; }
+  .radio-open svg, .radio-stop svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .radio-open-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* docked on wider screens: the same strip along the bottom, the page keeps room for it */
+  @media (min-width: 700px) {
+    .radio[data-mode="dock"] {
+      top: auto;
+      bottom: 0;
+      grid-template-columns: minmax(0, 600px) auto;
+      justify-content: space-between;
+      column-gap: 20px;
+      padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+      border-top: 3px solid var(--ink);
+      border-bottom: 0;
+    }
+    .radio-ctl { display: flex; align-items: center; gap: 6px; height: auto; margin-right: -10px; }
+    .radio-open { width: auto; gap: 8px; grid-auto-flow: column; padding: 0 10px; font: 800 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+    .radio-open svg { width: 15px; height: 15px; }
+    .radio-open-l { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  }
+  /* wide enough for the radio's own name, on red, as on the box */
+  @media (min-width: 1000px) {
+    .radio[data-mode="dock"] { grid-template-columns: auto minmax(0, 600px) minmax(max-content, 1fr); }
+    .radio[data-mode="dock"] .radio-bar {
+      display: block;
+      padding: 10px 14px 6px;
+      background: var(--red);
+      color: var(--white);
+      font: 400 30px/1 var(--gothic);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .radio[data-mode="dock"] .radio-ctl { justify-self: end; }
+  }
+  @media (hover: hover) {
+    .radio-open:hover .radio-open-l { text-decoration: underline; }
+    .radio-stop:hover { color: var(--red); }
+  }
+</style>

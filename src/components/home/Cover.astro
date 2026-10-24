@@ -71,7 +71,7 @@ const cutMask = art.cutout ? (await getImage({ src: art.cutout.front, width: 100
     )}
     <blockquote class="cl cl-quote"><p>{c.quoteLead} <em>{c.quoteHit}</em></p></blockquote>
     {playable ? (
-      <a class="cl cl-play" href="#soundtrack">
+      <a class="cl cl-play" href="#soundtrack" data-press-play>
         <svg class="cl-play-i" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18"></circle><path d="M16 12.5v15l12-7.5z"></path></svg>
         <span class="cl-play-h">{c.playTitle}</span>
         <span class="cl-play-d">{c.playLine}</span>

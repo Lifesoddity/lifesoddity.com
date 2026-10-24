@@ -100,26 +100,29 @@ const word = piece.word.lines.map((l) => l.join(''));
 
 <script>
   import { reduceMotion } from '../../scripts/motion';
+  import { onPage } from '../../scripts/page';
 
-  // several photos: the arrows step the row one photo at a time and rest at either end
-  document.querySelectorAll<HTMLElement>('[data-gallery].is-many').forEach((root) => {
-    const reel = root.querySelector<HTMLElement>('[data-reel]');
-    const steps = [...root.querySelectorAll<HTMLButtonElement>('[data-step]')];
-    if (!reel || !steps.length) return;
-    let queued = false;
-    const sync = () => {
-      queued = false;
-      const max = reel.scrollWidth - reel.clientWidth - 4;
-      steps[0].disabled = reel.scrollLeft <= 4;
-      steps[1].disabled = reel.scrollLeft >= max;
-    };
-    reel.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(sync); } }, { passive: true });
-    steps.forEach((btn) => btn.addEventListener('click', () => {
-      const shot = reel.firstElementChild as HTMLElement | null;
-      const by = shot ? shot.getBoundingClientRect().width : reel.clientWidth;
-      reel.scrollBy({ left: Number(btn.dataset.step) * by, behavior: reduceMotion() ? 'auto' : 'smooth' });
-    }));
-    sync();
+  onPage('gallery', () => {
+    // several photos: the arrows step the row one photo at a time and rest at either end
+    document.querySelectorAll<HTMLElement>('[data-gallery].is-many').forEach((root) => {
+      const reel = root.querySelector<HTMLElement>('[data-reel]');
+      const steps = [...root.querySelectorAll<HTMLButtonElement>('[data-step]')];
+      if (!reel || !steps.length) return;
+      let queued = false;
+      const sync = () => {
+        queued = false;
+        const max = reel.scrollWidth - reel.clientWidth - 4;
+        steps[0].disabled = reel.scrollLeft <= 4;
+        steps[1].disabled = reel.scrollLeft >= max;
+      };
+      reel.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(sync); } }, { passive: true });
+      steps.forEach((btn) => btn.addEventListener('click', () => {
+        const shot = reel.firstElementChild as HTMLElement | null;
+        const by = shot ? shot.getBoundingClientRect().width : reel.clientWidth;
+        reel.scrollBy({ left: Number(btn.dataset.step) * by, behavior: reduceMotion() ? 'auto' : 'smooth' });
+      }));
+      sync();
+    });
   });
 </script>
 

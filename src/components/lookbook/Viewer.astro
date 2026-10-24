@@ -42,9 +42,13 @@ const v = copy.viewer;
   import { flash, reduceMotion } from '../../scripts/motion';
   import { lookbook as copy } from '../../content/copy/lookbook';
 
-  const box = document.querySelector<HTMLDialogElement>('[data-viewer]');
-  const root = box?.closest('.lb');
-  if (box && root) initViewer(box, root);
+  import { onPage } from '../../scripts/page';
+
+  onPage('viewer', () => {
+    const box = document.querySelector<HTMLDialogElement>('[data-viewer]');
+    const root = box?.closest('.lb');
+    if (box && root) initViewer(box, root);
+  });
 
   function initViewer(box: HTMLDialogElement, root: Element) {
     const $ = <T extends Element>(sel: string) => box.querySelector<T>(sel)!;
