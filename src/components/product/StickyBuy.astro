@@ -1,0 +1,167 @@
+---
+// Phones only: once the price box has scrolled away, a black bar rises from the bottom with the
+// piece, its price and PICK A SIZE. That opens the size stamps right above the bar; a tap on a
+// size puts it in the bag. The bar steps aside at the end of the page, where the next thing to
+// do has its own controls.
+import BuyBox from '../ui/BuyBox.astro';
+import type { Product } from '../../lib/shopify';
+import { formatPrice } from '../../lib/money';
+import { shopifyImage } from '../../lib/shopify';
+import { product as copy } from '../../content/copy/product';
+
+interface Props { product: Product; title: string }
+const { product, title } = Astro.props;
+const thumb = product.images[0];
+---
+
+<div class="sb on-dark" data-sb data-live={product.handle} data-msg-added={copy.bar.added('{title}', '{size}')}>
+  <div class="sb-sheet" id="sb-sheet" role="group" aria-labelledby="sb-sheet-h" hidden>
+    <div class="sb-sheet-head">
+      <p class="sb-sheet-h" id="sb-sheet-h">{copy.bar.sizes}</p>
+      <button class="sb-close" type="button" data-sb-close aria-label={copy.bar.close}>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4 4 16"></path></svg>
+      </button>
+    </div>
+    <BuyBox product={product} mode="quick" sizeLabel={copy.sizeLabel} />
+  </div>
+  <div class="sb-row">
+    {thumb && (
+      <img class="sb-thumb" src={shopifyImage(thumb.src, 160)} alt="" width="52" height="52" loading="lazy" decoding="async" />
+    )}
+    <p class="sb-name">
+      <span class="sb-title">{title}</span>
+      <b class="sb-price num" data-live-price>{formatPrice(product.price)}</b>
+    </p>
+    <p class="sb-note sticker" data-sb-note aria-live="polite"></p>
+    <button class="addbag sb-go" type="button" aria-expanded="false" aria-controls="sb-sheet" data-sb-go><span>{copy.bar.open}</span></button>
+  </div>
+</div>
+
+<script>
+  import { slap } from '../../scripts/motion';
+
+  const bar = document.querySelector<HTMLElement>('[data-sb]');
+  const buy = document.querySelector<HTMLElement>('[data-sb-buy]');
+  const end = document.querySelector<HTMLElement>('[data-sb-end]');
+  const sheet = bar?.querySelector<HTMLElement>('.sb-sheet');
+  const go = bar?.querySelector<HTMLButtonElement>('[data-sb-go]');
+  const note = bar?.querySelector<HTMLElement>('[data-sb-note]');
+
+  if (bar && buy && sheet && go && 'IntersectionObserver' in window) {
+    let past = false;
+    let atEnd = false;
+    let clear = 0;
+    const open = (on: boolean, focus = true) => {
+      sheet.hidden = !on;
+      go.setAttribute('aria-expanded', String(on));
+      if (on && focus) sheet.querySelector<HTMLButtonElement>('[data-variant]:not([aria-disabled="true"])')?.focus();
+    };
+    const sync = () => {
+      const on = past && !atEnd;
+      if (!on && !sheet.hasAttribute('hidden')) open(false, false);
+      bar.classList.toggle('is-on', on);
+    };
+    // the header covers the top of the screen: the price box is gone once it slides under it
+    const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 60;
+    new IntersectionObserver(([e]) => {
+      past = !e.isIntersecting && e.boundingClientRect.top < (e.rootBounds?.top ?? head);
+      sync();
+    }, { rootMargin: `-${head}px 0px 0px 0px` }).observe(buy);
+    if (end) {
+      new IntersectionObserver(([e]) => {
+        atEnd = e.isIntersecting || e.boundingClientRect.top < 0;
+        sync();
+      }).observe(end);
+    }
+
+    go.addEventListener('click', () => open(sheet.hasAttribute('hidden')));
+    bar.querySelector('[data-sb-close]')?.addEventListener('click', () => { open(false); go.focus(); });
+    bar.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hasAttribute('hidden')) { open(false); go.focus(); } });
+    sheet.addEventListener('lo:added', (e) => {
+      const { title, size } = (e as CustomEvent<{ title: string; size: string }>).detail;
+      open(false);
+      go.focus();
+      if (note) {
+        note.textContent = (bar.dataset.msgAdded ?? '').replace('{title}', title).replace('{size}', size);
+        slap(note);
+        window.clearTimeout(clear);
+        clear = window.setTimeout(() => { note.textContent = ''; }, 2600);
+      }
+    });
+  }
+</script>
+
+<style>
+  .sb {
+    --sb-h: clamp(64px, 10svh, 78px);
+    position: fixed;
+    z-index: 25;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    color: var(--white);
+    translate: 0 calc(100% + 16px);
+    visibility: hidden;
+    transition: translate var(--slap) var(--ease-out), visibility 0s linear var(--slap);
+  }
+  /* the live stock check found none left: no bar */
+  .sb[data-soldout] { display: none; }
+  .sb.is-on { translate: 0 0; visibility: visible; transition: translate var(--slap) var(--ease-out); }
+
+  .sb-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 12px;
+    min-height: calc(var(--sb-h) + env(safe-area-inset-bottom, 0px));
+    padding: 8px max(var(--pad), env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(var(--pad), env(safe-area-inset-left, 0px));
+    border-top: 3px solid var(--yellow);
+    background: var(--ink);
+    box-shadow: 0 -8px 18px rgb(11 11 11 / .28);
+  }
+  .sb-thumb { width: 46px; height: 46px; object-fit: cover; border: 3px solid var(--white); rotate: -4deg; }
+  .sb-name { display: grid; gap: 3px; min-width: 0; }
+  .sb-title { overflow: hidden; font: 800 11.5px/1.15 var(--sans); letter-spacing: .1em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+  .sb-price { color: var(--yellow); font: 400 30px/.86 var(--gothic); }
+  .sb-go { width: auto; height: 48px; padding: 0 20px; font-size: 25px; white-space: nowrap; }
+  .sb-note {
+    position: absolute;
+    left: var(--pad);
+    right: var(--pad);
+    bottom: calc(100% + 10px);
+    padding: 9px 12px 8px;
+    background: var(--yellow);
+    color: var(--ink);
+    font: 800 12px/1.3 var(--sans);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    box-shadow: 0 5px 10px rgb(11 11 11 / .3);
+    pointer-events: none;
+  }
+  .sb-note:empty { display: none; }
+
+  /* the sizes, opened right above the bar */
+  .sb-sheet {
+    max-height: 62svh;
+    overflow: auto;
+    display: grid;
+    gap: 10px;
+    padding: 12px var(--pad) 16px;
+    border-top: 3px solid var(--ink);
+    background: var(--white);
+    color: var(--ink);
+    box-shadow: 0 -10px 20px rgb(11 11 11 / .25);
+  }
+  .sb-sheet :global(:focus-visible) { outline-color: var(--ink); }
+  .sb-sheet-head { display: flex; justify-content: space-between; align-items: center; }
+  .sb-sheet-h { font: 400 30px/.9 var(--gothic); text-transform: uppercase; }
+  .sb-close { display: grid; place-items: center; width: 44px; height: 44px; margin-right: -10px; }
+  .sb-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
+  .sb-sheet :global(.buy-note:empty) { display: none; }
+
+  @media (min-width: 700px) {
+    .sb { display: none; }
+  }
+</style>

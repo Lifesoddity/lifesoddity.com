@@ -4,7 +4,7 @@
 import type { ImageMetadata } from 'astro';
 import { getProducts, type Product, type ProductImage } from './shopify';
 import { layoutWord, type WordLayout } from './words';
-import { acts, liveAct, type Act } from '../content/acts';
+import { acts, newDropAct, type Act } from '../content/acts';
 import { archivePieces, defaultGrounds, garmentWords, productArt, type PieceArt } from '../content/pieces';
 
 export type Status = 'live' | 'soldout' | 'archive';
@@ -46,7 +46,7 @@ function wordFromTitle(title: string): string {
 
 function actFor(product: Product, art: PieceArt | undefined): Act {
   const tagged = product.tags.find((t) => t.toLowerCase().startsWith('act:'))?.slice(4).trim().toLowerCase();
-  return acts.find((a) => a.slug === (art?.act ?? tagged)) ?? liveAct();
+  return acts.find((a) => a.slug === (art?.act ?? tagged)) ?? newDropAct;
 }
 
 let cache: Promise<Piece[]> | null = null;

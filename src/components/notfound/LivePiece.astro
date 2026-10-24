@@ -1,0 +1,81 @@
+---
+// The live piece, one tap away: its Shopify photo printed with the flash, a tape tag, and a
+// price tag that refreshes from Shopify (data-live). The killed story and the joined page both
+// end on it. If it sells out after the build, the tape comes off and the SOLD OUT stamp shows.
+import Print from '../ui/Print.astro';
+import type { Piece } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { status } from '../../content/copy/common';
+
+interface Props {
+  piece: Piece;
+  tape: string;
+  cta: string;
+  class?: string;
+}
+
+const { piece, tape, cta, class: cls } = Astro.props;
+const product = piece.product;
+const photo = piece.photo;
+const alt = photo?.kind === 'shopify' && !photo.image.alt ? (piece.art.cutout?.alt ?? piece.title) : undefined;
+const live = piece.status === 'live';
+---
+
+{piece.href && (
+  <a class:list={['lp', cls]} href={piece.href} data-live={product?.handle} data-soldout={live ? undefined : ''}>
+    {photo && <Print class="lp-print" photo={photo} sizes="(min-width: 1000px) 30vw, (min-width: 700px) 40vw, 74vw" alt={alt} ratio={1} />}
+    <span class="tape lp-tape" aria-hidden="true">{tape}</span>
+    <span class="stamp lp-sold">{status.soldout}</span>
+    <span class="lp-tag">
+      <span class="lp-name">{piece.title}</span>
+      {product && <span class="lp-price num" data-live-price>{formatPrice(product.price)}</span>}
+      <span class="lp-go">{cta}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></span>
+    </span>
+  </a>
+)}
+
+<style>
+  .lp { position: relative; display: grid; justify-items: center; padding: 22px 0 0; color: var(--ink); text-decoration: none; }
+  .lp :global(.lp-print) { width: min(82%, 520px); rotate: 4deg; }
+  .lp-tape { left: 2%; top: 4px; font-size: clamp(30px, 8.6vw, 44px); }
+  .lp-sold { display: none; position: absolute; z-index: 4; left: 6%; top: 16px; background: var(--white); font-size: 14px; rotate: -6deg; }
+  .lp[data-soldout] .lp-tape { display: none; }
+  .lp[data-soldout] .lp-sold { display: inline-block; }
+
+  /* the price tag, stuck over the print's bottom edge */
+  .lp-tag {
+    position: relative;
+    z-index: 3;
+    justify-self: end;
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: end;
+    column-gap: 14px;
+    row-gap: 6px;
+    margin: -46px 2% 0 0;
+    padding: 12px 16px 12px;
+    background: var(--white);
+    border: 3px solid var(--ink);
+    rotate: -3deg;
+    box-shadow: 0 10px 18px -6px rgb(11 11 11 / .5);
+  }
+  .lp-name { grid-column: 1; align-self: center; max-width: 16ch; font: 800 13px/1.15 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+  .lp-price { grid-column: 2; grid-row: 1; font: 400 54px/.8 var(--gothic); }
+  .lp-go { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 8px; min-height: 24px; font: 800 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .3em; }
+  .lp-go svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) ease-out; }
+  .lp:focus-visible { outline-offset: 6px; }
+
+  @media (min-width: 1000px) {
+    .lp { padding-top: 1.6vw; }
+    .lp :global(.lp-print) { width: 84%; }
+    .lp-tape { left: 0; top: 0; font-size: min(3.2vw, 48px); }
+    .lp-tag { margin: -4vw 0 0 0; padding: 14px 18px; }
+    .lp-price { font-size: min(4.6vw, 70px); }
+    .lp-name { font-size: 14px; }
+  }
+
+  @media (hover: hover) {
+    .lp:hover .lp-go svg { translate: 4px 0; }
+    .lp:hover .lp-go { text-decoration-color: var(--pink); }
+  }
+</style>

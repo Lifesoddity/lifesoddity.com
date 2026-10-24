@@ -1,0 +1,126 @@
+---
+// The countdown to the next drop. Rendered only when content/acts.ts gives nextDrop.opens: the
+// opening time in Eastern (how he announces drops), the visitor's own time under it, and a small
+// box of digits that rolls once a second and ends on "Out now". Without script, the Eastern
+// time alone stands.
+import { drop } from '../../content/copy/drop';
+import { status } from '../../content/copy/common';
+import { formatWhen, EASTERN } from './when';
+
+interface Props {
+  /** ISO date with its offset, e.g. 2026-11-14T12:00:00-05:00. */
+  opens: string;
+}
+
+const { opens } = Astro.props;
+const c = drop.countdown;
+const eastern = formatWhen(opens, EASTERN);
+const past = Date.parse(opens) <= Date.now();
+---
+
+<div class="cd" data-countdown data-opens={opens} data-eastern={eastern} data-your={c.yourTime} data-opened={c.opened}>
+  <p class="cd-when"><span class="cd-k" data-word>{past ? c.opened : c.opens}</span> <time datetime={opens}>{eastern}</time></p>
+  <p class="cd-local" data-local hidden></p>
+  <div class="cd-box num" data-box role="timer" aria-label={c.label} hidden>
+    {c.units.map((u) => (
+      <span class="cd-u">
+        <span class="cd-win"><b data-unit={u.key}>00</b></span>
+        <span class="cd-l">{u.label}</span>
+      </span>
+    ))}
+  </div>
+  <p class="cd-out sticker" data-out hidden>{status.live}</p>
+</div>
+
+<script>
+  import { formatWhen, timeLeft } from './when';
+  import { reduceMotion, slap } from '../../scripts/motion';
+
+  document.querySelectorAll<HTMLElement>('[data-countdown]').forEach((root) => {
+    const target = Date.parse(root.dataset.opens ?? '');
+    if (Number.isNaN(target)) return;
+    const box = root.querySelector<HTMLElement>('[data-box]');
+    const out = root.querySelector<HTMLElement>('[data-out]');
+    const local = root.querySelector<HTMLElement>('[data-local]');
+    const cells = new Map<string, HTMLElement>();
+    root.querySelectorAll<HTMLElement>('[data-unit]').forEach((el) => cells.set(el.dataset.unit!, el));
+
+    // the visitor's own time, when it differs from Eastern
+    const mine = formatWhen(target);
+    if (local && mine && mine !== root.dataset.eastern) {
+      local.textContent = `${root.dataset.your ?? ''} ${mine}`.trim();
+      local.hidden = false;
+    }
+
+    const roll = (el: HTMLElement) => {
+      if (reduceMotion()) return;
+      el.animate(
+        [{ transform: 'translate3d(0, -55%, 0)', opacity: 0 }, { transform: 'translate3d(0, 0, 0)', opacity: 1 }],
+        { duration: 180, easing: 'cubic-bezier(.2, .7, .2, 1)' },
+      );
+    };
+
+    const word = root.querySelector<HTMLElement>('[data-word]');
+    const finish = () => {
+      if (box) box.hidden = true;
+      if (word && root.dataset.opened) word.textContent = root.dataset.opened;
+      if (out && out.hidden) { out.hidden = false; slap(out); }
+    };
+
+    let first = true;
+    const tick = () => {
+      const t = timeLeft(target);
+      if (t.done) { finish(); return; }
+      const values: Record<string, number> = { d: t.d, h: t.h, m: t.m, s: t.s };
+      cells.forEach((el, key) => {
+        const next = String(values[key] ?? 0).padStart(2, '0');
+        if (el.textContent !== next) {
+          el.textContent = next;
+          if (!first) roll(el);
+        }
+      });
+      if (box && box.hidden) box.hidden = false;
+      first = false;
+      // the next whole second, so the digits never drift
+      setTimeout(tick, 1000 - (Date.now() % 1000) + 8);
+    };
+    tick();
+  });
+</script>
+
+<style>
+  .cd { display: grid; gap: 8px; justify-items: start; }
+  .cd-when { font: 400 34px/.92 var(--gothic); text-transform: uppercase; }
+  .cd-k { color: var(--red); }
+  .cd-local { font: 700 13.5px/1.35 var(--sans); }
+  .cd-box {
+    display: inline-grid;
+    grid-auto-flow: column;
+    gap: 2px;
+    margin-top: 2px;
+    padding: 9px 8px 7px;
+    background: var(--ink);
+    color: var(--yellow);
+    rotate: -2deg;
+    box-shadow: 0 8px 14px -6px rgb(11 11 11 / .55);
+  }
+  .cd-box[hidden] { display: none; }
+  .cd-u { display: grid; justify-items: center; gap: 3px; min-width: 50px; }
+  .cd-u + .cd-u { border-left: 1px solid rgb(255 229 0 / .35); }
+  .cd-win { display: block; overflow: clip; }
+  .cd-win b { display: block; font: 400 44px/.9 var(--gothic); letter-spacing: .02em; }
+  .cd-l { color: var(--white); font: 800 9.5px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
+  .cd-out {
+    padding: 10px 18px 7px;
+    background: var(--pink);
+    color: var(--ink);
+    font: 400 44px/1 var(--gothic);
+    text-transform: uppercase;
+    box-shadow: 0 8px 14px rgb(11 11 11 / .3);
+  }
+  @media (min-width: 1000px) {
+    .cd-when { font-size: max(34px, 2.6vw); }
+    .cd-win b { font-size: max(44px, 3.4vw); }
+    .cd-u { min-width: max(50px, 4.2vw); }
+  }
+</style>

@@ -31,7 +31,8 @@ export interface Act {
   /** A line from his captions that closes or frames the act. */
   line: string | null;
   quote: string | null;
-  playlist: { name: string; spotify: string | null; apple: string | null };
+  /** The act's soundtrack; `cover` is its playlist artwork when he has one. */
+  playlist: { name: string; spotify: string | null; apple: string | null; cover?: { image: ImageMetadata; alt: string } };
   credits: Credit[];
   photos: { image: ImageMetadata; alt: string; credit: string | null }[];
 }
@@ -71,7 +72,7 @@ export const acts: Act[] = [
     status: 'archive',
     line: 'This concludes Act 1.',
     quote: 'Have you ever wanted to be him? The one who walks into the room and everything stops.',
-    playlist: { name: 'Showtime', spotify: null, apple: null },
+    playlist: { name: 'Showtime', spotify: null, apple: null, cover: { image: campaign.partyAnimalRadio, alt: "Illustrated cover for Life's Oddity radio: a house party under two spotlights, PARTY ANIMAL bunting" } },
     credits: [
       { role: 'Act 1 film shot by', names: ['sixomo'] },
       { role: 'Gluttony reel shot by', names: ['flyceoproductions'] },
@@ -96,6 +97,26 @@ export const nextDrop: { name: string | null; opens: string | null; opensLabel: 
 
 /** The one known track, from his caption on the Gluttony reel. */
 export const knownTrack = { title: 'G wagon', artist: 'Godsflyestsoldier', heardOn: 'the Gluttony reel', act: 'party-animal' };
+
+/** A product not yet tagged with an act (`act:<slug>` in Shopify) belongs here, so it never
+ *  borrows another drop's story. Tag it in Shopify and add its act above to give it one. */
+export const newDropAct: Act = {
+  slug: 'new',
+  number: null,
+  title: 'The new drop',
+  vice: null,
+  definition: null,
+  subtitle: null,
+  subtitleConfirmed: true,
+  opened: '',
+  openedLabel: '',
+  status: 'live',
+  line: null,
+  quote: null,
+  playlist: { name: '', spotify: null, apple: null },
+  credits: [],
+  photos: [],
+};
 
 export const actBySlug = (slug: string) => acts.find((a) => a.slug === slug);
 export const liveAct = () => acts.find((a) => a.status === 'live') ?? acts[0];

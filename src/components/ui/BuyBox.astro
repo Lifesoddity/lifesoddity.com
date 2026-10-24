@@ -51,7 +51,7 @@ const thumb = product.images[0] ? shopifyImage(product.images[0].src, 200) : '';
     ))}
   </div>
   {mode === 'box' && (
-    <button class="addbag" type="button" data-add disabled={!product.available}><span>{product.available ? addLabel : status.soldout}</span></button>
+    <button class="addbag" type="button" data-add disabled><span>{product.available ? addLabel : status.soldout}</span></button>
   )}
   <p class="buy-note" data-note aria-live="polite">{mode === 'box' && product.available ? home.cover.pickSize : ''}</p>
 </div>

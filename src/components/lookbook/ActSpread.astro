@@ -1,0 +1,363 @@
+---
+// One act of the paparazzi spread: the act's name as a giant word, its photos as a busy contact
+// sheet of tilted flash-lit prints (marker circles and script captions where the data has
+// them), the credits his captions give as small vertical lines, the act's issue line and
+// dictionary entry, and GET THE LOOK: its pieces, and the way to them in the shop.
+// Tapping a print opens it large in place (Viewer.astro).
+import PieceImage from '../ui/PieceImage.astro';
+import { shotSizes, type Spread } from './spreads';
+import { formatPrice } from '../../lib/money';
+import { lookbook as copy } from '../../content/copy/lookbook';
+import { pending, status as statusWords } from '../../content/copy/common';
+
+interface Props { spread: Spread; first?: boolean }
+const { spread, first = false } = Astro.props;
+const { act, word, ground, shots, pieces, quote } = spread;
+const id = act.slug;
+
+const style = [
+  `--bg:${ground.bg}`,
+  `--lc:${ground.dark ? 'var(--white)' : 'var(--ink)'}`,
+  `--wc:${ground.word}`,
+  `--ac:${ground.accent}`,
+  `--dot:${ground.dot}`,
+  `--w:${word.w}`,
+  `--cn:${act.credits.length}`,
+].join(';');
+
+const titleWords = act.title.split(/\s+/);
+const issue = [act.number ? copy.act(act.number) : null, act.vice, copy.dropped(act.openedLabel)].filter(Boolean).join(' · ');
+const def = act.definition;
+const cut = def ? def.indexOf(':') : -1;
+const onSale = spread.status === 'live' || spread.status === 'soldout';
+// the shop's own anchors: what is in the Shopify store (#out-now), else the act in its archive
+const shopHref = onSale ? '/shop#out-now' : `/shop#act-${act.slug}`;
+const mark = 'M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05.6-1.02.02-1-.5-.55-.95.1-1.05';
+---
+
+<section class:list={['lb-act', 'halftone', ground.dark && 'on-dark']} id={id} style={style} aria-labelledby={`${id}-title`}>
+  <h2 class="lb-word" id={`${id}-title`}>{titleWords.map((w, i) => <>{i > 0 && ' '}<span>{w}</span></>)}</h2>
+
+  <div class="lb-sheet" data-sheet>
+    {shots.length ? shots.map((s, i) => (
+      <figure class="lb-shot" style={`--pc:${s.place.pc};--ps:${s.place.ps};--dc:${s.place.dc};--ds:${s.place.ds};--t:${s.place.tilt}deg;--y:${s.place.y}`} data-tilt={s.place.tilt}>
+        <button
+          class:list={['lb-print', 'ph', s.credit && 'has-credit']}
+          type="button"
+          aria-haspopup="dialog"
+          data-flash
+          data-shot
+          data-src={s.full.src}
+          data-full={s.full.srcset}
+          data-w={s.w}
+          data-h={s.h}
+          data-act={act.title}
+          data-cap={s.caption ?? undefined}
+          data-credit={s.credit ?? undefined}
+          data-href={s.piece?.href ?? undefined}
+          data-piece={s.piece?.href ? copy.viewer.piece(s.piece.title) : undefined}
+        >
+          <span class="ph-sh" aria-hidden="true"></span>
+          <span class="lb-paper">
+            <span class="lb-pic">
+              <PieceImage photo={s.photo} alt={s.alt} sizes={shotSizes(s.place)} eager={first && i < 2} />
+              {s.mark && (
+                <svg class="mark" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
+                  <path transform={`translate(${s.mark.x} ${s.mark.y}) scale(${s.mark.rx} ${s.mark.ry})`} d={mark}></path>
+                </svg>
+              )}
+            </span>
+            {s.credit && <span class="lb-credit"><b>{copy.shotBy}</b> {s.credit}</span>}
+          </span>
+          <span class="ph-flash" aria-hidden="true"></span>
+          <span class="vh">, {copy.seeBig}</span>
+        </button>
+        {s.caption && <figcaption class="tape lb-tape"><span class="lb-sp">{copy.spotted} </span>{s.caption}</figcaption>}
+      </figure>
+    )) : (
+      <div class="lb-nopics">
+        <p class="stamp">{pending.stamp}</p>
+        <p class="lb-nopics-h">{copy.noPics.title}</p>
+        <p class="lb-nopics-line">{copy.noPics.line}</p>
+      </div>
+    )}
+  </div>
+
+  {act.credits.length > 0 && (
+    <div class="lb-credits">
+      <h3 class="vh">{copy.creditsTitle}</h3>
+      <ul>
+        {act.credits.map((c) => <li><b>{c.role}</b> {c.names.map((n) => `@${n}`).join(' ')}</li>)}
+      </ul>
+    </div>
+  )}
+
+  <div class="lb-meta">
+    <div class="lb-issue">
+      {spread.status && <span class="stamp lb-stamp">{statusWords[spread.status]}</span>}
+      <p>{issue}</p>
+    </div>
+    {def && <p class="lb-def">{cut > 0 ? <><b>{def.slice(0, cut)}:</b>{def.slice(cut + 1)}</> : def}</p>}
+    {quote && <blockquote class="lb-quote"><p>{quote}</p></blockquote>}
+    {act.line && <p class="lb-line sticker">{act.line}</p>}
+    {act.subtitle && act.subtitleConfirmed && <p class="lb-sub">{act.subtitle}</p>}
+  </div>
+
+  {pieces.length > 0 && (
+    <aside class="lb-look" aria-labelledby={`${id}-look`}>
+      <h3 class="lb-look-h" id={`${id}-look`}>{copy.look.title}</h3>
+      <ul class="lb-list">
+        {pieces.map((p) => (
+          <li>
+            {p.href && p.product ? (
+              <a class="lb-row" href={p.href} data-live={p.product.handle}>
+                <span class="lb-nm">{p.title}</span>
+                <span class="lb-dots" aria-hidden="true"></span>
+                {p.status === 'live' ? (
+                  <>
+                    <span class="lb-pr num" data-live-price>{formatPrice(p.product.price, p.product.currency)}</span>
+                    <span class="lb-st lb-so">{statusWords.soldout}</span>
+                  </>
+                ) : (
+                  <span class="lb-st">{statusWords.soldout}</span>
+                )}
+                <svg class="lb-go" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4 12.5 8l-4 4"></path></svg>
+              </a>
+            ) : (
+              <span class="lb-row">
+                <span class="lb-nm">{p.title}</span>
+                <span class="lb-dots" aria-hidden="true"></span>
+                <span class="lb-st">{statusWords.archive}</span>
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+      <a class="lb-shop" href={shopHref}><span>{onSale ? copy.look.shopLive(act.title) : copy.look.shopArchive(act.number ? copy.act(act.number) : act.title)}</span></a>
+    </aside>
+  )}
+</section>
+
+<style>
+  .lb-act {
+    --lc: var(--ink);
+    --wc: var(--white);
+    --ac: var(--pink);
+    --fade: radial-gradient(70% 45% at 100% 0%, #000, transparent 75%), radial-gradient(65% 40% at 0% 100%, #000, transparent 75%);
+    position: relative;
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "word word" "sheet credits" "meta meta" "look look";
+    column-gap: 8px;
+    padding: 26px var(--pad) 48px;
+    background: var(--bg);
+    color: var(--lc);
+    overflow: clip;
+    scroll-margin-top: var(--header-h);
+  }
+  .lb-act + :global(.lb-act) { border-top: 3px solid var(--ink); }
+
+  /* the act's name, as wide as the page */
+  .lb-word {
+    grid-area: word;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    column-gap: .2em;
+    color: var(--wc);
+    font: 400 calc(100cqw / var(--w) * .97)/.84 var(--gothic);
+    letter-spacing: 0;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* the contact sheet: a 12-column table of prints, tilted, dropped and overlapping */
+  .lb-sheet {
+    grid-area: sheet;
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: start;
+    row-gap: 26px;
+    padding: 26px 0 8px;
+  }
+  .lb-shot {
+    position: relative;
+    grid-column: var(--pc) / span var(--ps);
+    margin: calc(var(--y) * 1vw) -1.6vw 0;
+    rotate: var(--t);
+  }
+  .lb-print { display: block; width: 100%; text-align: left; transition: scale var(--base) var(--ease-out); }
+  .lb-print:active { scale: .985; }
+  .lb-paper { position: relative; display: block; padding: 5px; background: var(--white); }
+  .has-credit .lb-paper { padding-left: 17px; }
+  .lb-pic { position: relative; display: block; }
+  .lb-pic :global(img) { width: 100%; }
+  .lb-print:focus-visible { outline-offset: 5px; }
+  .lb-shot:focus-within { z-index: 6; }
+
+  /* the credit printed along the print's own edge, read bottom to top */
+  .lb-credit {
+    position: absolute;
+    left: 3px;
+    bottom: 7px;
+    writing-mode: vertical-rl;
+    rotate: 180deg;
+    color: var(--ink);
+    font: 600 8.5px/1 var(--sans);
+    letter-spacing: .06em;
+    white-space: nowrap;
+  }
+  .lb-credit b { font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+
+  /* the script caption on its black tape, stuck over the print's top corner */
+  .lb-tape {
+    left: -8px;
+    top: -17px;
+    max-width: calc(100% + 12px);
+    padding: 1px 12px 6px 10px;
+    font-size: 21px;
+    line-height: 1.02;
+    text-wrap: balance;
+    rotate: -6deg;
+  }
+  .lb-sp { display: none; }
+  .on-dark .lb-tape { background: var(--pink); color: var(--ink); }
+
+  .lb-nopics { grid-column: 1 / -1; display: grid; gap: 10px; justify-items: start; padding: 22px 18px 24px; background: var(--ink); color: var(--white); rotate: -1.5deg; box-shadow: 0 12px 20px -8px rgb(11 11 11 / .5); }
+  .lb-nopics .stamp { background: var(--white); }
+  .lb-nopics-h { color: var(--yellow); font: 400 56px/.86 var(--gothic); text-transform: uppercase; }
+  .lb-nopics-line { max-width: 36ch; font: 600 15px/1.4 var(--sans); }
+
+  /* the act's credits, set small and vertical down the side of the sheet */
+  .lb-credits { grid-area: credits; position: relative; width: calc(var(--cn) * 14px); margin-top: 26px; }
+  .lb-credits ul {
+    position: absolute;
+    inset: 0;
+    writing-mode: vertical-rl;
+    rotate: 180deg;
+    font: 600 10px/14px var(--sans);
+    letter-spacing: .04em;
+    overflow-wrap: anywhere;
+  }
+  .lb-credits b { font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+
+  /* the act's issue line, its dictionary entry, his line */
+  .lb-meta { grid-area: meta; display: grid; gap: 16px; align-content: start; justify-items: start; margin-top: 34px; }
+  .lb-issue { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; justify-self: stretch; padding: 8px 0 7px; border-top: 3px solid currentColor; border-bottom: 1px solid currentColor; }
+  .lb-issue p { font: 800 11px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+  .lb-stamp { background: var(--white); }
+  .lb-def { max-width: 42ch; font: 600 16px/1.42 var(--sans); }
+  .lb-def b { font-weight: 800; font-style: italic; }
+  .lb-quote p { font: 400 42px/.9 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .lb-quote::before { content: "\201C"; display: block; height: 34px; color: var(--ac); font: 400 110px/.9 var(--gothic); }
+  .lb-line { padding: 7px 12px 5px; background: var(--yellow); color: var(--ink); font: 400 28px/1 var(--gothic); letter-spacing: .02em; text-transform: uppercase; box-shadow: 0 4px 8px rgb(11 11 11 / .3); }
+  .lb-sub { font: 700 13px/1.3 var(--sans); }
+
+  /* GET THE LOOK: the magazine's price list, on paper */
+  .lb-look {
+    grid-area: look;
+    position: relative;
+    z-index: 2;
+    align-self: start;
+    display: grid;
+    gap: 6px;
+    margin-top: 30px;
+    padding: 14px 14px 16px;
+    border: 3px solid var(--ink);
+    background: var(--white);
+    color: var(--ink);
+    rotate: -1deg;
+    box-shadow: 0 12px 20px -8px rgb(11 11 11 / .55);
+  }
+  .lb-look :focus-visible { outline-color: var(--ink); }
+  .lb-look-h { font: 400 44px/.86 var(--gothic); text-transform: uppercase; }
+  .lb-row { display: flex; align-items: baseline; gap: 8px; min-height: 46px; padding: 14px 0 8px; border-bottom: 1px solid rgb(11 11 11 / .22); text-decoration: none; }
+  .lb-nm { font: 800 13px/1.2 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+  .lb-dots { flex: 1 1 16px; min-width: 16px; border-bottom: 2px dotted rgb(11 11 11 / .55); translate: 0 -3px; }
+  .lb-pr { font: 400 32px/.8 var(--gothic); }
+  .lb-st { color: var(--red); font: 800 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
+  .lb-so { display: none; }
+  .lb-row[data-soldout] .lb-pr { display: none; }
+  .lb-row[data-soldout] .lb-so { display: inline; }
+  .lb-go { align-self: center; flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) ease-out; }
+  .lb-shop {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 54px;
+    margin-top: 10px;
+    padding: 8px 22px 7px;
+    color: var(--white);
+    font: 400 28px/.92 var(--gothic);
+    letter-spacing: .04em;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  .lb-shop::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--red);
+    clip-path: polygon(0 0, 100% 0, 97.5% 50%, 100% 100%, 0 100%, 2.5% 50%);
+    transition: background-color var(--fast) ease-out;
+  }
+  .lb-shop span { position: relative; top: 1px; }
+  .lb-shop:active { translate: 0 1px; }
+
+  @media (min-width: 700px) {
+    .lb-act {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+      grid-template-areas: "word word word" "sheet sheet credits" "meta look look";
+      column-gap: 3vw;
+      padding: 34px var(--pad) 56px;
+    }
+    .lb-shot { grid-column: var(--dc) / span var(--ds); margin: calc(var(--y) * 1vw) -1.2vw 0; }
+    .lb-sheet { row-gap: 3vw; padding-top: 30px; }
+    .lb-paper { padding: 7px; }
+    .has-credit .lb-paper { padding-left: 20px; }
+    .lb-credit { left: 4px; font-size: 9.5px; }
+    .lb-tape { max-width: calc(100% + 56px); font-size: clamp(22px, 2.1vw, 29px); top: -20px; }
+    .lb-sp { display: inline; }
+    .lb-credits { margin-top: 30px; }
+    .lb-meta { margin-top: 44px; }
+    .lb-look { margin-top: 44px; }
+    .lb-quote p { font-size: 46px; }
+  }
+
+  @media (min-width: 1000px) {
+    .lb-act {
+      --rail: clamp(290px, 25vw, 390px);
+      grid-template-columns: minmax(0, 1fr) auto var(--rail);
+      grid-template-rows: auto auto minmax(0, 1fr);
+      grid-template-areas: "word word meta" "sheet credits meta" "sheet credits look";
+      column-gap: 2.2vw;
+      padding: 3.2vw var(--pad) 5vw;
+    }
+    .lb-word { align-self: end; font-size: min(calc((100cqw - var(--rail) - 2.2vw) / var(--w) * .97), 19cqw); }
+    .lb-sheet { margin-top: -1.4vw; padding-top: 0; row-gap: 3.4vw; }
+    .lb-credits { margin-top: 0; }
+    .lb-meta { align-self: start; margin-top: 0; padding-top: .6vw; }
+    .lb-def { font-size: max(16px, 1.25vw); }
+    .lb-quote p { font-size: clamp(36px, 3.2vw, 52px); }
+    .lb-look { margin-top: 2.6vw; }
+  }
+
+  @media (hover: hover) {
+    .lb-print:hover { scale: 1.035; }
+    .lb-shot:hover { z-index: 6; }
+    a.lb-row:hover .lb-nm { text-decoration: underline 2px; text-decoration-color: var(--pink); text-underline-offset: .25em; }
+    a.lb-row:hover .lb-go { translate: 3px 0; }
+    .lb-shop:hover::before { background: var(--red-press); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lb-print:hover, .lb-print:active { scale: none; }
+  }
+</style>

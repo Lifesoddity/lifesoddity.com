@@ -4,7 +4,6 @@
 // loaded only then). Until he gives the Spotify link, the box says the link is not in yet and
 // nothing pretends to play.
 import { Image } from 'astro:assets';
-import { campaign } from '../../assets';
 import type { Act } from '../../content/acts';
 import { knownTrack } from '../../content/acts';
 import { home } from '../../content/copy/home';
@@ -20,6 +19,9 @@ const copy = home.soundtrack;
 const spotify = act.playlist.spotify;
 const track = knownTrack.act === act.slug ? knownTrack : null;
 const title = act.playlist.name;
+// a playlist named after an unconfirmed subtitle ("A love letter to Mutsumi") stays small
+const quiet = !act.subtitleConfirmed && act.playlist.name === act.subtitle;
+const cover = act.playlist.cover;
 const sub = act.number ? `The soundtrack of Act ${act.number}: ${act.title}` : `The soundtrack of ${act.title}`;
 ---
 
@@ -27,16 +29,18 @@ const sub = act.number ? `The soundtrack of Act ${act.number}: ${act.title}` : `
   <h3 class="pl-bar">{copy.bar}</h3>
   <div class="pl-body">
     <div class="pl-info">
-      <h4 class="pl-title">{title}</h4>
+      <h4 class:list={['pl-title', quiet && 'is-quiet']}>{title}</h4>
       <p class="pl-sub">{sub}</p>
     </div>
 
     <div class="pl-art">
-      <figure class="ph print pl-cover" data-flash>
-        <span class="ph-sh" aria-hidden="true"></span>
-        <Image src={campaign.partyAnimalRadio} widths={[400, 640, 800]} sizes="(min-width: 1000px) 28vw, 70vw" alt="Illustrated cover for Life's Oddity radio: a house party under two spotlights, PARTY ANIMAL bunting" />
-        <span class="ph-flash" aria-hidden="true"></span>
-      </figure>
+      {cover && (
+        <figure class="ph print pl-cover" data-flash>
+          <span class="ph-sh" aria-hidden="true"></span>
+          <Image src={cover.image} widths={[400, 640, 800]} sizes="(min-width: 1000px) 28vw, 70vw" alt={cover.alt} />
+          <span class="ph-flash" aria-hidden="true"></span>
+        </figure>
+      )}
       {spotify ? (
         <button class="pl-play sticker" type="button" data-play aria-label={`Play the ${title} playlist`}>
           <svg class="pl-play-i" viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l10.5-6.5z"></path><path class="i-pause" d="M8.5 5v14M15.5 5v14"></path></svg>
@@ -76,6 +80,7 @@ const sub = act.number ? `The soundtrack of Act ${act.number}: ${act.title}` : `
   .pl-body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "info" "art" "now" "slot"; gap: 18px; padding: 18px 14px 22px; }
   .pl-info { grid-area: info; display: grid; gap: 6px; }
   .pl-title { font: 400 min(22vw, 120px)/.8 var(--gothic); text-transform: uppercase; }
+  .pl-title.is-quiet { font: 400 40px/.9 var(--gothic); }
   .pl-sub { font: 700 15px/1.35 var(--sans); }
   .pl-art { grid-area: art; align-self: start; display: grid; grid-template-columns: minmax(0, 1fr); padding-bottom: 12px; }
   .pl-cover { grid-area: 1 / 1; width: 70%; rotate: -3deg; }

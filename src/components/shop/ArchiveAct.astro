@@ -1,0 +1,184 @@
+---
+// One act of the archive: its title, its vice in pink script, the ACT stamp, his dictionary
+// entry, the day it dropped and his closing line; then every piece of the act as one of his
+// photos, printed and tilted, with the script caption and arrow of a paparazzi shot, the pink
+// marker circle where the piece has one, and the ARCHIVE stamp. No price, no sizes.
+//
+// The grid never leaves a hole: from 1000px, six columns in rows of three (two columns each),
+// and a remainder becomes rows of two (three columns each); from 700px, two columns with an
+// odd last piece laid out wide.
+import Print from '../ui/Print.astro';
+import NoPics from './NoPics.astro';
+import type { Act } from '../../content/acts';
+import type { Piece } from '../../lib/pieces';
+import { shop } from '../../content/copy/shop';
+import { status } from '../../content/copy/common';
+
+interface Props {
+  act: Act;
+  pieces: Piece[];
+}
+
+const { act, pieces } = Astro.props;
+const a = shop.archive;
+const n = pieces.length;
+
+function desktopSpans(count: number): number[] {
+  if (count === 1) return [6];
+  const spans = Array.from({ length: count }, () => 2);
+  const rest = count % 3;
+  if (rest === 2) spans.fill(3, count - 2);
+  if (rest === 1) spans.fill(3, count - 4);
+  return spans;
+}
+const spanD = desktopSpans(n);
+const wideT = (j: number) => n % 2 === 1 && j === n - 1;
+const tilts = [-3, 2.5, -1.5, 2, -2.5, 1.5];
+
+// The definition, with its term in bold italic ("Gluttony: the excessive hunger...").
+const def = act.definition;
+const colon = def ? def.indexOf(':') : -1;
+const term = def && colon > 0 && colon < 30 ? def.slice(0, colon) : null;
+
+// The arrow of the caption: from the gap under the caption down to the top of the marker
+// circle, bowing out to the right, with an open head. Drawn in the print's own 300x400 box, so
+// it lands on the circle at any size.
+const r1 = (v: number) => Math.round(v * 10) / 10;
+function arrow(m: { x: number; y: number; rx: number; ry: number }) {
+  const hx = m.x + m.rx * 0.35;
+  const hy = m.y - m.ry - 8;
+  const tx = Math.min(m.x + m.rx + 56, 272);
+  const ty = -12;
+  const c1 = [tx + 10, ty + (hy - ty) * 0.5];
+  const c2 = [hx + (tx - hx) * 0.35, hy - (hy - ty) * 0.45];
+  const dx = hx - c2[0];
+  const dy = hy - c2[1];
+  const len = Math.hypot(dx, dy);
+  const ux = -dx / len;
+  const uy = -dy / len;
+  const t = 0.62;
+  const L = 17;
+  const wing = (sign: number) => [hx + L * (ux * Math.cos(t) - sign * uy * Math.sin(t)), hy + L * (sign * ux * Math.sin(t) + uy * Math.cos(t))];
+  const [ax, ay] = wing(1);
+  const [bx, by] = wing(-1);
+  return `M${r1(tx)} ${ty}C${r1(c1[0])} ${r1(c1[1])} ${r1(c2[0])} ${r1(c2[1])} ${r1(hx)} ${r1(hy)}M${r1(ax)} ${r1(ay)}L${r1(hx)} ${r1(hy)}L${r1(bx)} ${r1(by)}`;
+}
+---
+
+<section class="act" aria-labelledby={`act-${act.slug}`}>
+  <header class="act-head">
+    <div class="act-name">
+      <h3 class="act-title" id={`act-${act.slug}`}>{act.title}</h3>
+      {act.vice && <p class="act-vice">{act.vice.toLowerCase()}</p>}
+    </div>
+    <div class="act-facts">
+      {act.number && <p class="stamp act-num">{a.act(act.number)}</p>}
+      {def && <p class="act-def">{term ? <><b>{term}:</b>{def.slice(colon + 1)}</> : def}</p>}
+      <p class="act-date">{a.dropped} <time datetime={act.opened}>{act.openedLabel}</time></p>
+      {act.line && <p class="act-line">{act.line}</p>}
+    </div>
+  </header>
+
+  <ul class="act-grid" role="list">
+    {pieces.map((p, j) => (
+      <li class:list={['ap', wideT(j) && 'ap-wt', spanD[j] === 6 && 'ap-wd', spanD[j] === 2 && j % 3 === 1 && 'ap-mid']} style={`--sd:${spanD[j]}`}>
+        <div class="ap-pic">
+          <p class="ap-cap" aria-hidden="true">{a.spotted(p.art.tag)}</p>
+          {p.photo ? (
+            <Print class="ap-print" photo={p.photo} sizes="(min-width: 1000px) 27vw, (min-width: 700px) 40vw, 80vw" tilt={tilts[j % tilts.length]} mark={p.art.mark}>
+              {p.art.mark && (
+                <svg class="mark ap-arrow" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true"><path d={arrow(p.art.mark)}></path></svg>
+              )}
+            </Print>
+          ) : (
+            <NoPics class="ap-print" label={shop.next.noPics} tilt={tilts[j % tilts.length]} ratio={3 / 4} />
+          )}
+          <p class="stamp ap-stamp">{status.archive}</p>
+        </div>
+        <div class="ap-copy">
+          <h4 class="ap-name">{p.title}</h4>
+          {p.description && <p class="ap-desc">{p.description}</p>}
+        </div>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .act { display: grid; gap: 34px; }
+  .act + .act { margin-top: 64px; padding-top: 36px; border-top: 3px solid var(--white); }
+
+  /* the act's opener */
+  .act-head { display: grid; gap: 16px; }
+  .act-name { position: relative; justify-self: start; }
+  .act-title { padding-top: 22px; color: var(--yellow); font: 400 clamp(76px, 23vw, 150px)/.82 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .act-vice { position: absolute; right: 0; top: 0; color: var(--pink); font: 400 clamp(42px, 12vw, 72px)/1 var(--script); rotate: -7deg; pointer-events: none; }
+  .act-facts { display: grid; gap: 10px; justify-items: start; }
+  .act-num { padding: 6px 10px 5px; border-color: var(--yellow); color: var(--yellow); font-size: 13px; box-shadow: inset 0 0 0 1.5px var(--ink), inset 0 0 0 2.5px var(--yellow); }
+  .act-def { max-width: 40ch; font: 600 16px/1.42 var(--sans); text-wrap: pretty; }
+  .act-def b { font-weight: 800; font-style: italic; color: var(--yellow); }
+  .act-date { padding: 6px 0 5px; border-top: 3px solid var(--white); border-bottom: 1px solid var(--white); font: 800 11px/1.25 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+  .act-line { color: var(--pink); font: 400 40px/.9 var(--gothic); text-transform: uppercase; }
+
+  /* the pieces: his photos as prints, the caption in pink script with its arrow */
+  .act-grid { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 56px; }
+  .ap { display: grid; gap: 16px; align-content: start; }
+  .ap-pic { position: relative; width: 86%; padding: 0 3% 10px; }
+  .ap:nth-child(even) .ap-pic { justify-self: end; }
+  .ap-cap {
+    position: relative;
+    z-index: 2;
+    max-width: 92%;
+    margin: 0 0 24px auto;
+    color: var(--pink);
+    font: 400 clamp(26px, 7.4vw, 34px)/1.05 var(--script);
+    text-align: right;
+    text-wrap: balance;
+    rotate: -4deg;
+  }
+  .ap-pic :global(.ap-print) { width: 100%; }
+  .ap-pic :global(.ap-print > img) { width: 100%; }
+  .ap-pic :global(.ap-arrow) { z-index: 3; }
+  .ap-stamp { position: absolute; z-index: 4; right: 0; bottom: 2px; padding: 7px 10px 5px; background: var(--white); font-size: 14px; rotate: -8deg; box-shadow: inset 0 0 0 1.5px var(--white), inset 0 0 0 2.5px var(--red), 0 4px 8px rgb(0 0 0 / .35); }
+  .ap-copy { display: grid; gap: 8px; }
+  .ap-name { color: var(--white); font: 400 clamp(40px, 11vw, 56px)/.86 var(--gothic); text-transform: uppercase; }
+  .ap-desc { max-width: 40ch; font: 500 15px/1.45 var(--sans); }
+
+  @media (min-width: 700px) {
+    .act-head { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); column-gap: 5vw; align-items: end; }
+    .act-title { font-size: clamp(96px, 13vw, 150px); }
+    .act-vice { right: auto; left: 46%; font-size: clamp(54px, 7vw, 88px); }
+    .act-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 5vw; row-gap: 64px; }
+    .ap-pic { width: 100%; }
+    .ap-wt { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 5vw; align-items: center; }
+    .ap-wt .ap-pic { width: 100%; }
+    .ap-name { font-size: clamp(44px, 5.6vw, 60px); }
+    .ap-wt .ap-name { font-size: clamp(60px, 9vw, 88px); }
+    .ap-wt .ap-desc { font-size: 17px; }
+  }
+
+  @media (min-width: 1000px) {
+    .act { gap: 4vw; }
+    .act-head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+    .act-title { padding-top: 2vw; font-size: min(11vw, 190px); }
+    .act-vice { left: auto; right: -.6em; top: -.62em; font-size: min(6.6vw, 110px); }
+    .act-def { font-size: max(16px, 1.3vw); }
+    .act-date { font-size: 12px; }
+    .act-line { font-size: min(3.6vw, 60px); }
+    .act-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: 3.6vw; row-gap: 5vw; }
+    .ap { grid-column: span var(--sd); }
+    .ap-wt { grid-template-columns: minmax(0, 1fr); }
+    .ap-wt .ap-pic { width: 100%; }
+    .ap-wt .ap-name { font-size: min(3.9vw, 66px); }
+    .ap-wt .ap-desc { font-size: 15.5px; }
+    .ap-mid { padding-top: 5.5vw; }
+    .ap-wd { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 5vw; align-items: center; }
+    .ap-wd .ap-pic { width: 70%; justify-self: center; }
+    .ap-wd .ap-name { font-size: min(7vw, 120px); }
+    .ap-wd .ap-desc { font-size: max(17px, 1.3vw); }
+    .ap-cap { font-size: min(2.3vw, 40px); }
+    .ap-name { font-size: min(3.9vw, 66px); }
+    .ap-desc { font-size: 15.5px; }
+    .ap-stamp { font-size: 15px; }
+  }
+</style>

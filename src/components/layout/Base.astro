@@ -29,7 +29,7 @@ interface Props {
 const { title, description = site.description, image, imageAlt, type = 'website', ld = [], price, noindex = false, bare = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const fullTitle = bare ? title : `${title} | ${site.name}`;
-const previewImage = image ?? new URL('/og.png', Astro.site).href;
+const previewImage = image ?? new URL('/og.jpg', Astro.site).href;
 ---
 
 <!doctype html>

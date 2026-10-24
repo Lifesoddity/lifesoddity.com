@@ -4,9 +4,9 @@
 //
 // file                                   subject                                    used on
 // brand/logo-black.png                   the Life's Oddity wordmark                 every page (header, cover, footer)
-// campaign/showtime-hoodie-back.jpg      Showtime hoodie, back, red patent trousers home story, lookbook, drop
+// campaign/showtime-hoodie-back.jpg      Showtime hoodie, back, red patent trousers home story, shop, lookbook, drop
 // campaign/showtime-hoodie-side.jpg      the hoodie worn open, concrete corner      lookbook
-// campaign/spotlight-tee-front.jpg       Spotlight tee on a model, concrete wall    home story, lookbook
+// campaign/spotlight-tee-front.jpg       Spotlight tee on a model, concrete wall    home story, shop, lookbook, drop
 // campaign/spotlight-tee-closeup.jpg     Spotlight tee close-up                     lookbook
 // campaign/she-devil-letter-roses.jpg    the love letter on rose petals             product page (She Devil), lookbook
 // campaign/she-devil-letter.jpg          the handwritten letter                     product page (She Devil), lookbook

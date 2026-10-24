@@ -1,0 +1,218 @@
+---
+// HOW IT WENT DOWN: every act on the day it dropped, oldest first, from acts.ts (real dates
+// only), then the next drop with its date stamped UNCONFIRMED until he sets one. Each act shows
+// its state as a rubber stamp, its definition, its pieces and one picture: the live piece's
+// Shopify photo (a link to it, with its price), or the act's radio cover.
+import Print from '../ui/Print.astro';
+import { campaign } from '../../assets';
+import { acts, nextDrop } from '../../content/acts';
+import { getPieces, statusLabel, type Piece, type Status } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { about } from '../../content/copy/about';
+import { pending } from '../../content/copy/common';
+
+const t = about.timeline;
+const pieces = await getPieces();
+const dated = [...acts].sort((a, b) => Date.parse(a.opened) - Date.parse(b.opened));
+
+/** His radio covers, by act: the one picture an act without a Shopify photo shows here. */
+const radio: Record<string, { image: typeof campaign.partyAnimalRadio; alt: string }> = {
+  'party-animal': { image: campaign.partyAnimalRadio, alt: t.radioAlt },
+};
+
+/** "Jan 30, 2026, 12pm EST" -> the day, and the hour when he gave one. */
+function when(label: string) {
+  const m = label.match(/^([A-Za-z]+ \d{1,2}, \d{4})(?:,\s*(.+))?$/);
+  return m ? { day: m[1], hour: m[2] ?? null } : { day: label, hour: null };
+}
+
+function stateOf(own: Piece[]): Status {
+  if (own.some((p) => p.status === 'live')) return 'live';
+  if (own.some((p) => p.status === 'soldout')) return 'soldout';
+  return 'archive';
+}
+
+const entries = dated.map((act) => {
+  const own = pieces.filter((p) => p.act.slug === act.slug);
+  const shop = own.find((p) => p.product && p.photo && p.status === 'live') ?? own.find((p) => p.product && p.photo);
+  const def = act.definition;
+  const colon = def ? def.indexOf(':') : -1;
+  return {
+    act,
+    when: when(act.openedLabel),
+    state: stateOf(own),
+    name: act.number ? `Act ${act.number}: ${act.title}` : act.title,
+    term: def && colon > 0 ? def.slice(0, colon) : null,
+    meaning: def && colon > 0 ? def.slice(colon + 1) : def,
+    names: own.map((p) => p.title),
+    shop,
+    radio: radio[act.slug] ?? null,
+  };
+});
+const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.opensLabel) : null };
+---
+
+<section class="tl halftone" aria-labelledby="tl-title">
+  <div class="tl-head">
+    <h2 class="tl-title" id="tl-title">{t.title}</h2>
+    <p class="tl-deck">{t.deck}</p>
+  </div>
+
+  <ol class="tl-list">
+    {entries.map((e, i) => (
+      <li class="tl-item">
+        <p class="tl-when">
+          <time datetime={e.act.opened}><span class="tl-day">{e.when.day}</span>{e.when.hour && <span class="tl-hour">{e.when.hour}</span>}</time>
+        </p>
+        <div class="tl-text">
+          <span class="stamp tl-stamp">{statusLabel[e.state]}</span>
+          <h3 class="tl-name">{e.name}</h3>
+          {e.meaning && <p class="tl-def">{e.term && <b>{e.term}:</b>}{e.meaning}</p>}
+          {e.names.length > 0 && <p class="tl-pieces"><b>{t.pieces}</b> {e.names.join(', ')}.</p>}
+          {e.act.line && <p class="tl-line">{e.act.line}</p>}
+          {e.shop?.href ? (
+            <a class="tl-go" href={e.shop.href}>{t.seePiece}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a>
+          ) : e.state === 'archive' && (
+            <a class="tl-go" href="/lookbook">{t.seePics}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a>
+          )}
+        </div>
+        {e.shop?.photo ? (
+          <div class="tl-vis" data-live={e.shop.product!.handle}>
+            <Print
+              class="tl-print"
+              photo={e.shop.photo}
+              sizes="(min-width: 1000px) 15vw, 52vw"
+              href={e.shop.href}
+              label={`${e.shop.title}, ${t.seePiece.toLowerCase()}`}
+              alt={e.shop.photo.kind === 'shopify' && !e.shop.photo.image.alt ? (e.shop.art.cutout?.alt ?? e.shop.title) : undefined}
+              ratio={1}
+              tilt={i % 2 ? -3 : 3}
+            >
+              <span class="tl-price num" aria-hidden="true" data-live-price>{formatPrice(e.shop.product!.price)}</span>
+            </Print>
+          </div>
+        ) : e.radio && (
+          <div class="tl-vis">
+            <Print class="tl-print" photo={{ kind: 'local', image: e.radio.image, alt: e.radio.alt }} sizes="(min-width: 1000px) 15vw, 52vw" ratio={1} tilt={i % 2 ? -3 : 3} />
+            <p class="tl-cap">{t.radio}</p>
+          </div>
+        )}
+      </li>
+    ))}
+
+    <li class="tl-item tl-next">
+      <p class="tl-when">
+        {next.day ? (
+          <time datetime={nextDrop.opens ?? undefined}><span class="tl-day">{next.day.day}</span>{next.day.hour && <span class="tl-hour">{next.day.hour}</span>}</time>
+        ) : (
+          <span class="stamp tl-stamp tl-stamp-big">{pending.stamp}</span>
+        )}
+      </p>
+      <div class="tl-text">
+        <h3 class="tl-name">{next.name ?? t.next.title}</h3>
+        <p class="tl-def">{t.next.line}</p>
+        <a class="tl-cta" href="/drop">{t.next.cta}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a>
+      </div>
+      <span class="tl-q" aria-hidden="true">?</span>
+    </li>
+  </ol>
+</section>
+
+<style>
+  .tl {
+    --dot: rgb(11 11 11 / .1);
+    --fade: radial-gradient(70% 45% at 100% 0%, #000, transparent 75%), radial-gradient(60% 40% at 0% 100%, #000, transparent 75%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    padding: 44px var(--pad) 52px;
+    background: var(--yellow);
+    color: var(--ink);
+    overflow: clip;
+  }
+  .tl :focus-visible { outline-color: var(--ink); }
+  .tl-head { display: grid; gap: 12px; }
+  .tl-title { font: 400 min(23vw, 190px)/.82 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .tl-deck { max-width: 32ch; font: 700 16px/1.4 var(--sans); }
+
+  /* the rail: down the left on a phone, across the top from 1000 up */
+  .tl-list { display: grid; gap: 44px; padding-left: 20px; border-left: 4px solid var(--ink); }
+  .tl-item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; }
+  .tl-item::before { content: ""; position: absolute; left: -24px; top: 22px; width: 16px; height: 4px; background: var(--ink); }
+
+  .tl-when time { display: grid; gap: 6px; }
+  .tl-day { font: 400 clamp(58px, 16vw, 84px)/.84 var(--gothic); text-transform: uppercase; }
+  .tl-hour { font: 800 11.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+
+  .tl-text { display: grid; gap: 10px; justify-items: start; align-content: start; }
+  .tl-stamp { background: var(--white); }
+  .tl-stamp-big { padding: 8px 12px 6px; font-size: 15px; rotate: -5deg; }
+  .tl-name { font: 400 clamp(40px, 11vw, 56px)/.88 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .tl-def { max-width: 40ch; font: 600 15px/1.42 var(--sans); }
+  .tl-def b { font-weight: 800; font-style: italic; }
+  .tl-pieces { max-width: 40ch; font: 600 14px/1.4 var(--sans); }
+  .tl-pieces b { font-weight: 800; }
+  .tl-line { font: 400 30px/.92 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .tl-line::before { content: "\201C"; }
+  .tl-line::after { content: "\201D"; }
+
+  .tl-go, .tl-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 800 12.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .3em; }
+  .tl-go svg, .tl-cta svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) ease-out; }
+  .tl-cta { margin-top: 4px; padding: 4px 16px 0; min-height: 52px; background: var(--ink); color: var(--yellow); font: 400 28px/1 var(--gothic); letter-spacing: .04em; text-decoration: none; }
+  .tl-cta svg { width: 22px; height: 22px; margin-top: -3px; }
+
+  .tl-vis { display: grid; gap: 12px; justify-items: end; padding: 4px 8px 0 0; }
+  .tl-vis :global(.tl-print) { width: min(64%, 300px); }
+  .tl-cap { max-width: 26ch; font: 800 11px/1.35 var(--sans); letter-spacing: .1em; text-align: right; text-transform: uppercase; }
+  .tl-price { position: absolute; z-index: 3; left: -14px; bottom: 12%; padding: 6px 12px 3px; background: var(--white); color: var(--ink); font: 400 42px/.9 var(--gothic); rotate: -8deg; box-shadow: 0 6px 12px rgb(11 11 11 / .3); }
+
+  .tl-next { padding-bottom: 8px; }
+  /* the pink question mark sits in the gap the text leaves on its right */
+  .tl-q { position: absolute; right: 0; top: -34px; color: var(--pink); font: 400 clamp(130px, 36vw, 200px)/1 var(--script); rotate: 9deg; pointer-events: none; }
+  .tl-next .tl-text { position: relative; z-index: 1; padding-right: 34%; }
+
+  @media (min-width: 700px) {
+    .tl-head { grid-template-columns: auto minmax(0, 1fr); align-items: end; column-gap: 4vw; }
+    .tl-title { font-size: min(13vw, 190px); }
+    .tl-deck { padding-bottom: 6px; font-size: 17px; }
+    .tl-item:not(.tl-next) { grid-template-columns: minmax(0, 1fr) minmax(0, 44%); column-gap: 24px; }
+    .tl-when { grid-column: 1 / -1; }
+    .tl-vis { grid-column: 2; grid-row: 2; align-self: start; padding-top: 0; }
+    .tl-vis :global(.tl-print) { width: 92%; }
+    .tl-q { font-size: 200px; right: 6%; }
+    .tl-next .tl-text { padding-right: 40%; }
+  }
+
+  @media (min-width: 1000px) {
+    .tl { padding: 4.4vw var(--pad) 5vw; row-gap: 3.4vw; }
+    .tl-title { font-size: min(11vw, 190px); }
+    .tl-deck { font-size: max(17px, 1.3vw); }
+    .tl-list { display: flex; flex-wrap: wrap; row-gap: 4vw; padding-left: 0; border-left: 0; }
+    .tl-item { flex: 1 1 440px; padding: 22px 2vw 0 0; border-top: 6px solid var(--ink); }
+    .tl-item:not(.tl-next) { grid-template-columns: minmax(0, 1fr) minmax(0, 40%); column-gap: 1.6vw; }
+    /* the rail: a thick rule and a hairline under it, like the masthead's */
+    .tl-item::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 1px; background: var(--ink); }
+    .tl-item::before { display: none; }
+    .tl-next { flex: 1 1 250px; padding-right: 0; container-type: inline-size; }
+    .tl-next .tl-text { padding-right: 0; padding-top: 7vw; }
+    .tl-vis :global(.tl-print) { width: 96%; }
+    .tl-day { font-size: min(5.6vw, 92px); }
+    .tl-name { font-size: min(3.4vw, 54px); }
+    .tl-line { font-size: min(2.2vw, 34px); }
+    .tl-def { font-size: max(15px, 1.05vw); }
+    .tl-q { top: 2.4vw; right: 6%; font-size: min(11vw, 170px); }
+  }
+
+  /* the next drop alone on its own row (1000 to about 1280): one strip, the question mark at the end */
+  @container (min-width: 560px) {
+    .tl-next .tl-text { grid-template-columns: auto minmax(0, 30ch) auto; align-items: center; column-gap: 3vw; padding-top: 0; }
+    .tl-next .tl-cta { margin-top: 0; }
+    .tl-next .tl-name { font-size: min(6.4cqi, 64px); }
+    .tl-q { top: -3.4vw; right: 2%; }
+  }
+
+  @media (hover: hover) {
+    .tl-go:hover svg, .tl-cta:hover svg { translate: 4px 0; }
+    .tl-go:hover { text-decoration-color: var(--pink); }
+  }
+</style>

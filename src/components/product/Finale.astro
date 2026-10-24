@@ -1,0 +1,149 @@
+---
+// The end of the cover story. When the act has other pieces, they are pinned up here as prints
+// (a live one links to its page with its price, an archive one carries its stamp). When this is
+// the act's only piece, the story is TO BE CONTINUED: the list for the next drop. With only one
+// or two other pieces, both run side by side, so the spread is never a lone print.
+import Print from '../ui/Print.astro';
+import WaitlistForm from '../ui/WaitlistForm.astro';
+import type { Piece } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { nextDrop } from '../../content/acts';
+import { status } from '../../content/copy/common';
+import { product as copy } from '../../content/copy/product';
+
+interface Props {
+  /** Other pieces of the same act. Empty: the waitlist instead. */
+  more: Piece[];
+}
+const { more } = Astro.props;
+const showMore = more.length > 0;
+const showList = more.length < 3;
+const n = copy.next;
+const deck = nextDrop.name ? n.named(nextDrop.name, nextDrop.opensLabel) : n.deck;
+const listFor = nextDrop.name ? nextDrop.name.toLowerCase().replace(/\s+/g, '-') : 'next-drop';
+const tilts = [-3, 2.5, -1.5, 3];
+---
+
+<div class:list={['fin', showMore && showList && 'is-both']} data-sb-end>
+{showMore && (
+  <section class="mo halftone" aria-labelledby="mo-title" style={`--cols:${Math.min(Math.max(more.length, 3), 4)}`}>
+    <h2 class="mo-title" id="mo-title">{copy.more.title}</h2>
+    <ul class="mo-list">
+      {more.map((p, i) => (
+        <li class="mo-item">
+          {p.photo && (
+            <Print
+              class="mo-print"
+              photo={p.photo}
+              sizes="(min-width: 1000px) 22vw, 44vw"
+              href={p.href}
+              label={copy.more.see(p.title)}
+              ratio={3 / 4}
+              tilt={tilts[i % tilts.length]}
+            />
+          )}
+          <h3 class="mo-name">{p.href ? <a href={p.href}>{p.title}</a> : p.title}</h3>
+          {p.product && p.status === 'live' ? (
+            <p class="mo-price num" data-live={p.product.handle}><span data-live-price>{formatPrice(p.product.price)}</span></p>
+          ) : (
+            <p><span class="stamp">{p.status === 'soldout' ? status.soldout : status.archive}</span></p>
+          )}
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+{showList && (
+  <section class="nx halftone" aria-labelledby="nx-title">
+    <div class="nx-head">
+      <h2 class="nx-title" id="nx-title">{n.title.map((line, i) => <>{i > 0 && ' '}<span>{line}</span></>)}</h2>
+      <p class="tape nx-tag" aria-hidden="true">{n.tag}</p>
+    </div>
+    <div class="nx-copy">
+      <p class="nx-deck">{deck}</p>
+      <WaitlistForm act={listFor} />
+      <a class="nx-all" href="/shop">
+        <span>{n.all}</span>
+        <svg viewBox="0 0 32 16" aria-hidden="true"><path d="M2 9c8-1.5 17-2 27-1M23 2.5l6 5.5-6.5 5"></path></svg>
+      </a>
+    </div>
+  </section>
+)}
+</div>
+
+<style>
+  /* ---------- TO BE CONTINUED: the list for the next drop ---------- */
+  .nx {
+    --dot: rgb(11 11 11 / .12);
+    --fade: radial-gradient(70% 60% at 0% 0%, #000, transparent 72%), radial-gradient(50% 50% at 100% 100%, #000, transparent 70%);
+    display: grid;
+    gap: 28px;
+    padding: 44px var(--pad) 56px;
+    border-top: 3px solid var(--ink);
+    background: var(--yellow);
+    overflow: clip;
+  }
+  .nx-head { display: grid; }
+  .nx-title { font: 400 clamp(92px, 27vw, 240px)/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; }
+  .nx-title span { display: block; }
+  /* the tape hangs under the end of the title, never over its letters */
+  .nx-tag { position: relative; justify-self: end; margin: 2px 2% 0 0; font-size: 38px; }
+  .nx-copy { display: grid; gap: 18px; align-content: start; }
+  .nx-deck { max-width: 30ch; font: 700 18px/1.35 var(--sans); }
+  .nx-all { justify-self: start; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font: 800 12.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .3em; }
+  .nx-all svg { width: 32px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) ease-out; }
+
+  /* ---------- MORE FROM THIS ACT ---------- */
+  .mo {
+    --dot: rgb(255 46 110 / .35);
+    --fade: radial-gradient(70% 60% at 100% 0%, #000, transparent 75%);
+    display: grid;
+    gap: 30px;
+    padding: 44px var(--pad) 60px;
+    border-top: 3px solid var(--ink);
+    background: var(--white);
+    overflow: clip;
+  }
+  .mo-title { font: 400 clamp(72px, 20vw, 200px)/.82 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .mo-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 34px 26px; }
+  .mo-item { display: grid; gap: 10px; align-content: start; }
+  .mo-item:nth-child(even) { margin-top: 30px; }
+  .mo-name { margin-top: 12px; font: 400 30px/.92 var(--gothic); text-transform: uppercase; }
+  .mo-name a { display: inline-block; padding: 7px 0; text-decoration: none; }
+  .mo-price { font: 400 34px/.9 var(--gothic); }
+
+  @media (min-width: 700px) {
+    .nx { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; column-gap: 40px; }
+    .nx-title { font-size: 14vw; }
+    .nx-tag { font-size: 46px; margin-top: 6px; }
+    .mo-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .mo-item:nth-child(even) { margin-top: 0; }
+    .mo-item:nth-child(3n + 2) { margin-top: 40px; }
+  }
+  @media (min-width: 1000px) {
+    .nx { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); column-gap: 5vw; padding: 5vw var(--pad) 5.4vw; }
+    .nx-title { font-size: min(12.5vw, 240px); }
+    .nx-head { justify-self: start; }
+    .nx-tag { margin: .6vw 4% 0 0; font-size: min(4vw, 64px); }
+    .nx-deck { font-size: max(18px, 1.5vw); }
+    .mo { gap: 3vw; padding: 5vw var(--pad); }
+    .mo-title { font-size: min(9vw, 180px); }
+    .mo-list { grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); column-gap: 4vw; }
+    .mo-item:nth-child(3n + 2) { margin-top: 0; }
+    .mo-item:nth-child(even) { margin-top: 3vw; }
+    .mo-name { font-size: min(2.6vw, 44px); }
+    .mo-price { font-size: min(2.8vw, 48px); }
+
+    /* one or two other pieces: the prints and the list share the band */
+    .is-both { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-top: 3px solid var(--ink); }
+    .is-both .mo, .is-both .nx { border-top: 0; }
+    .is-both .mo-title { font-size: min(6.4vw, 120px); }
+    .is-both .mo-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .is-both .nx { grid-template-columns: minmax(0, 1fr); align-content: start; row-gap: 3vw; border-left: 3px solid var(--ink); }
+    .is-both .nx-title { font-size: min(9vw, 170px); }
+  }
+  @media (hover: hover) {
+    .nx-all:hover svg { translate: 4px 0; }
+    .mo-name a:hover { text-decoration: underline; text-decoration-color: var(--pink); }
+  }
+</style>

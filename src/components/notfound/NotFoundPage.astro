@@ -1,6 +1,110 @@
 ---
-// Placeholder until the page's clone builds it. Owned by the notfound page.
-import PageHead from '../ui/PageHead.astro';
+// 404: a killed story. STORY in giant type with KILLED stamped across it on the tabloid's
+// yellow, one line in the magazine's voice, the way out (all the pieces, the cover), and the
+// live piece one tap away. The stamp lands once (still under reduced motion).
+import LivePiece from './LivePiece.astro';
+import { getCoverPiece } from '../../lib/pieces';
+import { notfound as c } from '../../content/copy/notfound';
+
+const piece = await getCoverPiece();
 ---
 
-<PageHead title="Not found" />
+<section class="nf halftone" aria-labelledby="nf-title">
+  <div class="nf-copy">
+    <h1 class="nf-title" id="nf-title"><span class="nf-story">{c.story}</span> <span class="nf-killed" data-stamp>{c.killed}</span></h1>
+    <p class="nf-deck">{piece?.href ? c.deck : c.deckNoPiece}</p>
+    <ul class="nf-exits">
+      <li><a class="nf-go nf-go-main" href="/shop"><span>{c.shop}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a></li>
+      <li><a class="nf-go" href="/"><span>{c.home}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a></li>
+    </ul>
+  </div>
+  {piece && <LivePiece class="nf-piece" piece={piece} tape={c.tape} cta={c.see} />}
+</section>
+
+<script>
+  import { reduceMotion } from '../../scripts/motion';
+
+  // the rubber stamp comes down once, pressed flat onto the page (it is never hidden first)
+  const stamp = document.querySelector<HTMLElement>('.nf [data-stamp]');
+  if (stamp && !reduceMotion()) {
+    stamp.animate([{ scale: 1.22 }, { scale: 1 }], { duration: 200, easing: 'cubic-bezier(.2, .7, .2, 1)' });
+  }
+</script>
+
+<style>
+  .nf {
+    --dot: rgb(11 11 11 / .1);
+    --fade: radial-gradient(70% 55% at 100% 0%, #000, transparent 75%), radial-gradient(60% 50% at 0% 100%, #000, transparent 75%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+    padding: 26px var(--pad) 52px;
+    background: var(--yellow);
+    color: var(--ink);
+    overflow: clip;
+  }
+  .nf :focus-visible { outline-color: var(--ink); }
+  .nf-copy { display: grid; gap: 18px; align-content: start; }
+
+  .nf-title { display: grid; justify-items: start; }
+  .nf-story { font: 400 min(51vw, 400px)/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; }
+  /* KILLED, a red rubber stamp slammed over the bottom of STORY */
+  .nf-killed {
+    justify-self: end;
+    margin: -.42em 4% .22em 0;
+    padding: .1em .2em 0;
+    border: 5px solid var(--red);
+    color: var(--red);
+    font: 400 min(23vw, 180px)/.9 var(--gothic);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    rotate: -9deg;
+    box-shadow: inset 0 0 0 4px var(--yellow), inset 0 0 0 7px var(--red);
+  }
+
+  .nf-deck { max-width: 34ch; font: 700 18px/1.4 var(--sans); }
+
+  .nf-exits { display: grid; gap: 10px; }
+  .nf-go {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-height: 56px;
+    padding: 4px 20px 0;
+    border: 3px solid var(--ink);
+    background: var(--white);
+    color: var(--ink);
+    font: 400 30px/1 var(--gothic);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .nf-go-main { border-color: var(--ink); background: var(--ink); color: var(--yellow); }
+  .nf-go svg { flex: none; width: 24px; height: 24px; margin-top: -4px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) ease-out; }
+  .nf-go:active { translate: 0 1px; }
+
+  @media (min-width: 700px) {
+    .nf { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; column-gap: 4vw; min-height: calc(100svh - var(--header-h)); padding: 5vw var(--pad); }
+    .nf-story { font-size: min(27vw, 400px); }
+    .nf-killed { font-size: min(12.5vw, 180px); }
+    .nf-exits { grid-template-columns: repeat(2, max-content); gap: 12px; }
+  }
+
+  @media (min-width: 1000px) {
+    .nf { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); column-gap: 5vw; padding: 3.4vw var(--pad) 4vw; }
+    .nf-copy { gap: 2vw; }
+    .nf-story { font-size: min(25vw, 400px); }
+    .nf-killed { margin-right: 2%; border-width: 6px; font-size: min(11vw, 180px); }
+    .nf-deck { font-size: max(18px, 1.5vw); }
+    .nf-go { min-height: 60px; font-size: min(2.6vw, 36px); }
+  }
+
+  @media (hover: hover) {
+    .nf-go:hover svg { translate: 4px 0; }
+    .nf-go:not(.nf-go-main):hover { background: var(--pink); }
+    .nf-go-main:hover { background: var(--red); color: var(--white); border-color: var(--red); }
+  }
+</style>

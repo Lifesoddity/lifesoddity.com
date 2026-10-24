@@ -1,0 +1,45 @@
+---
+// A print with no photo on it: black, the white print border, a crossed-out camera and NO PICS
+// (YET) in yellow. The paparazzi did not get the shot: the next drop has no photos, and a
+// Shopify product with no photo uploaded shows this instead of an empty frame.
+interface Props {
+  label: string;
+  class?: string;
+  /** Degrees. */
+  tilt?: number;
+  /** Width / height. */
+  ratio?: number;
+}
+
+const { label, class: cls, tilt = 0, ratio = 4 / 3 } = Astro.props;
+---
+
+<div class:list={['ph', 'nopics', cls]} style={tilt ? `rotate:${tilt}deg` : undefined}>
+  <span class="ph-sh" aria-hidden="true"></span>
+  <div class="nopics-in" style={`aspect-ratio:${ratio}`}>
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M9 15h6.5l3-5h11l3 5H39a3 3 0 0 1 3 3v19a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V18a3 3 0 0 1 3-3z"></path>
+      <circle cx="24" cy="27" r="7.5"></circle>
+      <path d="M6 7l36 35"></path>
+    </svg>
+    <p>{label}</p>
+  </div>
+</div>
+
+<style>
+  .nopics-in {
+    position: relative;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 6%;
+    border: 6px solid var(--white);
+    background: var(--ink);
+    color: var(--yellow);
+  }
+  .nopics-in svg { width: clamp(48px, 22%, 104px); height: auto; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .nopics-in p { padding: 0 8%; font: 400 clamp(36px, 9vw, 76px)/.86 var(--gothic); text-align: center; text-transform: uppercase; }
+  @media (min-width: 1000px) {
+    .nopics-in p { font-size: clamp(40px, 4.4vw, 84px); }
+  }
+</style>

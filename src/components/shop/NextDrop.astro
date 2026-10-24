@@ -1,0 +1,84 @@
+---
+// The last card of the spread: the next drop. No name or date yet, so no countdown: a print
+// the paparazzi could not get, WHO'S NEXT?, the UNCONFIRMED stamp and the way to the drop
+// page and its waitlist. The whole card is one link.
+import NoPics from './NoPics.astro';
+import { nextDrop } from '../../content/acts';
+import { shop } from '../../content/copy/shop';
+import { pending } from '../../content/copy/common';
+
+const n = shop.next;
+const line = nextDrop.name ? n.named(nextDrop.name, nextDrop.opensLabel) : n.pending;
+const unconfirmed = !nextDrop.name || !nextDrop.opensLabel;
+---
+
+<section class="nx on-dark halftone" id="next" aria-labelledby="nx-title">
+  <NoPics class="nx-pics" label={n.noPics} tilt={3} />
+  <div class="nx-copy">
+    <h2 class="nx-title" id="nx-title">{n.title}</h2>
+    {unconfirmed && <p class="stamp nx-stamp">{pending.stamp}</p>}
+    <p class="nx-line">{line}</p>
+    <a class="nx-go" href="/drop">
+      <span class="nx-go-in">
+        <span>{n.go}</span>
+        <svg viewBox="0 0 24 12" aria-hidden="true"><path d="M1 6h21M17 1.5 22 6l-5 4.5"></path></svg>
+      </span>
+    </a>
+  </div>
+</section>
+
+<style>
+  .nx {
+    --dot: rgb(0 0 0 / .22);
+    --fade: radial-gradient(70% 60% at 100% 0%, #000, transparent 72%), radial-gradient(55% 50% at 0% 100%, #000, transparent 75%);
+    position: relative;
+    display: grid;
+    gap: 34px;
+    padding: 44px var(--pad) 52px;
+    background: var(--red);
+    color: var(--white);
+    overflow: clip;
+    scroll-margin-top: var(--header-h);
+  }
+  .nx :global(.nx-pics) { width: 78%; max-width: 460px; margin: 0 auto; }
+  .nx-copy { display: grid; gap: 14px; justify-items: start; }
+  .nx-title { font: 400 clamp(92px, 27vw, 200px)/.8 var(--gothic); text-transform: uppercase; }
+  .nx-stamp { background: var(--white); font-size: 13px; }
+  .nx-line { max-width: 34ch; font: 700 17px/1.4 var(--sans); text-wrap: pretty; }
+
+  /* the way in: a yellow strip with notched ends; the link's ::after covers the whole card */
+  .nx-go { display: inline-block; margin-top: 6px; color: var(--ink); text-decoration: none; }
+  .nx-go::after { content: ""; position: absolute; inset: 0; z-index: 2; }
+  .nx-go-in {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 4px 28px 0;
+    background: var(--yellow);
+    font: 400 32px/1 var(--gothic);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    clip-path: polygon(0 0, 100% 0, 96.5% 50%, 100% 100%, 0 100%, 3.5% 50%);
+  }
+  .nx-go svg { width: 26px; height: 13px; margin-top: -4px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--base) var(--ease-out); }
+  .nx-go:active .nx-go-in { translate: 0 1px; }
+
+  @media (min-width: 700px) {
+    .nx { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: center; column-gap: 5vw; padding: 56px var(--pad) 64px; }
+    .nx :global(.nx-pics) { width: 100%; }
+    .nx-title { font-size: 15vw; }
+    .nx-line { font-size: 18px; }
+  }
+  @media (min-width: 1000px) {
+    .nx { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); padding: 5vw var(--pad); }
+    .nx :global(.nx-pics) { max-width: none; }
+    .nx-title { font-size: min(12.5vw, 220px); }
+    .nx-line { font-size: max(18px, 1.35vw); }
+    .nx-go-in { min-height: 64px; font-size: 38px; }
+  }
+  @media (hover: hover) {
+    .nx:hover .nx-go svg { translate: 5px 0; }
+  }
+</style>

@@ -321,8 +321,12 @@ html { scrollbar-color: var(--ink) var(--paper); }
 .foot-links a { display: inline-block; padding: 6px 0; font: 800 11.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
 .foot-legal { font: 600 12px/1.4 var(--sans); color: var(--muted); }
 @media (min-width: 700px) {
-  .foot { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 28px; }
-  .foot-legal { grid-column: 1 / -1; }
+  .foot { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 28px; }
+  .foot-links, .foot-legal { grid-column: 1 / -1; }
+}
+@media (min-width: 1000px) {
+  .foot { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .foot-links { grid-column: auto; }
 }
 
 /* ---------- pointer devices ---------- */
