@@ -1,23 +1,35 @@
 ---
-// The title card every inner page opens with: a field of one of the magazine's colours, the
-// page's name in giant League Gothic, an optional script overlay and one deck line. The colour
-// and the overlay change per page; the grammar stays.
+// The title card an inner page opens with: a field of one of the magazine's colours, the page's
+// name in giant League Gothic, an optional script overlay and one deck line.
+//
+// The title's treatment changes per page, so no two neighbours in the nav open the same way (D4):
+//   plain    the giant title straight on the field
+//   slab     reversed out of a black slab
+//   bar      yellow caps on a black bar run across the full width
+//   outline  outline caps over an offset second-colour pass, Riso style
+//   banner   white caps on a red issue banner, the way the cover flags EXCLUSIVE
+// One map that keeps neighbours apart (Shop, Drop, Lookbook, About): slab, banner, outline, bar.
+//
+// The pink script is rare (D4: at most one page head in three, where it says the most) and never
+// crosses the title (D7): below 1000px it takes its own line above the title; from 1000px it
+// hangs at the top right, clear of a title that runs no wider than about half the card.
 interface Props {
   title: string;
-  /** A short pink script word over the title ("exclusive", "spotted"). */
+  /** A short pink script word over the card ("all the pics"). */
   script?: string;
   deck?: string;
   tone?: 'yellow' | 'pink' | 'black' | 'red' | 'white';
-  /** Extra content under the deck (filters, a date, a stamp). */
+  treatment?: 'plain' | 'slab' | 'bar' | 'outline' | 'banner';
+  /** Extra content under the deck (filters, a date, a stamp) goes in the default slot. */
   class?: string;
 }
 
-const { title, script, deck, tone = 'yellow', class: cls } = Astro.props;
+const { title, script, deck, tone = 'yellow', treatment = 'plain', class: cls } = Astro.props;
 const dark = tone === 'black' || tone === 'red';
 ---
 
-<header class:list={['phead', 'halftone', `tone-${tone}`, dark && 'on-dark', cls]}>
-  <h1 class="phead-title">{title}</h1>
+<header class:list={['phead', 'halftone', `tone-${tone}`, `t-${treatment}`, dark && 'on-dark', script && 'has-script', cls]}>
+  <h1 class="phead-title"><span class="phead-ink">{title}</span></h1>
   {script && <p class="phead-script" aria-hidden="true">{script}</p>}
   {deck && <p class="phead-deck">{deck}</p>}
   <slot />
@@ -34,18 +46,57 @@ const dark = tone === 'black' || tone === 'red';
     overflow: clip;
     border-bottom: 3px solid var(--ink);
   }
-  .tone-yellow { background: var(--yellow); color: var(--ink); }
-  .tone-pink { background: var(--cover); color: var(--ink); --dot: rgb(81 42 52 / .34); }
-  .tone-black { background: var(--ink); color: var(--white); --dot: rgb(255 46 110 / .22); }
-  .tone-red { background: var(--red); color: var(--white); --dot: rgb(0 0 0 / .22); }
-  .tone-white { background: var(--white); color: var(--ink); --dot: rgb(255 46 110 / .35); }
+  /* per tone: the field, and the inks each treatment prints with on it */
+  .tone-yellow { background: var(--yellow); color: var(--ink); --slab: var(--ink); --slab-ink: var(--yellow); --line: var(--ink); --pass: var(--pink); --banner: var(--red); }
+  .tone-pink { background: var(--cover); color: var(--ink); --dot: rgb(81 42 52 / .34); --slab: var(--ink); --slab-ink: var(--pink); --line: var(--ink); --pass: var(--white); --banner: var(--ink); }
+  .tone-black { background: var(--ink); color: var(--white); --dot: rgb(255 46 110 / .22); --slab: var(--white); --slab-ink: var(--ink); --line: var(--white); --pass: var(--pink); --banner: var(--red); }
+  .tone-red { background: var(--red); color: var(--white); --dot: rgb(0 0 0 / .22); --slab: var(--ink); --slab-ink: var(--white); --line: var(--white); --pass: var(--ink); --banner: var(--ink); }
+  .tone-white { background: var(--white); color: var(--ink); --dot: rgb(255 46 110 / .35); --slab: var(--ink); --slab-ink: var(--white); --line: var(--ink); --pass: var(--pink); --banner: var(--red); }
+
   .phead-title { font: 400 clamp(84px, 24vw, 220px)/.8 var(--gothic); text-transform: uppercase; letter-spacing: .005em; text-wrap: balance; }
-  .phead-script { position: absolute; right: var(--pad); top: 18px; color: var(--pink); font: 400 clamp(40px, 9vw, 96px)/1 var(--script); rotate: -8deg; }
+  .phead-ink { display: block; }
+
+  /* slab: the caps reversed out of a black block, as wide as the words */
+  .t-slab .phead-title { justify-self: start; max-width: 100%; }
+  .t-slab .phead-ink { padding: .09em .12em .05em; background: var(--slab); color: var(--slab-ink); }
+
+  /* bar: yellow caps on a black bar from edge to edge */
+  .t-bar .phead-title { margin-inline: calc(-1 * var(--pad)); }
+  .t-bar .phead-ink { padding: .1em var(--pad) .06em; background: var(--ink); color: var(--yellow); }
+  .tone-black.t-bar .phead-ink { box-shadow: inset 0 3px 0 var(--yellow), inset 0 -3px 0 var(--yellow); }
+
+  /* outline: the caps drawn in outline over a solid pass of the second ink, offset down and
+     right; the outline carries the contrast, the pass is the misregistered second colour */
+  .t-outline .phead-ink {
+    color: transparent;
+    -webkit-text-stroke: max(2px, .022em) var(--line);
+    text-shadow: .04em .035em 0 var(--pass);
+  }
+
+  /* banner: the caps on a red banner with notched ends, tilted a touch */
+  .t-banner .phead-title { justify-self: start; max-width: 100%; margin: 6px 0 4px; rotate: -2deg; }
+  .t-banner .phead-ink {
+    padding: .1em .26em .06em;
+    background: var(--banner);
+    color: var(--white);
+    clip-path: polygon(0 0, 100% 0, 97% 50%, 100% 100%, 0 100%, 3% 50%);
+  }
+
+  /* the script: its own line above the title (it never crosses the letters) */
+  .phead-script { order: -1; justify-self: end; margin: -8px 2px -2px 0; color: var(--pink); font: 400 clamp(38px, 9vw, 72px)/1 var(--script); rotate: -5deg; }
   .tone-pink .phead-script { color: var(--white); }
+
   .phead-deck { max-width: 46ch; font: 700 17px/1.4 var(--sans); }
+
   @media (min-width: 1000px) {
     .phead { padding: 3.4vw var(--pad) 3vw; }
     .phead-title { font-size: min(13vw, 220px); }
+    /* the title runs about half the card; the script hangs in the other half */
+    .has-script .phead-title { max-width: 58%; }
+    /* the bar still runs edge to edge: only its letters keep to the left of the script */
+    .has-script.t-bar .phead-title { max-width: none; }
+    .has-script.t-bar .phead-ink { padding-right: 42%; }
+    .phead-script { order: 0; position: absolute; right: var(--pad); top: 2.4vw; margin: 0; font-size: min(7.5vw, 110px); rotate: -8deg; }
     .phead-deck { font-size: 19px; }
   }
 </style>

@@ -8,7 +8,7 @@
 // campaign/showtime-hoodie-side.jpg      the hoodie worn open, concrete corner      lookbook
 // campaign/spotlight-tee-front.jpg       Spotlight tee on a model, concrete wall    home story, shop, lookbook, drop
 // campaign/spotlight-tee-closeup.jpg     Spotlight tee close-up                     lookbook
-// campaign/she-devil-letter-roses.jpg    the love letter on rose petals             product page (She Devil), lookbook
+// campaign/she-devil-letter-roses.jpg    the love letter on rose petals             product page (She Devil), lookbook, About
 // campaign/she-devil-letter.jpg          the handwritten letter                     product page (She Devil), lookbook
 // campaign/party-animal-radio.jpg        Life's Oddity radio cover, Party Animal    player, about
 // campaign/gluttony-reel-still.jpg       still from the Gluttony reel (640x360)     small use only: cover coverline

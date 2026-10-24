@@ -1,21 +1,22 @@
 ---
-// One act of the archive: its title, its vice in pink script, the ACT stamp, his dictionary
-// entry, the day it dropped, his closing line and the way on to its pictures in the lookbook;
-// then every piece of the act as one of his photos, printed and tilted, with the script caption
-// and arrow of a paparazzi shot, the pink marker circle where the piece has one, and the
-// ARCHIVE stamp. Each print links to the act in the lookbook. A fact about a piece he has not
-// confirmed (art.pending) sits under its description beside the UNCONFIRMED stamp. No price,
+// One act of the archive: its title, its vice in pink script on its own line above it (D7: the
+// script never crosses the title), the ACT stamp, the act's dictionary entry, the day it
+// dropped, its closing line and the way on to its pictures in the lookbook; then every piece of
+// the act with the script caption of a paparazzi shot and the ARCHIVE stamp. A campaign photo
+// (people, places) is a tilted white-bordered print with its arrow and the pink marker circle
+// where the piece has one; a piece shot in the studio on its own gradient is its cut-out, on a
+// yellow ground of its own so a black garment reads on the black field (D2, D4). A piece with
+// no photo shows its name only (D1). Each picture links to the act in the lookbook. No price,
 // no sizes.
 //
 // The grid never leaves a hole: from 1000px, six columns in rows of three (two columns each),
 // and a remainder becomes rows of two (three columns each); from 700px, two columns with an
 // odd last piece laid out wide.
 import Print from '../ui/Print.astro';
-import NoPics from './NoPics.astro';
 import type { Act } from '../../content/acts';
 import type { Piece } from '../../lib/pieces';
 import { shop } from '../../content/copy/shop';
-import { pending, status } from '../../content/copy/common';
+import { status } from '../../content/copy/common';
 
 interface Props {
   act: Act;
@@ -72,8 +73,8 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
 <section class="act" aria-labelledby={`act-${act.slug}`}>
   <header class="act-head">
     <div class="act-name">
-      <h3 class="act-title" id={`act-${act.slug}`}>{act.title}</h3>
       {act.vice && <p class="act-vice">{act.vice.toLowerCase()}</p>}
+      <h3 class="act-title" id={`act-${act.slug}`}>{act.title}</h3>
     </div>
     <div class="act-facts">
       {act.number && <p class="stamp act-num">{a.act(act.number)}</p>}
@@ -88,28 +89,36 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
   </header>
 
   <ul class="act-grid" role="list">
-    {pieces.map((p, j) => (
-      <li class:list={['ap', wideT(j) && 'ap-wt', spanD[j] === 6 && 'ap-wd', spanD[j] === 2 && j % 3 === 1 && 'ap-mid']} style={`--sd:${spanD[j]}`}>
-        <div class="ap-pic">
-          <p class="ap-cap" aria-hidden="true">{a.spotted(p.art.tag)}</p>
-          {p.photo ? (
-            <Print class="ap-print" photo={p.photo} sizes="(min-width: 1000px) 27vw, (min-width: 700px) 40vw, 80vw" href={pics} label={a.seePics(p.title)} tilt={tilts[j % tilts.length]} mark={p.art.mark}>
-              {p.art.mark && (
-                <svg class="mark ap-arrow" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true"><path d={arrow(p.art.mark)}></path></svg>
+    {pieces.map((p, j) => {
+      const cut = p.art.cutout;
+      const tilt = tilts[j % tilts.length];
+      return (
+        <li class:list={['ap', wideT(j) && 'ap-wt', spanD[j] === 6 && 'ap-wd', spanD[j] === 2 && j % 3 === 1 && 'ap-mid']} style={`--sd:${spanD[j]}`}>
+          {(cut || p.photo) && (
+            <div class="ap-pic">
+              <p class="ap-cap" aria-hidden="true">{a.spotted(p.art.tag)}</p>
+              {cut ? (
+                <div class="ap-ground halftone">
+                  {/* the archive shows the side its main photo shows: the jacket's back (D2) */}
+                  <Print class="ap-print ap-cut" cutout={cut} side={cut.back ? 'back' : 'front'} sizes="(min-width: 1000px) 22vw, (min-width: 700px) 34vw, 70vw" href={pics} label={a.seePics(p.title)} tilt={tilt / 2} />
+                </div>
+              ) : (
+                <Print class="ap-print" photo={p.photo} sizes="(min-width: 1000px) 27vw, (min-width: 700px) 40vw, 80vw" href={pics} label={a.seePics(p.title)} tilt={tilt} mark={p.art.mark}>
+                  {p.art.mark && (
+                    <svg class="mark ap-arrow" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true"><path d={arrow(p.art.mark)}></path></svg>
+                  )}
+                </Print>
               )}
-            </Print>
-          ) : (
-            <NoPics class="ap-print" label={shop.next.noPics} tilt={tilts[j % tilts.length]} ratio={3 / 4} />
+              <p class="stamp ap-stamp">{status.archive}</p>
+            </div>
           )}
-          <p class="stamp ap-stamp">{status.archive}</p>
-        </div>
-        <div class="ap-copy">
-          <h4 class="ap-name">{p.title}</h4>
-          {p.description && <p class="ap-desc">{p.description}</p>}
-          {p.art.pending && <p class="ap-pend"><span class="stamp">{pending.stamp}</span> {p.art.pending}</p>}
-        </div>
-      </li>
-    ))}
+          <div class="ap-copy">
+            <h4 class="ap-name">{p.title}</h4>
+            {p.description && <p class="ap-desc">{p.description}</p>}
+          </div>
+        </li>
+      );
+    })}
   </ul>
 </section>
 
@@ -119,9 +128,10 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
 
   /* the act's opener */
   .act-head { display: grid; gap: 16px; }
-  .act-name { position: relative; justify-self: start; }
-  .act-title { padding-top: 22px; color: var(--yellow); font: 400 clamp(76px, 23vw, 150px)/.82 var(--gothic); text-transform: uppercase; text-wrap: balance; }
-  .act-vice { position: absolute; right: 0; top: 0; color: var(--pink); font: 400 clamp(42px, 12vw, 72px)/1 var(--script); rotate: -7deg; pointer-events: none; }
+  /* the vice takes its own line above the title, at its right end: it never crosses the letters */
+  .act-name { display: grid; justify-self: start; justify-items: start; }
+  .act-title { color: var(--yellow); font: 400 clamp(76px, 23vw, 150px)/.82 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .act-vice { justify-self: end; margin: 0 .1em .02em 0; color: var(--pink); font: 400 clamp(42px, 12vw, 72px)/1 var(--script); rotate: -6deg; pointer-events: none; }
   .act-facts { display: grid; gap: 10px; justify-items: start; }
   .act-num { padding: 6px 10px 5px; border-color: var(--yellow); color: var(--yellow); font-size: 13px; box-shadow: inset 0 0 0 1.5px var(--ink), inset 0 0 0 2.5px var(--yellow); }
   .act-def { max-width: 40ch; font: 600 16px/1.42 var(--sans); text-wrap: pretty; }
@@ -165,18 +175,26 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
   .ap-pic :global(.ap-print) { width: 100%; }
   .ap-pic :global(.ap-print > img) { width: 100%; }
   .ap-pic :global(.ap-arrow) { z-index: 3; }
+  /* a studio shot's cut-out, on a yellow ground of its own (the halftone of a colour field) */
+  .ap-ground {
+    --dot: rgb(11 11 11 / .12);
+    --fade: radial-gradient(75% 65% at 50% 45%, #000, transparent 78%);
+    display: grid;
+    place-items: center;
+    aspect-ratio: 3 / 4;
+    padding: 10% 9% 12%;
+    background: var(--yellow);
+  }
+  .ap-ground :global(a:focus-visible) { outline-color: var(--ink); }
   .ap-stamp { position: absolute; z-index: 4; right: 0; bottom: 2px; padding: 7px 10px 5px; background: var(--white); font-size: 14px; rotate: -8deg; box-shadow: inset 0 0 0 1.5px var(--white), inset 0 0 0 2.5px var(--red), 0 4px 8px rgb(0 0 0 / .35); }
   .ap-copy { display: grid; gap: 8px; }
   .ap-name { color: var(--white); font: 400 clamp(40px, 11vw, 56px)/.86 var(--gothic); text-transform: uppercase; }
   .ap-desc { max-width: 40ch; font: 500 15px/1.45 var(--sans); }
-  /* a fact he has not confirmed, beside the stamp (on white, so the red reads on the black ground) */
-  .ap-pend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: 40ch; color: var(--white); font: 700 13px/1.35 var(--sans); }
-  .ap-pend .stamp { background: var(--white); }
 
   @media (min-width: 700px) {
     .act-head { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); column-gap: 5vw; align-items: end; }
     .act-title { font-size: clamp(96px, 13vw, 150px); }
-    .act-vice { right: auto; left: 46%; font-size: clamp(54px, 7vw, 88px); }
+    .act-vice { font-size: clamp(54px, 7vw, 88px); }
     .act-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 5vw; row-gap: 64px; }
     .ap-pic { width: 100%; }
     .ap-wt { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 5vw; align-items: center; }
@@ -189,8 +207,9 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
   @media (min-width: 1000px) {
     .act { gap: 4vw; }
     .act-head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
-    .act-title { padding-top: 2vw; font-size: min(11vw, 190px); }
-    .act-vice { left: auto; right: -.6em; top: -.62em; font-size: min(6.6vw, 110px); }
+    .act-title { font-size: min(11vw, 190px); }
+    /* the title runs on one line here: the vice keeps clear of its caps, descenders and all */
+    .act-vice { margin-bottom: .3em; font-size: min(6vw, 100px); rotate: -4deg; }
     .act-def { font-size: max(16px, 1.3vw); }
     .act-date { font-size: 12px; }
     .act-line { font-size: min(3.6vw, 60px); }

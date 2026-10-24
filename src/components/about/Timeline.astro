@@ -1,8 +1,10 @@
 ---
 // HOW IT WENT DOWN: every act on the day it dropped, oldest first, from acts.ts (real dates
-// only), then the next drop with its date stamped UNCONFIRMED until he sets one. Each act shows
-// its state as a rubber stamp, its definition, its pieces and one picture: the live piece's
-// Shopify photo (a link to it, with its price), or the act's radio cover.
+// only), then the next drop: its date stamped UNCONFIRMED until one is set (the page's one
+// stamp, D1). Each act shows its state as a rubber stamp, its definition and its pieces, and
+// beside them its radio cover when it has one, or its live piece's price tag (the price box's
+// bars, the price refreshed from Shopify, the way to the piece). The live piece's photo stays on
+// the cover, the story, the shop and its own page (D2).
 import Print from '../ui/Print.astro';
 import { campaign } from '../../assets';
 import { acts, nextDrop } from '../../content/acts';
@@ -15,12 +17,12 @@ const t = about.timeline;
 const pieces = await getPieces();
 const dated = [...acts].sort((a, b) => Date.parse(a.opened) - Date.parse(b.opened));
 
-/** His radio covers, by act: the one picture an act without a Shopify photo shows here. */
+/** The radio covers, by act: the one picture an act shows here. */
 const radio: Record<string, { image: typeof campaign.partyAnimalRadio; alt: string }> = {
   'party-animal': { image: campaign.partyAnimalRadio, alt: t.radioAlt },
 };
 
-/** "Jan 30, 2026, 12pm EST" -> the day, and the hour when he gave one. */
+/** "Jan 30, 2026, 12pm EST" -> the day, and the hour when one was given. */
 function when(label: string) {
   const m = label.match(/^([A-Za-z]+ \d{1,2}, \d{4})(?:,\s*(.+))?$/);
   return m ? { day: m[1], hour: m[2] ?? null } : { day: label, hour: null };
@@ -34,7 +36,8 @@ function stateOf(own: Piece[]): Status {
 
 const entries = dated.map((act) => {
   const own = pieces.filter((p) => p.act.slug === act.slug);
-  const shop = own.find((p) => p.product && p.photo && p.status === 'live') ?? own.find((p) => p.product && p.photo);
+  const shop = own.find((p) => p.product && p.status === 'live') ?? own.find((p) => p.product);
+  const buy = shop?.href && shop.product ? { href: shop.href, handle: shop.product.handle, title: shop.title, price: shop.product.price } : null;
   const def = act.definition;
   const colon = def ? def.indexOf(':') : -1;
   return {
@@ -45,7 +48,7 @@ const entries = dated.map((act) => {
     term: def && colon > 0 ? def.slice(0, colon) : null,
     meaning: def && colon > 0 ? def.slice(colon + 1) : def,
     names: own.map((p) => p.title),
-    shop,
+    buy,
     radio: radio[act.slug] ?? null,
   };
 });
@@ -60,7 +63,7 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
 
   <ol class="tl-list">
     {entries.map((e, i) => (
-      <li class="tl-item">
+      <li class:list={['tl-item', !e.radio && !e.buy && 'no-vis', !e.radio && e.buy && 'has-tag']}>
         <p class="tl-when">
           <time datetime={e.act.opened}><span class="tl-day">{e.when.day}</span>{e.when.hour && <span class="tl-hour">{e.when.hour}</span>}</time>
         </p>
@@ -70,31 +73,26 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
           {e.meaning && <p class="tl-def">{e.term && <b>{e.term}:</b>}{e.meaning}</p>}
           {e.names.length > 0 && <p class="tl-pieces"><b>{t.pieces}</b> {t.pieceList(e.names)}.</p>}
           {e.act.line && <p class="tl-line">{e.act.line}</p>}
-          {e.shop?.href ? (
-            <a class="tl-go" href={e.shop.href}>{t.seePiece}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a>
-          ) : e.state === 'archive' && (
-            <a class="tl-go" href="/lookbook">{t.seePics}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a>
+          {!e.buy && e.state === 'archive' && (
+            <a class="tl-go" href={`/lookbook/#${e.act.slug}`}>{t.seePics}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a>
           )}
         </div>
-        {e.shop?.photo ? (
-          <div class="tl-vis" data-live={e.shop.product!.handle}>
-            <Print
-              class="tl-print"
-              photo={e.shop.photo}
-              sizes="(min-width: 1000px) 15vw, 52vw"
-              href={e.shop.href}
-              label={`${e.shop.title}, ${t.seePiece.toLowerCase()}`}
-              alt={e.shop.photo.kind === 'shopify' && !e.shop.photo.image.alt ? (e.shop.art.cutout?.alt ?? e.shop.title) : undefined}
-              ratio={1}
-              tilt={i % 2 ? -3 : 3}
-            >
-              <span class="tl-price num" aria-hidden="true" data-live-price>{formatPrice(e.shop.product!.price)}</span>
-            </Print>
-          </div>
-        ) : e.radio && (
+        {(e.radio || e.buy) && (
           <div class="tl-vis">
-            <Print class="tl-print" photo={{ kind: 'local', image: e.radio.image, alt: e.radio.alt }} sizes="(min-width: 1000px) 15vw, 52vw" ratio={1} tilt={i % 2 ? -3 : 3} />
-            <p class="tl-cap">{t.radio}</p>
+            {e.radio && (
+              <>
+                <Print class="tl-print" photo={{ kind: 'local', image: e.radio.image, alt: e.radio.alt }} sizes="(min-width: 1000px) 15vw, (min-width: 700px) 36vw, 52vw" ratio={1} tilt={i % 2 ? -3 : 3} />
+                <p class="tl-cap">{t.radio}</p>
+              </>
+            )}
+            {e.buy && (
+              <a class="tl-tag" href={e.buy.href} data-live={e.buy.handle}>
+                <span class="tl-tag-name">{e.buy.title}</span>
+                <span class="tl-price num" data-live-price>{formatPrice(e.buy.price)}</span>
+                <svg class="tl-bars" viewBox="0 0 64 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h2v40H0zM3 0h1v40H3zM5 0h1v40H5zM8 0h3v40H8zM12 0h1v40h-1zM14 0h2v40h-2zM17 0h1v40h-1zM19 0h1v40h-1zM22 0h3v40h-3zM26 0h2v40h-2zM29 0h1v40h-1zM31 0h1v40h-1zM34 0h2v40h-2zM37 0h3v40h-3zM41 0h1v40h-1zM43 0h1v40h-1zM46 0h2v40h-2zM49 0h1v40h-1zM51 0h3v40h-3zM55 0h1v40h-1zM57 0h2v40h-2zM60 0h1v40h-1zM62 0h2v40h-2z"></path></svg>
+                <span class="tl-go">{t.seePiece}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></span>
+              </a>
+            )}
           </div>
         )}
       </li>
@@ -164,7 +162,29 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
   .tl-vis { display: grid; gap: 12px; justify-items: end; padding: 4px 8px 0 0; }
   .tl-vis :global(.tl-print) { width: min(64%, 300px); }
   .tl-cap { max-width: 26ch; font: 800 11px/1.35 var(--sans); letter-spacing: .1em; text-align: right; text-transform: uppercase; }
-  .tl-price { position: absolute; z-index: 3; left: -14px; bottom: 12%; padding: 6px 12px 3px; background: var(--white); color: var(--ink); font: 400 42px/.9 var(--gothic); rotate: -8deg; box-shadow: 0 6px 12px rgb(11 11 11 / .3); }
+
+  /* the live piece: its price tag, the price box's bars and the way to it, where an act with a
+     radio cover shows the cover; the price refreshes from Shopify */
+  .tl-tag {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: end;
+    justify-content: start;
+    column-gap: 14px;
+    row-gap: 8px;
+    margin: 6px 6px 0 0;
+    padding: 12px 16px 12px;
+    background: var(--white);
+    border: 3px solid var(--ink);
+    color: var(--ink);
+    text-decoration: none;
+    rotate: -3deg;
+    box-shadow: 0 10px 18px -6px rgb(11 11 11 / .45);
+  }
+  .tl-tag-name { grid-column: 1 / -1; max-width: 18ch; font: 800 12px/1.15 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+  .tl-price { font: 400 72px/.8 var(--gothic); letter-spacing: -.01em; }
+  .tl-bars { width: 46px; height: 38px; margin-bottom: 4px; fill: var(--ink); }
+  .tl-tag .tl-go { grid-column: 1 / -1; min-height: 24px; white-space: nowrap; }
 
   .tl-next { padding-bottom: 8px; }
   /* the pink question mark sits in the gap the text leaves on its right */
@@ -175,7 +195,9 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
     .tl-head { grid-template-columns: auto minmax(0, 1fr); align-items: end; column-gap: 4vw; }
     .tl-title { font-size: min(13vw, 190px); }
     .tl-deck { padding-bottom: 6px; font-size: 17px; }
-    .tl-item:not(.tl-next) { grid-template-columns: minmax(0, 1fr) minmax(0, 44%); column-gap: 24px; }
+    .tl-item:not(.tl-next, .no-vis) { grid-template-columns: minmax(0, 1fr) minmax(0, 44%); column-gap: 24px; }
+    /* a price tag takes its own width; the text takes the rest */
+    .tl-item.has-tag { grid-template-columns: minmax(0, 1fr) auto; }
     .tl-when { grid-column: 1 / -1; }
     .tl-vis { grid-column: 2; grid-row: 2; align-self: start; padding-top: 0; }
     .tl-vis :global(.tl-print) { width: 92%; }
@@ -189,7 +211,10 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
     .tl-deck { font-size: max(17px, 1.3vw); }
     .tl-list { display: flex; flex-wrap: wrap; row-gap: 4vw; padding-left: 0; border-left: 0; }
     .tl-item { flex: 1 1 440px; padding: 22px 2vw 0 0; border-top: 6px solid var(--ink); }
-    .tl-item:not(.tl-next) { grid-template-columns: minmax(0, 1fr) minmax(0, 40%); column-gap: 1.6vw; }
+    .tl-item:not(.tl-next, .no-vis) { grid-template-columns: minmax(0, 1fr) minmax(0, 40%); column-gap: 1.6vw; }
+    .tl-item.has-tag { grid-template-columns: minmax(0, 1fr) auto; }
+    .tl-price { font-size: min(5vw, 72px); }
+    .tl-bars { width: 34px; height: 30px; }
     /* the rail: a thick rule and a hairline under it, like the masthead's */
     .tl-item::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 1px; background: var(--ink); }
     .tl-item::before { display: none; }
@@ -213,6 +238,7 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
 
   @media (hover: hover) {
     .tl-go:hover svg, .tl-cta:hover svg { translate: 4px 0; }
-    .tl-go:hover { text-decoration-color: var(--pink); }
+    .tl-go:hover, .tl-tag:hover .tl-go { text-decoration-color: var(--pink); }
+    .tl-tag:hover .tl-go svg { translate: 4px 0; }
   }
 </style>

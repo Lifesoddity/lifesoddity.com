@@ -2,6 +2,7 @@
 // after the page loads, so a size that sold out an hour ago is struck through, not sold twice,
 // and a price changed since the build is the one that goes into the bag.
 // Shopify's public product data answers any origin (Access-Control-Allow-Origin: *).
+// The buy boxes' main buttons are buy.ts's: each box gets "lo:stock" once its stamps are updated.
 
 import { formatPrice } from '../lib/money';
 import { status } from '../content/copy/common';
@@ -24,10 +25,9 @@ export function initLive(domain: string) {
     } catch {
       return; // offline or blocked: the built page stands
     }
-    boxes.filter((b) => b.dataset.live === handle).forEach((box) => {
+    const mine = boxes.filter((b) => b.dataset.live === handle);
+    mine.forEach((box) => {
       box.querySelectorAll<HTMLElement>('[data-live-price]').forEach((el) => { el.textContent = formatPrice(data.price); });
-      const add = box.querySelector<HTMLButtonElement>('[data-add]');
-      const note = box.querySelector<HTMLElement>('[data-note]');
       box.querySelectorAll<HTMLButtonElement>('[data-variant]').forEach((stamp) => {
         const v = data.variants.find((x) => x.id === Number(stamp.dataset.variant));
         if (v) stamp.dataset.price = String(v.price);
@@ -36,21 +36,12 @@ export function initLive(domain: string) {
         stamp.title = out ? status.soldout : '';
         const label = stamp.querySelector('.vh');
         if (label) label.textContent = out ? `, ${status.soldout.toLowerCase()}` : '';
-        // the size chosen before the refresh answered has just sold out: un-choose it
-        if (out && stamp.getAttribute('aria-pressed') === 'true') {
-          stamp.setAttribute('aria-pressed', 'false');
-          if (add) add.disabled = true;
-          if (note && note.dataset.noteInitial !== undefined) note.textContent = note.dataset.noteInitial;
-        }
       });
-      if (!data.available) {
-        box.querySelectorAll<HTMLButtonElement>('[data-add]').forEach((b) => {
-          b.disabled = true;
-          const span = b.querySelector('span');
-          if (span) span.textContent = status.soldout;
-        });
-      }
       box.toggleAttribute('data-soldout', !data.available);
     });
+    // every stamp is current now: the buy boxes set their buttons from it
+    mine
+      .filter((box) => box.hasAttribute('data-buy'))
+      .forEach((box) => box.dispatchEvent(new CustomEvent('lo:stock', { detail: { available: data.available } })));
   });
 }

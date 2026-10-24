@@ -7,6 +7,7 @@
 //   (acts.ts credits and photo credits). He should confirm the photographers agree to their
 //   photos on the site and how they want the credit written. A photo with no named
 //   photographer carries no credit line.
+// - An act with no photos yet shows no sheet at all: nothing stands in for the photos (D1).
 // - She Devil's quote ("To every woman that has loved me for who I am, thank you.") comes from
 //   a personal caption: it stays off this page until he says yes (see heldQuotes).
 // - "A love letter to Mutsumi" is not printed until he confirms it (acts.ts subtitleConfirmed).
@@ -45,12 +46,6 @@ export const lookbook = {
     titleArchive: 'In this act',
     shopLive: (act: string) => `Shop ${act}`,
     shopArchive: (act: string) => `See ${act} in the shop`,
-  },
-
-  /** An act with no photos yet, in the magazine's voice. */
-  noPics: {
-    title: 'No pics (yet)',
-    line: 'The photos from this act have not surfaced. We are chasing them.',
   },
 
   /** Acts whose quote waits on his yes before it is printed. */

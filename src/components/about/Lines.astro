@@ -1,7 +1,7 @@
 ---
-// His other two lines, set as the profile's pull quotes on black: the store's line in yellow,
-// the theme in white with its last word in pink, each credited to where he wrote it, signed
-// with the wordmark.
+// The brand's other two lines, set as the profile's pull quotes on black, as its own words with
+// no attribution (D5): the store's line in yellow, the theme in white with its last word in pink,
+// signed with the wordmark.
 import { Image } from 'astro:assets';
 import { brand } from '../../assets';
 import { site } from '../../content/site';
@@ -17,12 +17,8 @@ const quotes = about.quotes.map((q) => ({ ...q, ...parts(site[q.key], q.hit) }))
 ---
 
 <section class="ln on-dark halftone" aria-label={about.quotesLabel}>
-  <p class="ln-script" aria-hidden="true">{about.quotesLabel}</p>
   {quotes.map((q) => (
-    <figure class:list={['ln-q', `ln-${q.key}`]}>
-      <blockquote><p>{q.before}{q.hit && <em>{q.hit}</em>}{q.after}</p></blockquote>
-      <figcaption>{q.credit}</figcaption>
-    </figure>
+    <blockquote class:list={['ln-q', `ln-${q.key}`]}><p>{q.before}{q.hit && <em>{q.hit}</em>}{q.after}</p></blockquote>
   ))}
   <Image class="ln-sign" src={brand.logo} alt={site.name} widths={[400, 800]} sizes="(min-width: 1000px) 30vw, 60vw" />
 </section>
@@ -40,14 +36,12 @@ const quotes = about.quotes.map((q) => ({ ...q, ...parts(site[q.key], q.hit) }))
     color: var(--white);
     overflow: clip;
   }
-  .ln-script { position: absolute; z-index: 2; right: var(--pad); top: 14px; color: var(--pink); font: 400 clamp(40px, 11vw, 96px)/1 var(--script); rotate: -7deg; pointer-events: none; }
-  .ln-q { position: relative; display: grid; gap: 12px; }
+  .ln-q { position: relative; display: grid; gap: 12px; align-content: start; }
   .ln-q::before { content: "\201C"; display: block; height: 40px; color: var(--pink); font: 400 128px/.9 var(--gothic); }
   .ln-q p { font: 400 min(20vw, 160px)/.86 var(--gothic); text-transform: uppercase; text-wrap: balance; }
   .ln-q em { font-style: normal; color: var(--pink); }
   .ln-line p { color: var(--yellow); }
   .ln-bio p { font-size: min(20.5vw, 190px); }
-  .ln-q figcaption { font: 800 11.5px/1.2 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: rgb(255 255 255 / .8); }
   .ln-sign { width: min(62%, 300px); filter: invert(1); rotate: -3deg; }
 
   @media (min-width: 700px) {
@@ -64,8 +58,6 @@ const quotes = about.quotes.map((q) => ({ ...q, ...parts(site[q.key], q.hit) }))
     .ln-q::before { height: 3.4vw; font-size: 10vw; }
     .ln-q p { font-size: 7.4vw; }
     .ln-bio p { font-size: 8.2vw; }
-    .ln-q figcaption { font-size: 12.5px; }
-    .ln-script { top: 3.2vw; right: 7vw; font-size: min(6.4vw, 110px); }
     .ln-sign { width: min(26vw, 380px); }
   }
 </style>

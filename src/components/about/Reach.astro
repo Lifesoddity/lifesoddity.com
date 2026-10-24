@@ -1,6 +1,7 @@
 ---
-// GOT A TIP? How to reach him (a message on Instagram, his main channel) and where he posts.
-// The links come from site.ts, so a new profile there shows up here by itself.
+// GOT A TIP? The way in is a DM on Instagram, the label's main channel (D5: "DM @lifesoddity"),
+// then the profiles to follow. The links come from site.ts, so a new profile there shows up here
+// by itself.
 import { contact, social } from '../../content/site';
 import { about } from '../../content/copy/about';
 
@@ -10,7 +11,6 @@ const r = about.reach;
 <section class="rc on-dark halftone" aria-labelledby="rc-title">
   <div class="rc-head">
     <h2 class="rc-title" id="rc-title">{r.title}</h2>
-    <p class="rc-deck">{r.deck}</p>
     <a class="rc-dm" href={contact.href} rel="noopener">
       <span>{contact.label}</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
@@ -48,7 +48,6 @@ const r = about.reach;
   }
   .rc-head { display: grid; gap: 16px; justify-items: start; align-content: start; }
   .rc-title { font: 400 min(36vw, 300px)/.8 var(--gothic); text-transform: uppercase; text-wrap: balance; }
-  .rc-deck { max-width: 30ch; font: 700 17px/1.4 var(--sans); }
   .rc-dm {
     display: inline-flex;
     align-items: center;
@@ -87,7 +86,6 @@ const r = about.reach;
   @media (min-width: 700px) {
     .rc { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 5vw; padding: 6vw var(--pad); }
     .rc-title { font-size: min(17vw, 300px); }
-    .rc-deck { font-size: 18px; }
     .rc-dm { font-size: 30px; }
     .rc-where { align-self: end; }
   }
@@ -95,7 +93,6 @@ const r = about.reach;
   @media (min-width: 1000px) {
     .rc { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); padding: 4.6vw var(--pad) 5vw; }
     .rc-title { font-size: min(16vw, 300px); }
-    .rc-deck { font-size: max(18px, 1.35vw); }
     .rc-dm { font-size: min(3vw, 44px); padding: 8px 22px 2px; }
     .rc-net { font-size: min(5.4vw, 84px); }
     .rc-handle { font-size: 15px; }

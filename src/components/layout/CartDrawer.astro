@@ -39,9 +39,9 @@ import { site } from '../../content/site';
         <span class="drawer-price num"></span>
       </div>
       <div class="drawer-qty" role="group">
-        <button class="drawer-step" type="button" data-step="-1" aria-label={bag.less}>−</button>
+        <button class="drawer-step" type="button" data-step="-1" aria-label={bag.less}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10h11"></path></svg></button>
         <span class="drawer-n num"></span>
-        <button class="drawer-step" type="button" data-step="1" aria-label={bag.more}>+</button>
+        <button class="drawer-step" type="button" data-step="1" aria-label={bag.more}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10h11M10 4.5v11"></path></svg></button>
       </div>
       <button class="drawer-remove" type="button" data-remove>{bag.remove}</button>
     </li>
@@ -209,7 +209,8 @@ import { site } from '../../content/site';
   .drawer-name[href]:hover { text-decoration: underline; }
   .drawer-size, .drawer-price { font: 700 13px/1.2 var(--sans); }
   .drawer-qty { grid-area: qty; display: flex; align-items: center; gap: 8px; }
-  .drawer-step { display: grid; place-items: center; width: 44px; height: 44px; border: 2px solid var(--ink); background: var(--white); font: 800 18px/1 var(--sans); }
+  .drawer-step { display: grid; place-items: center; width: 44px; height: 44px; border: 2px solid var(--ink); background: var(--white); }
+  .drawer-step svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
   .drawer-n { min-width: 1.5ch; text-align: center; font: 800 15px/1 var(--sans); }
   .drawer-remove { grid-area: remove; justify-self: start; padding: 6px 0; font: 700 12px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; text-decoration: underline; text-underline-offset: .25em; }
   .drawer-empty { display: grid; gap: 14px; align-content: start; padding-top: 22px; font: 700 17px/1.35 var(--sans); }

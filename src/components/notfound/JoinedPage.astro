@@ -57,7 +57,7 @@ const title = twoLines(j.title);
     color: var(--white);
     overflow: clip;
   }
-  .jn-copy { display: grid; gap: 18px; justify-items: start; align-content: start; }
+  .jn-copy { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; justify-items: start; align-content: start; }
 
   /* the sticker: yellow paper, ink type, stuck on at an angle */
   .jn-title {
@@ -98,7 +98,6 @@ const title = twoLines(j.title);
   @media (min-width: 700px) {
     .jn { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; column-gap: 4vw; min-height: calc(100svh - var(--header-h)); padding: 5vw var(--pad); }
     .jn-title { font-size: min(12.5vw, 210px); }
-    .jn-exits { width: auto; grid-template-columns: repeat(2, max-content); gap: 12px; }
   }
 
   @media (min-width: 1000px) {
@@ -106,6 +105,7 @@ const title = twoLines(j.title);
     .jn-copy { gap: 1.6vw; }
     .jn-title { font-size: min(11vw, 210px); }
     .jn-deck { margin-top: 1.4vw; font-size: max(18px, 1.5vw); }
+    .jn-exits { width: auto; grid-template-columns: repeat(2, max-content); gap: 12px; }
     .jn-go { min-height: 60px; font-size: min(2.6vw, 36px); }
   }
 

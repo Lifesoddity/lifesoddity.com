@@ -1,36 +1,31 @@
-// The About page: the profile. Life's Oddity in his own three lines, the acts as a dated
-// timeline, the crew his captions credit, and how to reach him. Facts come from site.ts and
-// acts.ts; this file holds only the page's own words.
+// The About page: the profile. Life's Oddity in its own three lines, beside a photo from its
+// latest campaign; the acts as a dated timeline; the crew its captions credit; how to reach it.
+// Facts come from site.ts and acts.ts; this file holds only the page's own words. The site
+// speaks as Life's Oddity: no third person about the founder, no source attributions (D5).
 //
-// FOR THE OWNER: his own story is missing (who is behind the label, where, since when). The
-// page shows an UNCONFIRMED stamp in its place, and promises nothing. Nothing here guesses it.
-// Sources of the credits under each line: .bunshin/harvest/facts.md ("The brand").
+// FOR THE OWNER: the story behind the label (who, where, since when) has not been given. The
+// page leaves it out (D1); nothing here guesses it. When it is written, it can open this page.
 
 export const about = {
-  /** The pink script over the title card. */
-  script: 'the profile',
-  /** Where the tagline comes from: his Instagram name and his TikTok bio. */
-  titleCredit: 'His words: the name on his Instagram, the bio on his TikTok.',
   /** The issue line under the title: parts joined with middle dots. */
   issueLead: 'The profile issue',
   /** The span of the acts, first to latest: "Party Animal to She Devil". */
   issueSpan: (first: string, last: string) => (first === last ? first : `${first} to ${last}`),
 
-  who: {
-    /** On the black print where his photo would be. */
-    print: 'Who is he?',
-    tape: 'no pics yet',
-    /** Beside the UNCONFIRMED stamp. */
-    line: 'Who he is, where he is from, when it started: not on the record yet.',
-    label: 'No photo of him yet',
+  /** The caption beside the opening photo: the act it comes from, its date, its real credit. */
+  photo: {
+    actName: (n: number | null, title: string) => (n ? `Act ${n}: ${title}` : title),
+    /** How screen readers name the photo's link to the act's pictures in the lookbook. */
+    see: (act: string) => `${act}, see the pics`,
   },
 
-  /** His two other lines, set as pull quotes. `hit` is printed in pink. */
+  /** The brand's two other lines, set as pull quotes. `hit` is printed in pink. */
   quotes: [
-    { key: 'line', hit: 'oddities', credit: 'His Instagram bio' },
-    { key: 'bio', hit: 'nightmare', credit: 'His Instagram bio' },
+    { key: 'line', hit: 'oddities' },
+    { key: 'bio', hit: 'nightmare' },
   ] as const,
-  quotesLabel: 'In his words',
+  /** How screen readers name the pull quotes. */
+  quotesLabel: "Life's Oddity, in its own lines",
 
   timeline: {
     title: 'How it went down',
@@ -54,15 +49,14 @@ export const about = {
 
   crew: {
     title: 'The crew',
-    deck: 'The people behind the shoots.',
+    deck: 'The people behind the acts.',
     on: 'on Instagram',
   },
 
   reach: {
     title: 'Got a tip?',
-    deck: 'Reach him where he posts.',
-    profiles: 'Where he posts',
-    /** His handles as they read on each profile (facts.md, "Channels"). */
+    profiles: "Follow Life's Oddity",
+    /** The handles as they read on each profile (facts.md, "Channels"). */
     handles: {
       Instagram: '@lifesoddity',
       TikTok: '@lifes.oddity',

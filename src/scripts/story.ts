@@ -4,6 +4,7 @@
 // no listener and no pin: the scenes stand still, one after another.
 
 import { flash, reduceMotion, slap } from './motion';
+import { buy } from '../content/copy/common';
 
 export function initStory() {
   const track = document.querySelector<HTMLElement>('.ss-track');
@@ -64,7 +65,7 @@ export function initStory() {
     sizesBox.addEventListener('lo:added', (e) => {
       const { title, size } = (e as CustomEvent<{ title: string; size: string }>).detail;
       closeSizes();
-      if (note) { note.textContent = `In your bag: ${title}, size ${size}.`; slap(note); }
+      if (note) { note.textContent = buy.added(title, size); slap(note); }
       sizesBtn.focus();
     });
   }

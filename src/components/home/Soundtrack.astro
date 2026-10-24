@@ -1,26 +1,28 @@
 ---
-// The soundtrack page: PRESS PLAY. SHOWTIME STARTS NOW. set large on black over the Party Animal
-// jacket, printed and tilted with its "spotted:" tag, beside the act's playlist box. PRESS PLAY on
+// The soundtrack page: LIFE'S ODDITY RADIO set large on black beside the act's playlist (the
+// Player: a coverline strip with the Party Animal radio cover until the Spotify link is in, the
+// full box with PLAY once it is). The radio cover is this page's one picture (D2): no garment
+// here, the story just showed them all.
+// The headline is the act's own call, PRESS PLAY. SHOWTIME STARTS NOW., only once something
+// plays; until then it is the radio's own line, THE SOUND BEHIND THE COLLECTION. PRESS PLAY on
 // the cover jumps here once the playlist link is in.
 import Player from '../ui/Player.astro';
-import Print from '../ui/Print.astro';
-import { campaign } from '../../assets';
 import type { Act } from '../../content/acts';
 import { home } from '../../content/copy/home';
 
 interface Props { act: Act }
 const { act } = Astro.props;
 const s = home.soundtrack;
+const playable = Boolean(act.playlist.spotify);
+const lead = playable ? s.lead : s.quietLead;
+const follow = playable ? s.follow : s.quietFollow;
+const deck = playable ? s.deck : s.quietDeck(act.number, act.title);
 ---
 
-<section class="sound on-dark halftone" id="soundtrack" aria-label={s.label}>
+<section class="sound on-dark halftone" id="soundtrack" aria-labelledby="sound-title">
   <div class="sound-head">
-    <h2 class="sound-line"><span>{s.lead}</span> <span>{s.follow}</span></h2>
-    <p class="sound-deck">{s.deck}</p>
-    <div class="sound-snap">
-      <p class="sound-tag" aria-hidden="true">{s.spotted}</p>
-      <Print class="sound-print" photo={{ kind: 'local', image: campaign.partyAnimalJacketBack, alt: s.jacketAlt }} ratio={1} tilt={3} sizes="(min-width: 1000px) 26vw, 70vw" />
-    </div>
+    <h2 class="sound-line" id="sound-title"><span>{lead}</span> <span>{follow}</span></h2>
+    <p class="sound-deck">{deck}</p>
   </div>
   <Player act={act} class="sound-box" />
 </section>
@@ -38,16 +40,12 @@ const s = home.soundtrack;
     overflow: clip;
     scroll-margin-top: var(--header-h);
   }
-  .sound-head { display: grid; gap: 12px; }
-  .sound-line { font: 400 min(24vw, 140px)/.84 var(--gothic); text-transform: uppercase; }
+  .sound-head { display: grid; gap: 12px; align-content: start; }
+  .sound-line { font: 400 min(24vw, 140px)/.84 var(--gothic); text-transform: uppercase; text-wrap: balance; }
   .sound-line span { display: block; }
   .sound-line span:first-child { color: var(--yellow); }
   .sound-line span:last-child { margin-top: 4px; font-size: .5em; line-height: .95; }
   .sound-deck { max-width: 32ch; font: 600 16px/1.4 var(--sans); }
-  /* the jacket, printed and tilted under the deck, its script tag stuck above it */
-  .sound-snap { display: grid; justify-self: center; width: 70%; max-width: 420px; margin-top: 8px; }
-  .sound-tag { justify-self: end; max-width: 72%; margin: 0 -6% 12px 0; color: var(--pink); font: 400 clamp(26px, 2.6vw, 40px)/1 var(--script); text-align: right; text-wrap: balance; rotate: -6deg; }
-  .sound-snap :global(.sound-print) { width: 100%; }
   @media (min-width: 700px) {
     .sound-line { font-size: 12vw; }
     .sound-line span:first-child { font-size: 1.25em; }
@@ -56,11 +54,12 @@ const s = home.soundtrack;
   }
   @media (min-width: 1000px) {
     .sound { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 1.7vw; row-gap: 2.6vw; padding: 4.4vw var(--pad) 5.4vw; }
-    .sound-head { grid-column: 1 / 6; align-self: start; }
+    .sound-head { grid-column: 1 / 6; grid-row: 1 / span 2; align-self: center; gap: 1.4vw; }
     .sound-line { font-size: 8vw; }
     .sound-line span:first-child { font-size: 1em; }
-    .sound-snap { justify-self: start; margin: .8vw 0 0 6%; }
     .sound-deck { font-size: max(16px, 1.3vw); }
-    .sound :global(.sound-box) { grid-column: 6 / 13; }
+    /* the playlist keeps its own height beside the headline: the black halftone ground carries
+       the space, never a stretched, empty box */
+    .sound :global(.sound-box) { grid-column: 6 / 13; grid-row: 1 / span 2; align-self: center; }
   }
 </style>

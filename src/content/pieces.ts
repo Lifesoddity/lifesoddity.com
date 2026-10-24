@@ -3,7 +3,7 @@
 //   only adds the art (the giant word, the ground, the cut-out) and which act it belongs to.
 //   A product with no entry here still appears everywhere, with sensible defaults.
 // - Archive pieces from past acts that are no longer in the Shopify store: they live here in
-//   full, with his photos, and never show a price.
+//   full, with the campaign photos, and never show a price.
 
 import type { ImageMetadata } from 'astro';
 import { campaign, cutouts } from '../assets';
@@ -27,8 +27,10 @@ export interface PieceArt {
   line?: string;
   /** The marker circle drawn on a photo print: centre and radii in a 300x400 box. */
   mark?: { x: number; y: number; rx: number; ry: number };
-  /** A fact about this piece he has not confirmed: pages print it beside an UNCONFIRMED stamp. */
-  pending?: string;
+  /** Retired (D1): an open question about a piece is for the owner only and is never printed.
+   *  Write it as a code comment on the piece instead. Typed `never` so no piece can set one;
+   *  delete the field once no page reads it. */
+  pending?: never;
 }
 
 export const productArt: Record<string, PieceArt> = {
@@ -112,7 +114,8 @@ export const archivePieces: ArchivePiece[] = [
     },
     tag: 'The Party Animal jacket, Act 1',
     line: 'This concludes Act 1.',
-    pending: 'Same piece as the Showtime hoodie?',
+    // Owner's open question, never printed (D1): is this the same piece as the Showtime hoodie?
+    // Both photos show a black zip hoodie with SECURITY and LIFE OF THE PARTY on the back.
     photos: [
       { image: campaign.partyAnimalJacketBack, alt: "Back of the Party Animal jacket: SECURITY and LIFE OF THE PARTY over a party collage, LIFE'S ODDITY down the sleeves" },
       { image: campaign.partyAnimalJacketFront, alt: "Front of the Party Animal jacket: a washed black zip hoodie with SECURITY on the chest" },

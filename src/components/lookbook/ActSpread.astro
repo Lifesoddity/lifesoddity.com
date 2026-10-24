@@ -1,14 +1,16 @@
 ---
 // One act of the paparazzi spread: the act's name as a giant word, its photos as a busy contact
-// sheet of tilted flash-lit prints (marker circles and script captions where the data has
-// them), the act's issue line and dictionary entry, the credits his captions give, and GET THE
-// LOOK: its pieces, and the way to them in the shop.
-// Tapping a print opens it large in place (Viewer.astro).
+// sheet (campaign photos as tilted flash-lit prints, a piece's cut-out on its own yellow or white ground,
+// marker circles and script captions where the data has them), the act's issue line and
+// dictionary entry, the credits his captions give, and GET THE LOOK: its pieces, and the way to
+// them in the shop. An act with no photos has no sheet (D1: nothing is printed in their place).
+// Tapping a photo opens it large in place (Viewer.astro).
+import { Image } from 'astro:assets';
 import PieceImage from '../ui/PieceImage.astro';
-import { shotSizes, type Spread } from './spreads';
+import { CUT_WIDTHS, shotSizes, type Spread } from './spreads';
 import { formatPrice } from '../../lib/money';
 import { lookbook as copy } from '../../content/copy/lookbook';
-import { pending, status as statusWords } from '../../content/copy/common';
+import { status as statusWords } from '../../content/copy/common';
 
 interface Props { spread: Spread; first?: boolean }
 const { spread, first = false } = Astro.props;
@@ -37,55 +39,71 @@ const lookTitle = pieces.some((p) => p.product) ? copy.look.title : copy.look.ti
 // the shop's own anchors: what is in the Shopify store (#out-now), else the act in its archive
 const shopHref = onSale ? '/shop#out-now' : `/shop#act-${act.slug}`;
 const mark = 'M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05.6-1.02.02-1-.5-.55-.95.1-1.05';
+// each cut-out gets its own contrasting ground, yellow then white, so two never merge into one.
+// Cut-outs decode in sync: two small files, and an async decode left them unpainted in full-page
+// captures (the review's screenshots) while their shadow showed.
+const cutGround = (i: number) => (shots.slice(0, i).filter((x) => x.kind === 'cut').length % 2 ? 'white' : 'yellow');
 ---
 
-<section class:list={['lb-act', 'halftone', ground.dark && 'on-dark']} id={id} style={style} aria-labelledby={`${id}-title`}>
+<section class:list={['lb-act', 'halftone', ground.dark && 'on-dark', !shots.length && 'is-bare']} id={id} style={style} aria-labelledby={`${id}-title`}>
   <h2 class="lb-word" id={`${id}-title`}>{titleWords.map((w, i) => <>{i > 0 && ' '}<span>{w}</span></>)}</h2>
 
-  <div class="lb-sheet" data-sheet>
-    {shots.length ? shots.map((s, i) => (
-      <figure class="lb-shot" style={`--pc:${s.place.pc};--ps:${s.place.ps};--dc:${s.place.dc};--ds:${s.place.ds};--t:${s.place.tilt}deg;--y:${s.place.y}`} data-tilt={s.place.tilt}>
-        <button
-          class:list={['lb-print', 'ph', s.credit && 'has-credit']}
-          type="button"
-          aria-haspopup="dialog"
-          data-flash
-          data-shot
-          data-src={s.full.src}
-          data-full={s.full.srcset}
-          data-w={s.w}
-          data-h={s.h}
-          data-act={act.title}
-          data-cap={s.caption ?? undefined}
-          data-credit={s.credit ?? undefined}
-          data-href={s.piece?.href ?? undefined}
-          data-piece={s.piece?.href ? copy.viewer.piece(s.piece.title) : undefined}
-        >
-          <span class="ph-sh" aria-hidden="true"></span>
-          <span class="lb-paper">
-            <span class="lb-pic">
-              <PieceImage photo={s.photo} alt={s.alt} sizes={shotSizes(s.place)} eager={first && i === 0} />
-              {s.mark && (
-                <svg class="mark" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
-                  <path transform={`translate(${s.mark.x} ${s.mark.y}) scale(${s.mark.rx} ${s.mark.ry})`} d={mark}></path>
-                </svg>
-              )}
-            </span>
-            {s.credit && <span class="lb-credit"><b>{copy.shotBy}</b> {s.credit}</span>}
-          </span>
-          <span class="ph-flash" aria-hidden="true"></span>
-          <span class="vh">, {copy.seeBig}</span>
-        </button>
-        {s.caption && <figcaption class="tape lb-tape"><span class="lb-sp">{copy.spotted} </span>{s.caption}</figcaption>}
-      </figure>
-    )) : (
-      <div class="lb-nopics">
-        <p class="stamp">{pending.stamp}</p>
-        <p class="lb-nopics-h">{copy.noPics.title}</p>
-        <p class="lb-nopics-line">{copy.noPics.line}</p>
-      </div>
-    )}
-  </div>
+  {shots.length > 0 && (
+    <div class="lb-sheet" data-sheet>
+      {shots.map((s, i) => (
+        <figure class:list={['lb-shot', `is-${s.kind}`, s.kind === 'cut' && `on-${cutGround(i)}`]} style={`--pc:${s.place.pc};--ps:${s.place.ps};--dc:${s.place.dc};--ds:${s.place.ds};--t:${s.place.tilt}deg;--y:${s.place.y}`} data-tilt={s.place.tilt}>
+          <button
+            class:list={['lb-print', s.kind !== 'cut' && 'ph', s.credit && 'has-credit']}
+            type="button"
+            aria-haspopup="dialog"
+            data-flash={s.kind !== 'cut' ? '' : undefined}
+            data-shot
+            data-kind={s.kind}
+            data-src={s.full.src}
+            data-full={s.full.srcset}
+            data-w={s.w}
+            data-h={s.h}
+            data-act={act.title}
+            data-cap={s.caption ?? undefined}
+            data-credit={s.credit ?? undefined}
+            data-href={s.piece?.href ?? undefined}
+            data-piece={s.piece?.href ? copy.viewer.piece(s.piece.title) : undefined}
+            data-shadow={s.cut?.shadow}
+            data-overhang={s.cut?.overhang}
+            data-ground={s.kind === 'cut' ? cutGround(i) : undefined}
+          >
+            {s.kind === 'cut' && s.cut ? (
+              <span class="lb-ground halftone">
+                <span class="lb-cut ph cut" data-flash="" style={`--overhang:${s.cut.overhang};--shadow-img:url(${s.cut.shadow})`}>
+                  <span class="ph-sh" aria-hidden="true"></span>
+                  <Image src={s.cut.image} widths={CUT_WIDTHS} sizes={shotSizes(s.place)} alt={s.alt} loading={first && i === 0 ? 'eager' : 'lazy'} decoding="sync" />
+                  <span class="ph-flash" aria-hidden="true" style={`--cut:url(${s.cut.mask})`}></span>
+                </span>
+              </span>
+            ) : s.photo && (
+              <>
+                <span class="ph-sh" aria-hidden="true"></span>
+                <span class="lb-paper">
+                  <span class="lb-pic">
+                    <PieceImage photo={s.photo} alt={s.alt} sizes={shotSizes(s.place)} eager={first && i === 0} />
+                    {s.mark && (
+                      <svg class="mark" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
+                        <path transform={`translate(${s.mark.x} ${s.mark.y}) scale(${s.mark.rx} ${s.mark.ry})`} d={mark}></path>
+                      </svg>
+                    )}
+                  </span>
+                  {s.credit && <span class="lb-credit"><b>{copy.shotBy}</b> {s.credit}</span>}
+                </span>
+                <span class="ph-flash" aria-hidden="true"></span>
+              </>
+            )}
+            <span class="vh">, {copy.seeBig}</span>
+          </button>
+          {s.caption && <figcaption class="tape lb-tape"><span class="lb-sp">{copy.spotted} </span>{s.caption}</figcaption>}
+        </figure>
+      ))}
+    </div>
+  )}
 
   <div class="lb-meta">
     <div class="lb-issue">
@@ -184,7 +202,8 @@ const mark = 'M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05
     grid-template-columns: repeat(12, minmax(0, 1fr));
     align-items: start;
     row-gap: 26px;
-    padding: 26px 0 8px;
+    /* room above the first row for the tapes, so none touches the word's letters (D7) */
+    padding: 34px 0 8px;
   }
   .lb-shot {
     position: relative;
@@ -229,10 +248,16 @@ const mark = 'M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05
   .lb-sp { display: none; }
   .on-dark .lb-tape { background: var(--pink); color: var(--ink); }
 
-  .lb-nopics { grid-column: 1 / -1; display: grid; gap: 10px; justify-items: start; padding: 22px 18px 24px; background: var(--ink); color: var(--white); rotate: -1.5deg; box-shadow: 0 12px 20px -8px rgb(11 11 11 / .5); }
-  .lb-nopics .stamp { background: var(--white); }
-  .lb-nopics-h { color: var(--yellow); font: 400 56px/.86 var(--gothic); text-transform: uppercase; }
-  .lb-nopics-line { max-width: 36ch; font: 600 15px/1.4 var(--sans); }
+  /* a straight shot (a product photo, when an act has no campaign yet): the print, untilted */
+  .is-shot { rotate: none; }
+
+  /* a cut-out on its own ground: a straight yellow field with the piece tilted on it, its
+     shadow its own silhouette (global .cut), the flash masked to its edge */
+  .is-cut { rotate: none; }
+  .lb-ground { --dot: rgb(11 11 11 / .12); display: block; padding: 10% 12% 11%; background: var(--yellow); }
+  .on-white .lb-ground { --dot: rgb(255 46 110 / .3); background: var(--white); }
+  .lb-cut { rotate: calc(var(--t) * 1.3); }
+  .lb-cut :global(img) { position: relative; width: 100%; }
 
   /* the act's issue line, its dictionary entry, the credits his captions give, his line */
   .lb-meta { grid-area: meta; display: grid; gap: 16px; align-content: start; justify-items: start; margin-top: 34px; }
@@ -314,7 +339,7 @@ const mark = 'M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05
       padding: 34px var(--pad) 56px;
     }
     .lb-shot { grid-column: var(--dc) / span var(--ds); margin: calc(var(--y) * 1vw) -1.2vw 0; }
-    .lb-sheet { row-gap: 3vw; padding-top: 30px; }
+    .lb-sheet { row-gap: 3vw; padding-top: 38px; }
     .lb-paper { padding: 7px; }
     .has-credit .lb-paper { padding-left: 20px; }
     .lb-credit { left: 4px; font-size: 9.5px; }
@@ -335,11 +360,14 @@ const mark = 'M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05
       padding: 3.2vw var(--pad) 5vw;
     }
     .lb-word { align-self: end; font-size: min(calc((100cqw - var(--rail) - 2.2vw) / var(--w) * .97), 19cqw); }
-    .lb-sheet { margin-top: -1.4vw; padding-top: 0; row-gap: 3.4vw; }
+    /* the sheet starts below the word, with room for the tapes, so no caption crosses its letters (D7) */
+    .lb-sheet { padding: 40px 1.2vw 0 0; row-gap: 3.4vw; }
     .lb-meta { align-self: start; margin-top: 0; padding-top: .6vw; }
     .lb-def { font-size: max(16px, 1.25vw); }
     .lb-quote p { font-size: clamp(36px, 3.2vw, 52px); }
     .lb-look { margin-top: 2.6vw; }
+    /* no sheet: the list takes the room under the word */
+    .is-bare { grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "word meta" "look meta"; }
   }
 
   @media (hover: hover) {

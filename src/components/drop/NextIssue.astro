@@ -1,8 +1,13 @@
 ---
 // WHO'S NEXT? The top of the drop page: the next issue. Its cover is printed blank, a silhouette
-// for a cover star and UNCONFIRMED stamped across it, because the next drop has no name or date
-// yet. The facts sheet says what is known and stamps what is not; the waitlist takes the email.
-// When content/acts.ts gives a name and a date, the page prints them and the countdown runs.
+// for a cover star and UNCONFIRMED stamped across it while the next drop has no name or date:
+// the page's one stamp (D1). Nothing else stands in for the missing facts; the waitlist takes the
+// email. When content/acts.ts gives a name, the deck and the cover print it; with a date, the
+// countdown runs under the deck.
+//
+// The title is this page's head, set as an issue banner (D4): white caps on a red flag with
+// notched ends, the way the cover flags EXCLUSIVE. The neighbours in the nav open differently
+// (Shop a black slab, Lookbook outline caps).
 import { Image } from 'astro:assets';
 import WaitlistForm from '../ui/WaitlistForm.astro';
 import Countdown from './Countdown.astro';
@@ -20,13 +25,14 @@ const eastern = opens ? formatWhen(opens, EASTERN) : null;
 const deck = name ? n.deckNamed(name) : n.deck;
 // the same form value the home page's waitlist sends, so sign-ups for one drop stay together
 const act = name ? name.toLowerCase().replace(/\s+/g, '-') : 'next-drop';
-const coverLine = [name ? drop.issue.name(name) : n.coverIssue, eastern ?? n.coverDate, site.tagline].join(' · ');
+// a date not given is left off the line; the stamp on the cover already says it
+const coverLine = [name ? drop.issue.name(name) : n.coverIssue, eastern, site.tagline].filter(Boolean).join(' · ');
 const stamped = !name || !opens;
 const words = n.title.split(' ');
 ---
 
 <section class="nx halftone" aria-labelledby="nx-title">
-  <h1 class="nx-title" id="nx-title">{words.map((w, i) => <>{i > 0 && ' '}<span>{w}</span></>)}</h1>
+  <h1 class="nx-title" id="nx-title"><span class="nx-flag">{words.map((w, i) => <>{i > 0 && ' '}<span class="nx-w">{w}</span></>)}</span></h1>
 
   <div class="nx-cover" aria-hidden="true">
     <span class="nx-sh"></span>
@@ -45,16 +51,7 @@ const words = n.title.split(' ');
   <div class="nx-copy">
     <div class="nx-sheet-facts">
       <p class="nx-deck">{deck}</p>
-      <dl class="nx-facts">
-        <div class="nx-fact">
-          <dt>{n.nameLabel}</dt>
-          <dd>{name ? <b class="nx-known">{name}</b> : <><span class="stamp">{pending.stamp}</span> <span class="nx-why">{n.namePending}</span></>}</dd>
-        </div>
-        <div class="nx-fact">
-          <dt>{n.dateLabel}</dt>
-          <dd>{opens ? <Countdown opens={opens} /> : <><span class="stamp">{pending.stamp}</span> <span class="nx-why">{n.datePending}</span></>}</dd>
-        </div>
-      </dl>
+      {opens && <div class="nx-when"><Countdown opens={opens} /></div>}
     </div>
     <div class="nx-form">
       <WaitlistForm act={act} />
@@ -69,16 +66,26 @@ const words = n.title.split(' ');
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas: "title cover" "copy copy";
-    column-gap: 12px;
+    column-gap: 20px;
     row-gap: 14px;
     padding: 20px var(--pad) 40px;
     background: var(--yellow);
     overflow: clip;
   }
 
-  /* the title: two lines on a phone and a tablet, one line on a desktop */
-  .nx-title { grid-area: title; align-self: start; font: 400 29vw/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; }
-  .nx-title span { display: block; }
+  /* the title on its issue banner (D4): a red flag per line on a phone and a tablet, one flag
+     across the line on a desktop; white caps on red, 5:1 */
+  .nx-title { grid-area: title; align-self: start; margin: 6px 0 0 -2px; font: 400 25vw/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; rotate: -2deg; }
+  .nx-flag { display: block; }
+  .nx-w {
+    display: block;
+    width: fit-content;
+    padding: .1em .16em .045em;
+    background: var(--red);
+    color: var(--white);
+    clip-path: polygon(0 0, 100% 0, 96% 50%, 100% 100%, 0 100%, 4% 50%);
+  }
+  .nx-w + .nx-w { margin: .07em 0 0 .1em; }
 
   /* the next issue's cover, printed blank */
   .nx-cover { grid-area: cover; position: relative; align-self: start; justify-self: end; width: 100%; max-width: 168px; margin: 4px 2px 0 0; rotate: 4deg; }
@@ -130,13 +137,7 @@ const words = n.title.split(' ');
   .nx-copy { grid-area: copy; display: grid; gap: 16px; }
   .nx-sheet-facts { display: grid; gap: 12px; }
   .nx-deck { max-width: 32ch; font: 700 17px/1.38 var(--sans); }
-  .nx-facts { display: grid; border-bottom: 2px solid var(--ink); }
-  .nx-fact { display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: 10px; align-items: baseline; padding: 8px 0 7px; border-top: 2px solid var(--ink); }
-  .nx-fact dt { font: 400 26px/.9 var(--gothic); text-transform: uppercase; }
-  /* the stamp, then the line: the line drops under the stamp whole rather than breaking beside it */
-  .nx-fact dd { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 9px; font: 600 14px/1.4 var(--sans); }
-  .nx-fact .stamp { background: var(--white); rotate: -2deg; }
-  .nx-known { font: 400 34px/.9 var(--gothic); text-transform: uppercase; }
+  .nx-when { padding-top: 10px; border-top: 2px solid var(--ink); }
   .nx-form :global(.tip) { max-width: 560px; }
   .nx-form :global(.tip-ok) { background: var(--pink); }
 
@@ -169,17 +170,23 @@ const words = n.title.split(' ');
     .nx-q { top: 24%; font-size: 84cqw; }
     .nx-stamp { top: 70%; border-width: 3px; font-size: 9cqw; box-shadow: inset 0 0 0 2px var(--white), inset 0 0 0 3.5px var(--red), 0 4px 8px rgb(11 11 11 / .25); }
     .nx-deck { font-size: 19px; }
-    .nx-fact { grid-template-columns: 76px minmax(0, 1fr); padding: 10px 0 9px; }
-    .nx-fact dt { font-size: 30px; }
-    .nx-fact dd { font-size: 15px; }
   }
 
   @media (min-width: 1000px) {
-    .nx { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-areas: none; column-gap: 24px; row-gap: 2.4vw; padding: 2.8vw var(--pad) 4vw; }
-    .nx-title { grid-column: 1 / 9; grid-row: 1; font-size: 15vw; white-space: nowrap; }
-    .nx-title span { display: inline; }
-    .nx-cover { grid-column: 9 / 13; grid-row: 1 / 3; width: 90%; justify-self: center; margin-top: .6vw; }
-    .nx-copy { grid-column: 1 / 9; grid-row: 2; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); column-gap: 3vw; align-items: start; }
+    /* the cover is taller than the title and the copy: its extra height falls under the copy, so
+       the deck and the form sit right under the banner */
+    .nx { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto 1fr; grid-template-areas: none; column-gap: 24px; row-gap: 2.4vw; padding: 2.8vw var(--pad) 4vw; }
+    .nx-title { grid-column: 1 / 9; grid-row: 1; justify-self: start; margin: .8vw 0 0; font-size: 14vw; white-space: nowrap; }
+    .nx-flag {
+      width: fit-content;
+      padding: .1em .2em .045em;
+      background: var(--red);
+      color: var(--white);
+      clip-path: polygon(0 0, 100% 0, 98% 50%, 100% 100%, 0 100%, 2% 50%);
+    }
+    .nx-w, .nx-w + .nx-w { display: inline; margin: 0; padding: 0; background: none; clip-path: none; }
+    .nx-cover { grid-column: 9 / 13; grid-row: 1 / 3; width: 84%; justify-self: center; margin-top: .6vw; }
+    .nx-copy { grid-column: 1 / 9; grid-row: 2; align-self: start; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); column-gap: 3vw; align-items: start; }
     .nx-deck { font-size: max(19px, 1.5vw); }
     .nx-form { padding-top: 4px; }
   }

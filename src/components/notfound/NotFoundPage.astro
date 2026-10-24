@@ -1,7 +1,8 @@
 ---
-// 404: a killed story. STORY in giant type with KILLED stamped across it on the tabloid's
-// yellow, one line in the magazine's voice, the way out (all the pieces, the cover), and the
-// live piece one tap away. The stamp lands once (still under reduced motion).
+// 404: a killed story. STORY in giant type with KILLED stamped right under it on the tabloid's
+// yellow (tucked close, never over the letters: D7), one line in the magazine's voice, the way
+// out (all the pieces, the cover), and the live piece one tap away as its coverline card. The
+// stamp lands once (still under reduced motion).
 import LivePiece from './LivePiece.astro';
 import { getCoverPiece } from '../../lib/pieces';
 import { notfound as c } from '../../content/copy/notfound';
@@ -44,14 +45,15 @@ const piece = await getCoverPiece();
     overflow: clip;
   }
   .nf :focus-visible { outline-color: var(--ink); }
-  .nf-copy { display: grid; gap: 18px; align-content: start; }
+  .nf-copy { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-content: start; }
 
   .nf-title { display: grid; justify-items: start; }
   .nf-story { font: 400 min(51vw, 400px)/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; }
-  /* KILLED, a red rubber stamp slammed over the bottom of STORY */
+  /* KILLED, a red rubber stamp slammed down right under STORY: its raised corner clears the
+     letters at every width */
   .nf-killed {
     justify-self: end;
-    margin: -.42em 4% .22em 0;
+    margin: .19em 4% .22em 0;
     padding: .1em .2em 0;
     border: 5px solid var(--red);
     color: var(--red);
@@ -88,9 +90,9 @@ const piece = await getCoverPiece();
 
   @media (min-width: 700px) {
     .nf { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; column-gap: 4vw; min-height: calc(100svh - var(--header-h)); padding: 5vw var(--pad); }
-    .nf-story { font-size: min(27vw, 400px); }
-    .nf-killed { font-size: min(12.5vw, 180px); }
-    .nf-exits { grid-template-columns: repeat(2, max-content); gap: 12px; }
+    /* STORY fills the left column without running past it (it is about 1.77em wide) */
+    .nf-story { font-size: 25vw; }
+    .nf-killed { font-size: 12vw; }
   }
 
   @media (min-width: 1000px) {
@@ -98,6 +100,7 @@ const piece = await getCoverPiece();
     .nf-copy { gap: 2vw; }
     .nf-story { font-size: min(25vw, 400px); }
     .nf-killed { margin-right: 2%; border-width: 6px; font-size: min(11vw, 180px); }
+    .nf-exits { grid-template-columns: repeat(2, max-content); gap: 12px; }
     .nf-deck { font-size: max(18px, 1.5vw); }
     .nf-go { min-height: 60px; font-size: min(2.6vw, 36px); }
   }

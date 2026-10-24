@@ -1,5 +1,5 @@
-// The magazine's three motions. Transform and opacity only, never looping, none at all when the
-// visitor asks for reduced motion.
+// The magazine's motions: the flash, the shadow snap, the sticker slap and the nudge. Transform
+// and opacity only, never looping, none at all when the visitor asks for reduced motion.
 
 export const reduceMotion = () =>
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -32,6 +32,21 @@ export function slap(el: Element | null) {
   (el as HTMLElement).animate(
     [{ scale: 1.25, rotate: '-10deg', opacity: 0, offset: 0 }],
     { duration: 220, easing: 'cubic-bezier(.3,1.6,.5,1)' },
+  );
+}
+
+/** A short sideways nudge (160 ms) that points at a row: PICK A SIZE nudges the size stamps. */
+export function nudge(el: Element | null) {
+  if (!el || reduceMotion()) return;
+  (el as HTMLElement).animate(
+    [
+      { translate: '0px 0px' },
+      { translate: '-7px 0px', offset: 0.25 },
+      { translate: '6px 0px', offset: 0.55 },
+      { translate: '-2px 0px', offset: 0.82 },
+      { translate: '0px 0px' },
+    ],
+    { duration: 160, easing: 'ease-out' },
   );
 }
 

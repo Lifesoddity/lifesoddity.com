@@ -1,14 +1,16 @@
 // The drop page: WHO'S NEXT? (the next issue and the waitlist), the issue on sale now, and the
 // back issues. The acts' own words (titles, definitions, quotes, "This concludes Act 1.") come
 // from content/acts.ts; this file holds the magazine's plain voice around them. Nothing here
-// states what he has not given.
+// states a fact that has not been given, and nothing stands in for one (D1).
 //
-// FOR THE OWNER (pending, shown on the page as UNCONFIRMED, never guessed):
-// - the next drop's name and date: set nextDrop in content/acts.ts. With a name, the page prints
-//   it; with a date (`opens`, ISO with the Eastern offset, e.g. 2026-11-14T12:00:00-05:00) the
-//   page shows "Opens <date> EST", the visitor's own time and a countdown that ends on "Out now".
-// - whether Act 1 pieces ever come back (the restock line under BACK ISSUES).
-// - the Spotify link of each act's playlist (content/acts.ts, playlist.spotify).
+// FOR THE OWNER (what the page leaves out until it is given):
+// - the next drop's name and date: set nextDrop in content/acts.ts. Until then the blank
+//   next-issue cover carries the page's one UNCONFIRMED stamp. With a name, the deck and the cover
+//   print it; with a date (`opens`, ISO with the Eastern offset, e.g. 2026-11-14T12:00:00-05:00)
+//   the page shows "Opens <date> EST", the visitor's own time and a countdown that ends on "Out now".
+// - whether Act 1 pieces ever come back: not mentioned until there is an answer.
+// - the Spotify link of each act's playlist (content/acts.ts, playlist.spotify): the playlist
+//   strip becomes the full box with PLAY by itself.
 
 export const drop = {
   next: {
@@ -16,13 +18,8 @@ export const drop = {
     /** Under the title while the next drop has no name. */
     deck: 'The next drop is in the works. Be the first to know.',
     deckNamed: (name: string) => `The next drop: ${name}. Be the first to know.`,
-    nameLabel: 'Name',
-    namePending: 'Not on the record yet.',
-    dateLabel: 'Date',
-    datePending: 'No date on the record yet.',
     /** The issue line printed on the next issue's blank cover. */
     coverIssue: 'The next issue',
-    coverDate: 'Date unconfirmed',
   },
   countdown: {
     opens: 'Opens',
@@ -45,13 +42,10 @@ export const drop = {
     seeLabel: (title: string) => `${title}, see the piece`,
     /** The heading over an act's credits, printed only in an issue that shows the photos they credit. */
     credits: 'Credits',
-    noPhoto: 'No pics yet.',
   },
   back: {
     title: 'Back issues',
     /** Add "and its playlist" back once the acts' playlist links are in. */
     deck: 'Past drops, kept on file: every piece and its pics.',
-    restockLabel: 'Coming back?',
-    restockPending: 'No word on a restock yet. We are watching.',
   },
 };

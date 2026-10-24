@@ -1,7 +1,7 @@
 ---
 // WHO'S NEXT? The next drop has no name or date yet, so no countdown: the next issue's cover,
-// printed blank as on /drop (the logo for a masthead, a silhouette for a cover star, UNCONFIRMED
-// stamped across it), and the waitlist. While no playlist link is in, the cover's last
+// printed blank (the logo for a masthead, a silhouette for a cover star, UNCONFIRMED stamped
+// across it: the page's one stamp, D1), and the waitlist. While no playlist link is in, the cover's last
 // coverline jumps here (#whos-next).
 import { Image } from 'astro:assets';
 import WaitlistForm from '../ui/WaitlistForm.astro';
@@ -15,7 +15,8 @@ const n = home.next;
 const name = nextDrop.name?.trim() || null;
 const when = nextDrop.opensLabel?.trim() || null;
 const deck = name ? `Next drop: ${name}${when ? `, ${when}` : ''}. Be the first to know.` : n.deck;
-const coverLine = [name ? n.coverNamed(name) : n.coverIssue, when ?? n.coverDate, site.tagline].join(' · ');
+// the stamp says what is not known yet (D1: one UNCONFIRMED, here); the issue line prints only what is
+const coverLine = [name ? n.coverNamed(name) : n.coverIssue, when, site.tagline].filter(Boolean).join(' · ');
 const stamped = !name || !when;
 ---
 

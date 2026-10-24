@@ -32,11 +32,23 @@ every drop is the cover story). Not live yet: lifesoddity.com still shows the Sh
    1. In Shopify (Settings → Domains), add the `shop` subdomain to the store.
    2. Make the `shop` subdomain the store's primary domain, and check that the store and its
       checkout open there.
-   3. Only then, in Shopify's DNS settings for lifesoddity.com, point the main domain and www at
+   3. In Netlify (Project configuration → Environment variables), set `PUBLIC_SHOPIFY_DOMAIN` to
+      the shop subdomain, redeploy, and check on the deploy that a bag's CHECKOUT opens
+      Shopify's checkout page.
+   4. Only then, in Shopify's DNS settings for lifesoddity.com, point the main domain and www at
       Netlify (Netlify shows the values when the domain is added). Leave the email records as
       they are.
-   4. Place one real order from the new site, end to end, on a phone.
+   5. Place one real order from the new site, end to end, on a phone.
 4. To undo: point the main domain and www back at Shopify and make lifesoddity.com the primary
    domain again; the Shopify store returns.
-5. With each drop: email the waitlist (Netlify lists the sign-ups) before or with the Instagram
-   post, since the site promises sign-ups hear first.
+
+## The waitlist
+
+- Sign-ups land in Netlify: the project's Forms page, form `waitlist`. Each one has the email,
+  the drop it was for and the page it came from. Form detection must be on in the project's
+  Forms settings (it is free).
+- To email them: export the list from that page (Download as CSV) into the email tool of your
+  choice, and send it before or with the drop's Instagram post. The site promises sign-ups hear
+  first.
+- When someone replies asking to be taken off, delete their submission in Netlify and remove
+  them from the email tool.

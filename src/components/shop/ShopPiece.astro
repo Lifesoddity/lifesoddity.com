@@ -1,7 +1,10 @@
 ---
-// One piece from the Shopify store, as a tilted flash-lit print beside its coverline: the name,
-// the drop it belongs to, its line, and a price box whose size stamps add to the bag at once
-// (BuyBox "quick"). Live pieces wear the red EXCLUSIVE banner; sold-out ones a SOLD OUT stamp.
+// One piece from the Shopify store beside its coverline: the name, the drop it belongs to, its
+// line, and a price box whose size stamps add to the bag at once (BuyBox "quick"). The picture
+// is the piece's cut-out, tilted, with its flash shadow on the yellow (D2: never its studio
+// gradient on a gradient field), or, for a piece with no cut-out yet, its Shopify photo printed
+// straight (D4). A piece with no photo shows its name and drop only (D1: no empty frame).
+// Live pieces wear the red EXCLUSIVE banner; sold-out ones a SOLD OUT stamp.
 // The status is the attribute data-soldout, set at build time and refreshed from Shopify after
 // load (live.ts toggles it on any [data-live] element), so CSS swaps the treatment by itself.
 //
@@ -9,7 +12,6 @@
 // "wide": the odd last piece, a spread mirrored from the lead, so the grid never has a hole.
 import Print from '../ui/Print.astro';
 import BuyBox from '../ui/BuyBox.astro';
-import NoPics from './NoPics.astro';
 import type { Piece } from '../../lib/pieces';
 import { formatPrice } from '../../lib/money';
 import { productArt } from '../../content/pieces';
@@ -39,6 +41,8 @@ const colon = line ? line.indexOf(':') : -1;
 const term = line && colon > 0 && colon < 30 ? line.slice(0, colon) : null;
 
 const varies = new Set(product.variants.map((v) => v.price)).size > 1;
+const cutout = piece.art.cutout ?? null;
+const hasPic = Boolean(cutout || piece.photo);
 const img = piece.photo?.kind === 'shopify' ? piece.photo.image : null;
 const ratio = img ? Math.min(Math.max(img.width / img.height, 0.75), 1) : 1;
 const tilt = [-3, 2.5, -2, 3][index % 4];
@@ -50,16 +54,17 @@ const id = `pc-${piece.key}`;
 ---
 
 <article
-  class:list={['pc', `pc-${layout}`]}
+  class:list={['pc', `pc-${layout}`, !hasPic && 'pc-bare', cutout && 'pc-cut']}
   data-shop-piece
   data-live={product.handle}
   data-soldout={sold ? '' : undefined}
   aria-labelledby={id}
 >
-  <div class="pc-pic">
-    {piece.photo ? (
+  {hasPic && (
+    <div class="pc-pic">
       <Print
         class="pc-print"
+        cutout={cutout ?? undefined}
         photo={piece.photo}
         sizes={sizes}
         href={piece.href}
@@ -69,13 +74,11 @@ const id = `pc-${piece.key}`;
         eager={index === 0}
         first={index === 0}
       />
-    ) : (
-      <NoPics class="pc-print" label={shop.next.noPics} tilt={tilt} ratio={1} />
-    )}
-    <p class="pc-excl" aria-hidden="true">{s.exclusive}</p>
-    <p class="pc-sold">{status.soldout}</p>
-    <p class="tape pc-tape" aria-hidden="true">{piece.art.tag}</p>
-  </div>
+      <p class="pc-excl" aria-hidden="true">{s.exclusive}</p>
+      <p class="pc-sold">{status.soldout}</p>
+      <p class="tape pc-tape" aria-hidden="true">{piece.art.tag}</p>
+    </div>
+  )}
 
   <div class="pc-copy">
     <h3 class="pc-name" id={id}>{piece.title}</h3>
@@ -272,6 +275,11 @@ const id = `pc-${piece.key}`;
     .pc-price { font-size: min(4.4vw, 72px); }
     .pc-hint, .pc-soldline { font-size: 13px; }
     .pc-bars { width: 52px; height: 40px; }
+  }
+
+  /* a piece with no photo: its name and drop only, in one column (D1: no empty frame) */
+  @media (min-width: 700px) {
+    .pc-bare.pc-lead, .pc-bare.pc-wide { grid-template-columns: minmax(0, 1fr); }
   }
 
   @media (hover: hover) {

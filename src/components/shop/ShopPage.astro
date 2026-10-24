@@ -1,8 +1,9 @@
 ---
 // ALL THE PIECES. The shop as an inside spread of the magazine: the title card on the cover's
-// pink with its coverlines (on black, the cover's right third), what is in the Shopify store
-// on yellow (out now or sold out, newest first), the archive act by act on black, and the
-// next drop on red. Built from getPieces(): a product added in Shopify appears here by itself,
+// pink, its title reversed out of a black slab (D4: the shop's own treatment, no script), with
+// its coverlines (on black, the cover's right third), what is in the Shopify store on yellow
+// (out now or sold out, newest first), the archive act by act on black, and the next drop on
+// red. Built from getPieces(): a product added in Shopify appears here by itself,
 // and the grids are laid out from the count, so one piece or ten never leave a hole.
 import PageHead from '../ui/PageHead.astro';
 import ShopPiece from './ShopPiece.astro';
@@ -12,7 +13,6 @@ import { getPieces } from '../../lib/pieces';
 import { formatPrice } from '../../lib/money';
 import { acts, nextDrop } from '../../content/acts';
 import { shop } from '../../content/copy/shop';
-import { pending } from '../../content/copy/common';
 
 const pieces = await getPieces();
 const store = pieces.filter((p) => p.product);
@@ -36,7 +36,7 @@ const c = shop.contents;
 ---
 
 <div class="shop">
-  <PageHead title={shop.title} script={shop.script} deck={deck} tone="pink">
+  <PageHead title={shop.title} deck={deck} tone="pink" treatment="slab">
     <nav class="lines" aria-label={c.label}>
       <ul role="list">
         {store.length > 0 && (
@@ -64,10 +64,7 @@ const c = shop.contents;
         <li>
           <a href="#next">
             <span class="ln-title">{c.next}</span>
-            <span class="ln-line">
-              {(!nextDrop.name || !nextDrop.opensLabel) && <span class="stamp ln-stamp">{pending.stamp}</span>}
-              {nextDrop.name ?? c.nextLine}
-            </span>
+            <span class="ln-line">{nextDrop.name ?? c.nextLine}</span>
           </a>
         </li>
       </ul>
@@ -111,7 +108,6 @@ const c = shop.contents;
   /* and takes its own row there, so the next row never opens on a middle dot */
   .lines li:first-child { flex-basis: 100%; }
   .lines li:first-child + li::before { content: none; }
-  .ln-stamp { margin-right: 8px; background: var(--white); font-size: 11px; }
   .lines a:focus-visible { outline-color: var(--ink); }
 
   @media (hover: hover) {
@@ -129,8 +125,6 @@ const c = shop.contents;
     .shop :global(.phead) { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); column-gap: 3vw; align-items: start; padding-right: 0; padding-bottom: 3vw; }
     .shop :global(.phead-title) { grid-column: 1; }
     .shop :global(.phead-deck) { grid-column: 1; align-self: end; }
-    /* the script hangs off the title's baseline, into the band above the deck */
-    .shop :global(.phead-script) { right: calc(33.333% + 3vw); top: calc(3.4vw + min(13vw, 220px) * .8 - 3.4vw); }
     .lines {
       grid-column: 2;
       grid-row: 1 / span 2;
@@ -152,7 +146,6 @@ const c = shop.contents;
     .ln-title { color: var(--yellow); font: 400 min(3.9vw, 66px)/.86 var(--gothic); letter-spacing: .01em; }
     .ln-line, .lines li:first-child .ln-line { display: block; margin-left: 0; font: 600 14px/1.35 var(--sans); letter-spacing: normal; }
     .ln-line .num { font-weight: 800; }
-    .ln-stamp { font-size: 11px; }
     .lines a:focus-visible { outline-color: var(--yellow); }
   }
   @media (min-width: 1000px) and (hover: hover) {

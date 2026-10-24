@@ -1,8 +1,10 @@
 ---
 // THE LOOKBOOK: the magazine's paparazzi spread. The title card, then one spread per act (the
 // newest first), each a busy contact sheet of his photos; a tap opens a photo large in place.
-// Everything comes from the content files and Shopify: a new act, a new product photo or a new
+// Everything comes from the content files and Shopify: a new act, a new campaign photo or a new
 // credit in acts.ts lands here with no change to this page.
+// The title card (D4): outline caps, so it never opens like its nav neighbours (Drop, About),
+// and it keeps the one pink script of the inner pages, "all the pics", where it says the most.
 import PageHead from '../ui/PageHead.astro';
 import ActSpread from './ActSpread.astro';
 import Viewer from './Viewer.astro';
@@ -31,7 +33,7 @@ const ld = {
 ---
 
 <div class="lb">
-  <PageHead title={copy.title} script={copy.script} deck={copy.deck} tone="yellow">
+  <PageHead title={copy.title} script={copy.script} deck={copy.deck} tone="yellow" treatment="outline">
     {spreads.length > 1 && (
       <nav class="lb-jump" aria-label={copy.jumpLabel}>
         {spreads.map((s) => <a href={`#${s.act.slug}`}><span>{s.act.title}</span></a>)}

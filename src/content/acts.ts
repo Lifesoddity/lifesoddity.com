@@ -1,7 +1,7 @@
 // The collection, told in acts. Each act is one drop: its name, its vice, its definition, the
 // day it opened, its soundtrack and its campaign. All of it from his own Instagram captions.
 // A new drop is one new entry here (and its products tagged in Shopify with `act:<slug>`).
-// `null` means he has not given it yet: the pages show it as pending, never invented.
+// `null` means it has not been given yet: the pages leave it out, never invent it.
 
 import type { ImageMetadata } from 'astro';
 import { campaign } from '../assets';

@@ -1,6 +1,6 @@
-// Words used on more than one page: the header, the bag, the waitlist, the pending facts.
-// The magazine's voice: short, second person, a little loud. Nothing here promises what he
-// has not confirmed.
+// Words used on more than one page: the header, the buy box, the bag, the waitlist, the
+// playlist. The site speaks as Life's Oddity: short, second person, a little loud, never about
+// the founder in the third person. Nothing here promises what has not been confirmed.
 
 export const header = {
   menu: 'Menu',
@@ -8,6 +8,20 @@ export const header = {
   added: 'Added!',
   skip: 'Skip to the page',
   home: "Life's Oddity, home",
+};
+
+/** The buy box (components/ui/BuyBox.astro, scripts/buy.ts). Its main button is never dead:
+ *  PICK A SIZE, then ADD TO BAG, then CHECKOUT · BAG (n) (bag.goCheckout). */
+export const buy = {
+  /** The size row's group label. */
+  size: 'Size',
+  /** The main button before a size is chosen: pressing it points at the sizes. */
+  pick: 'Pick a size',
+  add: 'Add to bag',
+  chosen: (size: string) => `Size ${size}. Add it to your bag.`,
+  added: (title: string, size: string) => `In your bag: ${title}, size ${size}.`,
+  /** The one fit line under the size stamps, followed by the contact link (site.ts contact). */
+  between: 'Between sizes?',
 };
 
 export const bag = {
@@ -47,21 +61,35 @@ export const waitlist = {
   failed: 'That did not go through. Try again in a minute, or',
 };
 
-/** How a fact he has not given yet is shown, in the tabloid's voice. */
+/**
+ * A fact not given yet is left out, not stamped (D1). The UNCONFIRMED stamp has one job: the
+ * next drop (its name and date), once per page, where the next drop is presented.
+ */
 export const pending = {
   stamp: 'Unconfirmed',
-  details: 'Fabric and fit are not posted yet. Ask before you order.',
-  sizeGuide: 'No size chart yet. Ask for measurements.',
-  shipping: 'Shipping and taxes are calculated at checkout.',
-  playlist: 'The playlist link is not in yet. Check back.',
-  /** The playlist box's stand-in print when a playlist has no artwork. */
-  noRecord: 'No record (yet)',
 };
 
-/** The playlist box. */
+/** The playlist (components/ui/Player.astro, scripts/player.ts). */
 export const player = {
-  /** The caption under the one known track. */
+  /** The bar over the box and the strip: the brand's own name for its soundtrack. */
+  bar: "Life's Oddity radio",
+  sub: (n: number | null, title: string) => (n ? `The soundtrack of Act ${n}: ${title}` : `The soundtrack of ${title}`),
+  /** The known track, then where it was heard: "G wagon, Godsflyestsoldier," */
+  track: (title: string, artist: string) => `${title}, ${artist},`,
   heardOn: (where: string) => `heard on ${where}`,
+  /** How screen readers name the playlist: "the Showtime playlist". */
+  name: (title: string) => `the ${title} playlist`,
+  play: 'Play',
+  pause: 'Pause',
+  playName: (name: string) => `Play ${name}`,
+  pauseName: (name: string) => `Pause ${name}`,
+  loading: 'Loading Spotify…',
+  playing: (name: string) => `Now playing: ${name}`,
+  paused: (name: string) => `Paused: ${name}`,
+  here: 'listen here',
+  honest: 'Not logged in to Spotify here? You’ll hear previews. Open in Spotify for the full songs.',
+  open: 'Open in Spotify',
+  error: 'Spotify did not load here. Open the playlist in Spotify instead.',
 };
 
 export const status = {

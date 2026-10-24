@@ -1,6 +1,6 @@
 ---
 // THE COVER. The magazine's front page and the first screen's buy control: the masthead, the
-// issue line, the cover star (the live piece, cut out and flash-lit), coverlines in his words,
+// issue line, the cover star (the live piece, cut out and flash-lit), coverlines in the brand's words,
 // and the price box where a real cover prints its price and barcode.
 import { Image, getImage } from 'astro:assets';
 import { brand, campaign } from '../../assets';
@@ -19,9 +19,9 @@ const product = piece.product!;
 const c = home.cover;
 const art = piece.art;
 const archiveAct = actBySlug('party-animal');
-// the third coverline plays the act's soundtrack once its playlist link is in; until then it
-// jumps to the waitlist (PRESS PLAY comes back by itself when the link is set)
-const playable = Boolean(archiveAct?.playlist.spotify || archiveAct?.playlist.apple);
+// the third coverline plays the act's soundtrack once its Spotify link is in (the only link the
+// Player plays); until then it jumps to the waitlist (PRESS PLAY comes back by itself)
+const playable = Boolean(archiveAct?.playlist.spotify);
 const issue = `The ${piece.act.title} issue · ${piece.act.openedLabel} · ${site.tagline}`;
 const lead = piece.word.lines.map((l) => l.join(''));
 // the flash is masked by the cut-out's own edge: the same file the visible image loads (its 1000w
@@ -139,8 +139,8 @@ const cutMask = art.cutout ? (await getImage({ src: art.cutout.front, width: 100
   .cl-play-h { color: var(--yellow); font: 400 50px/.86 var(--gothic); text-transform: uppercase; }
   .cl-play-d { font: 600 14px/1.35 var(--sans); }
 
-  /* a short phone screen (an app's in-app browser): smaller star and lead, so ADD TO BAG lands
-     in the first screen */
+  /* a short phone screen (an app's in-app browser): smaller star and lead, so the buy button
+     (PICK A SIZE, then ADD TO BAG) lands in the first screen */
   @media (max-width: 699px) and (max-height: 760px) {
     .star { width: 76%; }
     .cv-lead { font-size: clamp(88px, 24vw, 230px); }
@@ -166,7 +166,8 @@ const cutMask = art.cutout ? (await getImage({ src: art.cutout.front, width: 100
   }
 
   @media (min-width: 1000px) {
-    .cover { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: none; }
+    /* the cover word is sized by the screen's height too, so it fits short laptop screens */
+    .cover { --lead: min(14.5vw, 22.5svh); grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: none; }
     /* the right third of the spread: coverlines on black */
     .cover::after {
       content: "";
@@ -187,9 +188,12 @@ const cutMask = art.cutout ? (await getImage({ src: art.cutout.front, width: 100
     .issue { font-size: 12px; margin-top: 14px; }
     .cv-star { grid-area: 2 / 1 / 4 / 2; padding: 0 3vw; }
     .star { width: min(64%, 68svh); margin: 0 1% 0 0; rotate: -5deg; align-self: start; }
-    .cv-lead { font-size: min(14.5vw, 26svh); margin-top: 2.2vw; }
+    .cv-lead { font-size: var(--lead); margin-top: 2.2vw; }
     .cv-tape { right: auto; left: 39%; bottom: 3%; font-size: 3.6vw; }
-    .cv-deck { grid-area: 3 / 1 / 4 / 2; align-self: end; justify-self: start; max-width: 26ch; padding: 0 0 34px 3vw; font-size: max(14px, 1.2vw); }
+    /* the deck sits at the foot of the cover, and never higher than just under the cover word's
+       two lines (1.6em at line-height .8): where the screen is short, the cover grows instead of
+       letting the deck run into DEVIL */
+    .cv-deck { grid-area: 2 / 1 / 4 / 2; align-self: end; justify-self: start; max-width: 26ch; margin-top: calc(2.2vw + var(--lead) * 1.6 + max(16px, 1.4vw)); padding: 0 0 34px 3vw; font-size: max(14px, 1.2vw); }
     .cv-lines { grid-area: 1 / 2 / 3 / 3; grid-template-columns: minmax(0, 1fr); align-content: start; gap: min(2.4vw, 3svh); padding: 30px 2.6vw 26px; background: none; }
     .cv-lines::before { display: none; }
     .cl-act { grid-template-columns: minmax(0, 1fr) min(31%, 16svh); }

@@ -1,9 +1,11 @@
-// The playlist player. Nothing from Spotify loads until the visitor presses play: then
-// Spotify's own player (an iframe, its design) is set into the print, and our PLAY sticker
-// drives it through Spotify's iFrame API. Visitors not logged into Spotify in this browser
+// The playlist box. It exists only once an act has a Spotify link (without one, Player.astro
+// prints a coverline strip and nothing here runs). Nothing from Spotify loads until the visitor
+// presses play: then Spotify's own player (an iframe, its design) is set into the print, and our
+// PLAY sticker drives it through Spotify's iFrame API. Visitors not logged into Spotify in this browser
 // (most, inside Instagram) hear 30-second previews; the honest line under it says so.
 
 import { flash, slap } from './motion';
+import { player } from '../content/copy/common';
 
 interface Controller {
   togglePlay(): void;
@@ -45,16 +47,16 @@ export function initPlayers() {
     const now = pl.querySelector<HTMLElement>('[data-now]');
     const err = pl.querySelector<HTMLElement>('[data-error]');
     const url = pl.dataset.spotify;
-    const name = pl.dataset.name ?? 'the playlist';
+    const name = pl.dataset.name ?? player.name('');
     if (!btn || !slot || !mount || !url) return;
 
     let controller: Controller | null = null;
     let loading = false;
     const set = (playing: boolean) => {
       pl.classList.toggle('is-playing', playing);
-      btn.setAttribute('aria-label', `${playing ? 'Pause' : 'Play'} ${name}`);
-      if (label) label.textContent = playing ? 'Pause' : 'Play';
-      if (now) now.textContent = playing ? `Now playing: ${name}` : `Paused: ${name}`;
+      btn.setAttribute('aria-label', playing ? player.pauseName(name) : player.playName(name));
+      if (label) label.textContent = playing ? player.pause : player.play;
+      if (now) now.textContent = playing ? player.playing(name) : player.paused(name);
     };
 
     btn.addEventListener('click', async () => {
@@ -63,7 +65,7 @@ export function initPlayers() {
       if (loading) return;
       loading = true;
       slot.hidden = false;
-      if (now) now.textContent = 'Loading Spotify…';
+      if (now) now.textContent = player.loading;
       flash(slot.querySelector('.ph'));
       try {
         const api = await loadApi();

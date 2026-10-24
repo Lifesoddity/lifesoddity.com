@@ -1,12 +1,13 @@
 ---
-// The title card of the profile: LIFE IS ODD in giant type on the cover's pink, credited to
-// where he wrote it. Beside it, where a profile prints its subject's portrait, a black print
-// with no photo on it yet: WHO IS HE?, flash-lit, and an UNCONFIRMED sticker saying his story
-// is not on the record yet. Nothing about him is guessed, and nothing is promised.
-import { acts } from '../../content/acts';
+// The title card of the profile: LIFE IS ODD, the brand's own line, in yellow caps on two black
+// bars run edge to edge across the cover's pink (D4: About's treatment is the bar). Pasted over
+// the bars, a photo from the latest campaign as a tilted print, with its caption beside it: the
+// act it comes from, the day it dropped, and the credit its caption gives. It links to that
+// act's pictures in the lookbook. Nothing about the founder is guessed or stamped (D1, D5).
+import Print from '../ui/Print.astro';
+import { acts, liveAct } from '../../content/acts';
 import { site } from '../../content/site';
 import { about } from '../../content/copy/about';
-import { pending } from '../../content/copy/common';
 
 /** Two lines, the last word alone: "Life Is" / "Odd". */
 const splitLast = (s: string) => {
@@ -14,34 +15,44 @@ const splitLast = (s: string) => {
   return i > 0 ? [s.slice(0, i), s.slice(i + 1)] : [s];
 };
 const title = splitLast(site.tagline);
-const who = splitLast(about.who.print);
 const dated = [...acts].sort((a, b) => Date.parse(a.opened) - Date.parse(b.opened));
 const span = dated.length ? about.issueSpan(dated[0].title, dated[dated.length - 1].title) : null;
-const issue = [about.issueLead, span, site.bio].filter(Boolean).join(' · ');
+const issue = [about.issueLead, span, site.name].filter(Boolean).join(' · ');
+
+// the photo: the live act's first campaign photo, else the latest act's that has one
+const source = [liveAct(), ...[...dated].reverse()].find((a) => a?.photos.length) ?? null;
+const shot = source?.photos[0] ?? null;
+const role = shot?.credit ? source?.credits.find((c) => c.names.some((n) => `@${n}` === shot.credit))?.role : undefined;
+const credit = shot?.credit ? (role ? `${role} ${shot.credit}` : shot.credit) : null;
+const day = source?.openedLabel.match(/^[A-Za-z]+ \d{1,2}, \d{4}/)?.[0] ?? source?.openedLabel ?? '';
+const actName = source ? about.photo.actName(source.number, source.title) : '';
 ---
 
-<section class="pf halftone" aria-labelledby="pf-title">
-  <div class="pf-head">
-    <h1 class="pf-title" id="pf-title">
-      {title.map((l, i) => (
-        <>{i > 0 && ' '}<span class="pf-line">{l}{i === title.length - 1 && <span class="pf-script" aria-hidden="true">{about.script}</span>}</span></>
-      ))}
-    </h1>
-    <p class="pf-credit">{about.titleCredit}</p>
-  </div>
+<section class:list={['pf', 'halftone', !shot && 'no-shot']} aria-labelledby="pf-title">
+  <h1 class="pf-title" id="pf-title">
+    {title.map((l, i) => <>{i > 0 && ' '}<span class="pf-bar"><span class="pf-ink">{l}</span></span></>)}
+  </h1>
 
-  <div class="pf-who">
-    <figure class="pf-print ph print" data-flash data-flash-first aria-label={about.who.label}>
-      <span class="ph-sh" aria-hidden="true"></span>
-      <div class="pf-dark halftone">
-        <svg class="pf-cam" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 16.5h8l3.5-5.5h11l3.5 5.5h8v20H7z"></path><circle cx="24" cy="26" r="6.5"></circle><path d="M6.5 41.5 41.5 6.5"></path></svg>
-        <p class="pf-q">{who.map((l) => <span>{l}</span>)}</p>
-      </div>
-      <span class="ph-flash" aria-hidden="true"></span>
-    </figure>
-    <p class="tape pf-tape" aria-hidden="true">{about.who.tape}</p>
-    <p class="pf-pending sticker"><span class="stamp">{pending.stamp}</span> <span>{about.who.line}</span></p>
-  </div>
+  {source && shot && (
+    <>
+      <Print
+        class="pf-print"
+        photo={{ kind: 'local', image: shot.image, alt: shot.alt }}
+        sizes="(min-width: 1000px) 34vw, (min-width: 700px) 38vw, 48vw"
+        href={`/lookbook/#${source.slug}`}
+        label={about.photo.see(actName)}
+        ratio={3 / 4}
+        tilt={-3}
+        eager
+        first
+      />
+      <p class="pf-cap">
+        <span class="pf-act">{actName}</span>
+        {day && <span class="pf-meta">{day}</span>}
+        {credit && <span class="pf-meta pf-credit">{credit}</span>}
+      </p>
+    </>
+  )}
 
   <p class="pf-issue">{issue}</p>
 </section>
@@ -50,72 +61,58 @@ const issue = [about.issueLead, span, site.bio].filter(Boolean).join(' · ');
   .pf {
     --dot: rgb(81 42 52 / .34);
     --fade: radial-gradient(95% 55% at 0% 100%, #000 5%, transparent 72%), radial-gradient(70% 45% at 100% 0%, #000, transparent 70%);
+    --shadow: rgb(60 0 18 / .55);
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "head" "who" "issue";
-    row-gap: 22px;
-    padding: 20px var(--pad) 22px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 14px;
+    padding: 18px var(--pad) 22px;
     background: var(--cover);
+    color: var(--ink);
     overflow: clip;
   }
   .pf > * { position: relative; z-index: 1; }
 
-  .pf-head { grid-area: head; position: relative; display: grid; gap: 14px; }
-  .pf-title { color: var(--white); font: 400 min(47vw, 360px)/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; }
-  .pf-line { position: relative; display: block; width: max-content; }
-  /* the script overlay hangs off the end of the last line, over the pink, not over the letters */
-  .pf-script { position: absolute; left: 92%; top: 20%; color: var(--white); font: 400 clamp(44px, 12vw, 110px)/1 var(--script); letter-spacing: 0; text-transform: none; rotate: -8deg; white-space: nowrap; pointer-events: none; }
-  .pf-credit { max-width: 32ch; font: 700 14.5px/1.38 var(--sans); }
-
-  /* where the portrait goes: a black print, no photo yet. On a phone it takes the right half,
-     with the UNCONFIRMED sticker beside it, so his own lines start inside the second screen */
-  .pf-who { grid-area: who; position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; column-gap: 12px; justify-items: center; padding-top: 14px; }
-  .pf-print { grid-column: 2; grid-row: 1; width: 100%; padding: 7px; background: var(--white); rotate: 3deg; }
-  .pf-dark {
-    --dot: rgb(255 46 110 / .26);
-    --fade: radial-gradient(80% 70% at 50% 40%, #000, transparent 80%);
-    position: relative;
+  /* the bar: each line its own black bar, from the left edge of the page to the right */
+  .pf-title {
+    grid-column: 1 / -1;
+    grid-row: 1;
     display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: 6%;
-    aspect-ratio: 4 / 5;
-    background: var(--ink);
+    row-gap: .03em;
+    margin-inline: calc(-1 * var(--pad));
     color: var(--yellow);
-    container-type: inline-size;
+    font: 400 min(44vw, 360px, 38svh)/.8 var(--gothic);
+    letter-spacing: .005em;
+    text-transform: uppercase;
   }
-  .pf-cam { width: 22cqi; height: 22cqi; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .pf-q { font: 400 34cqi/.84 var(--gothic); text-align: center; text-transform: uppercase; }
-  .pf-q span { display: block; }
-  /* the tape tags the print's top-left corner, wherever the print sits */
-  .pf-tape { left: 44%; top: 2px; font-size: 24px; rotate: -6deg; }
-  .pf-pending { grid-column: 1; grid-row: 1; position: relative; z-index: 3; justify-self: start; display: grid; gap: 8px; justify-items: start; max-width: none; margin-top: 0; padding: 12px 14px 13px; background: var(--white); font: 700 14px/1.38 var(--sans); box-shadow: 0 8px 14px rgb(60 0 18 / .35); }
+  .pf-bar { display: block; padding: .1em var(--pad) .06em; background: var(--ink); }
+  .pf-ink { display: block; width: max-content; max-width: 100%; }
 
-  .pf-issue { grid-area: issue; padding: 6px 0 5px; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); font: 800 10.5px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+  /* the print: on a phone under the bars, its top edge tucked into the last bar below the
+     letters; from 700 up it is pasted over the bars' right ends, clear of the letters */
+  .pf :global(.pf-print) { grid-column: 2; grid-row: 2; z-index: 2; width: 100%; margin-top: -8px; }
+  .pf-cap { grid-column: 1; grid-row: 2; display: grid; gap: 8px; align-content: start; justify-items: start; padding-top: 18px; }
+  .pf-act { font: 400 clamp(34px, 9.6vw, 44px)/.86 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .pf-meta { font: 800 11px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+  .pf-credit { max-width: 22ch; padding-top: 8px; border-top: 2px solid var(--ink); font-weight: 700; letter-spacing: .06em; }
+
+  .pf-issue { grid-column: 1 / -1; grid-row: 3; margin-top: 26px; padding: 6px 0 5px; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); font: 800 10.5px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+  .no-shot .pf-issue { grid-row: 2; }
 
   @media (min-width: 700px) {
-    .pf { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-areas: "head who" "issue issue"; column-gap: 28px; padding-top: 30px; }
-    .pf-head { align-self: start; }
-    .pf-title { font-size: min(25vw, 360px); }
-    .pf-script { left: 96%; top: 30%; font-size: 5.4vw; }
-    .pf-credit { font-size: 16px; }
-    /* one column again: the print, then the sticker overlapping its foot */
-    .pf-who { grid-template-columns: minmax(0, 1fr); align-items: normal; column-gap: 0; align-self: start; padding-top: 6px; }
-    .pf-print { grid-column: auto; grid-row: auto; width: 86%; }
-    .pf-tape { left: 4%; font-size: 32px; }
-    .pf-pending { grid-column: auto; grid-row: auto; justify-self: start; max-width: 300px; margin: -22px 0 0 -8%; }
-    .pf-issue { margin-top: 8px; font-size: 11px; }
+    .pf { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); column-gap: 28px; padding-top: 26px; }
+    .pf-title { font-size: min(25vw, 360px, 38svh); }
+    .pf :global(.pf-print) { grid-column: 2; grid-row: 1 / span 2; align-self: start; justify-self: end; width: 86%; margin: 1.4vw 0 0; }
+    .pf-cap { padding-top: 26px; }
+    .pf-act { font-size: min(6vw, 56px); }
+    .pf-issue { margin-top: 30px; font-size: 11px; }
   }
 
   @media (min-width: 1000px) {
-    .pf { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); column-gap: 4vw; padding: 3vw var(--pad) 2.4vw; }
-    .pf-head { gap: 1.6vw; }
-    .pf-script { font-size: min(6.6vw, 100px); }
-    .pf-credit { max-width: 30ch; font-size: max(16px, 1.25vw); }
-    .pf-print { width: min(74%, 470px); margin-top: 1vw; }
-    .pf-tape { left: 8%; font-size: min(3vw, 44px); }
-    .pf-pending { justify-self: end; max-width: 330px; margin: -5vw 2% 0 0; font-size: 15px; }
-    .pf-script { top: 24%; }
-    .pf-issue { font-size: 12px; }
+    .pf { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); column-gap: 4vw; padding: 2.6vw var(--pad) 2.4vw; }
+    .pf :global(.pf-print) { width: min(88%, 520px); margin-top: .6vw; }
+    .pf-cap { grid-template-columns: auto minmax(0, 1fr); column-gap: 18px; row-gap: 6px; align-items: end; padding-top: 1.8vw; }
+    .pf-act { grid-row: 1 / span 2; font-size: min(4.4vw, 68px); }
+    .pf-credit { grid-column: 2; padding-top: 6px; }
+    .pf-issue { margin-top: 2vw; font-size: 12px; }
   }
 </style>

@@ -1,8 +1,9 @@
 ---
 // The left page of the cover story: every Shopify photo of the piece, on the piece's own ground.
 // A piece whose ground was sampled from its own product shot (content/pieces.ts) runs its first
-// photo full bleed, so the shot and the page are one colour field; any other photo, and every
-// photo of a piece with no art yet, is a flash-lit print slapped on the ground. Several photos
+// photo full bleed, so the shot and the page are one colour field; any other Shopify photo, and
+// every photo of a piece with no art yet, stands straight on the ground with its flash shadow (a
+// product shot, D4: the tilted white-bordered print is for campaign photos only). Several photos
 // sit in one swipeable row, each with its number taped on. The first loads at once and flashes;
 // the rest load lazily. The round sticker carries the real state, and flips to SOLD OUT when the
 // live stock check finds none left.
@@ -149,7 +150,7 @@ const word = piece.word.lines.map((l) => l.join(''));
   .gl-bleed :global(img) { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
   .gl-bleed .ph-sh { display: none; }
 
-  /* any other shot: a print with its flash shadow */
+  /* any other shot: straight, with its flash shadow (Print's .shot) */
   .is-print { padding: 34px 0 46px; }
   .gl-shot :global(.gl-print) { width: min(72%, 360px); }
   .is-many .gl-shot :global(.gl-print) { width: min(80%, 360px); }

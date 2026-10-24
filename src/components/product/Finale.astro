@@ -1,6 +1,8 @@
 ---
-// The end of the cover story. When the act has other pieces, they are pinned up here as prints
-// (a live one links to its page with its price, an archive one carries its stamp). When this is
+// The end of the cover story. When the act has other pieces, they are pinned up here (a live one
+// links to its page with its price, an archive one carries its stamp): a piece with a cut-out
+// shows it on this white ground, a campaign photo is a tilted print, a Shopify shot stands
+// straight (D2, D4). When this is
 // the act's only piece, the story is TO BE CONTINUED: the list for the next drop. With only one
 // or two other pieces, both run side by side, so the spread is never a lone print.
 import Print from '../ui/Print.astro';
@@ -31,10 +33,11 @@ const tilts = [-3, 2.5, -1.5, 3];
     <ul class="mo-list">
       {more.map((p, i) => (
         <li class="mo-item">
-          {p.photo && (
+          {(p.art.cutout || p.photo) && (
             <Print
               class="mo-print"
-              photo={p.photo}
+              photo={p.photo ?? undefined}
+              cutout={p.art.cutout}
               sizes="(min-width: 1000px) 22vw, 44vw"
               href={p.href}
               label={copy.more.see(p.title)}

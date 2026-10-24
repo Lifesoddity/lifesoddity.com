@@ -5,7 +5,7 @@
 // date, so a product added in Shopify needs no change in this file.
 //
 // For the store owner: when the next drop has a name and a date (content/acts.ts, nextDrop),
-// the last card prints them instead of the UNCONFIRMED stamp.
+// the last card prints them on its blank cover, and the UNCONFIRMED stamp comes off.
 
 /** "A", "A and B", "A, B and C". */
 export const andList = (items: string[]) =>
@@ -17,7 +17,6 @@ const fewNames = (items: string[]) =>
 
 export const shop = {
   title: 'All the pieces',
-  script: 'spotted',
   /** The title card's deck, from what is in the store and in the archive. */
   deck: (d: { out: string[]; sold: string[]; acts: string[] }) => {
     const parts = [
@@ -44,7 +43,7 @@ export const shop = {
     /** Several pieces in the store. */
     many: (n: number) => `${n} pieces in the store`,
     archive: 'The archive',
-    /** No count: two archive cards may turn out to be one piece (art.pending in content/pieces.ts). */
+    /** No count: two archive cards may turn out to be one piece (the owner's note in content/pieces.ts). */
     archiveLine: (_n: number, acts: string[]) => `Pieces from ${andList(acts)}`,
     next: 'Who’s next?',
     nextLine: 'Get on the list',
@@ -62,7 +61,7 @@ export const shop = {
     more: 'The full story',
   },
 
-  /** Past acts: his photos, no prices. */
+  /** Past acts: the campaign photos, no prices. */
   archive: {
     title: 'The archive',
     deck: 'Past acts, on the record. No price tags, just the pics.',
@@ -76,13 +75,16 @@ export const shop = {
     allPics: 'See all the pics',
   },
 
-  /** The last card: the next drop, which links to the drop page and its waitlist. */
+  /** The last card: the next drop, which links to the drop page and its waitlist. Its blank
+   *  cover is the page's one UNCONFIRMED stamp, until the drop has a name and a date. */
   next: {
     title: 'Who’s next?',
-    noPics: 'No pics (yet)',
-    pending: 'No name, no date on the record yet. Be the first to know.',
-    named: (name: string, date: string | null) =>
-      date ? `${name}. ${date}. Be the first to know.` : `${name}. No date on the record yet. Be the first to know.`,
+    /** While the next drop has no name (the same line as home and /drop). */
+    line: 'The next drop is in the works. Be the first to know.',
+    named: (name: string, date: string | null) => (date ? `${name}. ${date}. Be the first to know.` : `${name}. Be the first to know.`),
     go: 'Get on the list',
+    /** The blank cover's issue line: "The next issue · Life Is Odd". */
+    coverIssue: 'The next issue',
+    coverNamed: (name: string) => `The ${name} issue`,
   },
 };

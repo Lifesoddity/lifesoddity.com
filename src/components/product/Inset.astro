@@ -23,7 +23,8 @@ const credits = photos.map((p, i) => {
   return c && photos.findIndex((q) => creditFor(q.credit) === c) === i ? c : null;
 });
 const name = act.number ? copy.actName(act.number, act.title) : act.title;
-const small = `${name}. ${act.openedLabel}.${act.subtitle ? ` ${act.subtitle}.` : ''}`;
+// the campaign title stays small here until it is confirmed for large type
+const small = [name, act.openedLabel, act.subtitle].filter(Boolean).map((part) => `${part}.`).join(' ');
 const tilts = [-3, 2.5, 2, -2.5];
 ---
 
@@ -72,17 +73,18 @@ const tilts = [-3, 2.5, 2, -2.5];
   .lt-quote::before { content: "\201C"; display: block; height: 34px; color: var(--ink); font: 400 110px/.9 var(--gothic); }
   .lt-drop { max-width: 46ch; font: 800 11.5px/1.4 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
 
-  .lt-prints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 34px; align-items: start; }
+  .lt-prints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 58px 34px; align-items: start; }
   .lt-prints :global(.lt-1) { margin-top: 34px; }
   .lt-prints :global(.lt-3) { margin-top: 34px; }
-  /* the real credit, set up the print's right edge */
+  /* the real credit. On a phone the gap between two prints is too narrow for it, so it hangs
+     under its print (D7: it never runs into the next one); from 700px it runs up the print's
+     right edge. */
   .lt-credit {
     position: absolute;
-    top: 2%;
-    left: calc(100% + 8px);
-    max-height: 96%;
-    writing-mode: vertical-rl;
-    font: 700 10px/1.25 var(--sans);
+    top: calc(100% + 10px);
+    left: 4px;
+    right: 0;
+    font: 700 10px/1.3 var(--sans);
     letter-spacing: .1em;
     text-transform: uppercase;
   }
@@ -92,7 +94,8 @@ const tilts = [-3, 2.5, 2, -2.5];
     .lt.is-bare { grid-template-columns: minmax(0, 1fr); }
     .lt-title { font-size: 13vw; }
     .lt-quote p { font-size: 44px; }
-    .lt-prints { column-gap: 40px; }
+    .lt-prints { gap: 30px 40px; }
+    .lt-credit { top: 2%; right: auto; left: calc(100% + 8px); max-height: 96%; writing-mode: vertical-rl; line-height: 1.25; }
   }
   @media (min-width: 1000px) {
     .lt { grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr); column-gap: 4vw; padding: 5vw var(--pad) 6vw; }

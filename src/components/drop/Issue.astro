@@ -1,19 +1,29 @@
 ---
-// One act, printed as one issue of the magazine: its title with the vice on a tape tag, the
-// issue line (its name, the day it dropped and its state, unless the tape already says it), its
-// dictionary entry, its pieces as flash prints (live ones link to their product page and carry
-// their price; archive ones carry a rubber stamp and no price), its quote, its credits (only in
-// an issue that shows the photos they credit), its playlist box and, when he wrote one, its
-// closing line. The ground comes from the act's first piece, so every issue keeps the
-// colours of its own material. Everything is read from content/acts.ts and the pieces, so a new
-// act is a new issue with no change here.
+// One act, printed as one issue of the magazine: its title with its tags (the act stamp, the vice
+// on a tape tag), the issue line (its name, the day it dropped and its state, unless the tape
+// already says it), its dictionary entry, its pieces as prints (live ones link to their product
+// page and carry their price; archive ones carry a rubber stamp and no price), the issue's other
+// campaign photos, its quote, its credits (only in an issue that shows the photos they credit),
+// its playlist and, when there is one, its closing line. The ground comes from the act's first
+// piece, so every issue keeps the colours of its own material. Everything is read from
+// content/acts.ts and the pieces, so a new act is a new issue with no change here.
+//
+// Which picture prints where (D2, each image has one main place to live):
+// - A live piece's own Shopify photo and cut-out live on the cover, the story, the shop and its
+//   product page. Its issue prints the act's campaign photos instead (She Devil: the letter on
+//   rose petals, then the letter), and any campaign photo left over prints beside the playlist.
+//   With no campaign photo, its cut-out or its shot, on a contrasting ground.
+// - An archive piece's main photo lives in the home story and the shop archive. Its issue prints
+//   the alternate (the hoodie worn open, the Spotlight close-up). A piece shot on its own studio
+//   gradient (the jacket) prints as its cut-out, front side, on a contrasting ground (D2, D4).
+// - A piece with no picture shows its name and act only: no stand-in box (D1).
 import Print from '../ui/Print.astro';
 import Player from '../ui/Player.astro';
 import type { Act } from '../../content/acts';
 import { statusLabel, type Piece } from '../../lib/pieces';
 import { formatPrice } from '../../lib/money';
 import { drop } from '../../content/copy/drop';
-import { pending, status } from '../../content/copy/common';
+import { status } from '../../content/copy/common';
 
 interface Props {
   act: Act;
@@ -21,6 +31,10 @@ interface Props {
   /** The issue on sale now: its title is an h2 (the back issues sit under their own h2). */
   live?: boolean;
 }
+
+type Photo = NonNullable<Piece['photo']>;
+/** What an issue prints for a piece: a photo (a campaign print, or a shot on a ground), or its cut-out. */
+type View = { photo: Photo } | { cut: true };
 
 const { act, pieces, live = false } = Astro.props;
 const c = drop.issue;
@@ -31,6 +45,8 @@ const lead = pieces[0];
 const ground = lead?.art.ground ?? 'var(--yellow)';
 const dark = lead?.art.ink === 'white';
 const dot = lead?.art.dot ?? 'rgb(11 11 11 / .1)';
+// the contrasting ground a cut-out or a shot sits on: yellow, or white on an issue that is yellow
+const panel = /ffe500|--yellow/i.test(ground) ? 'var(--white)' : 'var(--yellow)';
 const onSale = pieces.some((p) => p.status === 'live');
 const state = act.status === 'archive' ? status.archive : onSale ? status.live : status.soldout;
 const actLabel = act.number ? c.act(act.number) : null;
@@ -41,25 +57,38 @@ const issueLine = [c.name(act.title), act.openedLabel ? c.opened(act.openedLabel
   .filter(Boolean)
   .join(' · ');
 
-// the credits name the people behind his campaign photos, so they print only in an issue that
-// shows those photos, never as a byline under a Shopify mockup they did not shoot
-const showsCampaign = pieces.some((p) => {
-  const ph = p.photo;
-  return ph?.kind === 'local' && act.photos.some((a) => a.image.src === ph.image.src);
-});
-const credits = showsCampaign ? act.credits : [];
-const hasWords = !!act.quote || credits.length > 0;
-
 const def = act.definition;
 const cut = def ? def.indexOf(':') : -1;
 const headword = def && cut > 0 ? def.slice(0, cut) : null;
 const meaning = def && cut > 0 ? def.slice(cut + 1).trim() : def;
 
-// "A love letter to Mutsumi" stays small until he confirms it: the playlist box prints it quiet
-const quiet = !act.subtitleConfirmed && !!act.subtitle && act.playlist.name === act.subtitle;
+// the pictures (see the top of this file)
+const campaign: Photo[] = act.photos.map((ph) => ({ kind: 'local', image: ph.image, alt: ph.alt }));
+const unused = live ? [...campaign] : [];
+const views: (View | null)[] = pieces.map((p) => {
+  if (p.product) {
+    const own = unused.shift();
+    if (own) return { photo: own };
+    if (p.art.cutout) return { cut: true };
+    return p.photo ? { photo: p.photo } : null;
+  }
+  if (p.art.cutout) return { cut: true };
+  const alternate = p.photos[1] ?? p.photos[0];
+  return alternate ? { photo: alternate } : null;
+});
 
 // the prints: one piece sits beside the playlist; several make a spread of different sizes
 const spread = pieces.length > 1;
+// the campaign photos no piece took, beside the playlist of a one-piece issue (at most two)
+const more = spread ? [] : unused.slice(0, 2);
+
+// the credits name the people behind the campaign photos, so they print only in an issue that
+// shows those photos, never as a byline under a Shopify mockup they did not shoot
+const shown = [...views.map((v) => (v && 'photo' in v ? v.photo : null)), ...more];
+const showsCampaign = shown.some((ph) => ph?.kind === 'local' && act.photos.some((a) => a.image.src === ph.image.src));
+const credits = showsCampaign ? act.credits : [];
+const hasWords = !!act.quote || credits.length > 0;
+
 const slots: Record<number, { col: string; dy: number; tilt: number }[]> = {
   2: [{ col: '1 / 7', dy: 0, tilt: -3 }, { col: '8 / 13', dy: 7, tilt: 2.5 }],
   3: [{ col: '1 / 5', dy: 0, tilt: -3 }, { col: '5 / 8', dy: 9, tilt: 2.5 }, { col: '8 / 13', dy: 2.5, tilt: -1.5 }],
@@ -71,17 +100,12 @@ const sizesOf = (i: number) => {
   const span = slotOf(i).col.split('/').map(Number);
   return `(min-width: 700px) ${Math.round(((span[1] - span[0]) / 12) * 92)}vw, 84vw`;
 };
-const ratioOf = (p: Piece) => {
-  const img = p.photo?.image;
-  const r = img && 'width' in img && img.width && img.height ? img.width / img.height : 0.75;
+const ratioOf = (ph: Photo) => {
+  const img = ph.image;
+  const r = 'width' in img && img.width && img.height ? img.width / img.height : 0.75;
   return Math.min(1, Math.max(0.75, Math.round(r * 1000) / 1000));
 };
-const altOf = (p: Piece) => {
-  const ph = p.photo;
-  if (!ph) return p.title;
-  if (ph.kind === 'local') return ph.alt;
-  return ph.image.alt || p.art.cutout?.alt || p.title;
-};
+const altOf = (p: Piece, ph: Photo) => (ph.kind === 'local' ? ph.alt : ph.image.alt || p.art.cutout?.alt || p.title);
 const forSaleOf = (p: Piece) => p.status === 'live' && !!p.product;
 // a piece on sale leaves its status to the price sticker, which already says OUT NOW
 const metaOf = (p: Piece) => {
@@ -91,16 +115,20 @@ const metaOf = (p: Piece) => {
 ---
 
 <article
-  class:list={['is', 'halftone', spread ? 'is-spread' : 'is-solo', !hasWords && 'is-bare', dark && 'on-dark', dark && 'is-dark']}
+  class:list={['is', 'halftone', spread ? 'is-spread' : 'is-solo', !hasWords && 'is-bare', more.length > 0 && 'has-more', dark && 'on-dark', dark && 'is-dark']}
   id={act.slug}
   aria-labelledby={`${act.slug}-title`}
-  style={`--g:${ground};--dot:${dot}`}
+  style={`--g:${ground};--dot:${dot};--panel:${panel}`}
 >
   <header class="is-head">
-    {actLabel && <p class="stamp is-act">{actLabel}</p>}
     <div class="is-tw">
       <H class="is-title" id={`${act.slug}-title`}>{act.title}</H>
-      {tape && <p class="tape is-tape">{tape}</p>}
+      {(actLabel || tape) && (
+        <div class="is-tags">
+          {actLabel && <p class="stamp is-act">{actLabel}</p>}
+          {tape && <p class="tape is-tape">{tape}</p>}
+        </div>
+      )}
     </div>
     <p class="is-line">{issueLine}</p>
   </header>
@@ -112,42 +140,46 @@ const metaOf = (p: Piece) => {
       {pieces.map((p, i) => {
         const slot = slotOf(i);
         const forSale = forSaleOf(p);
+        const view = views[i];
+        const tilt = spread ? slot.tilt : -3;
+        const seal = !forSale && (
+          <span class="is-seal" aria-hidden="true">
+            <b>{statusLabel[p.status]}</b>
+            {actLabel && <span>{actLabel}</span>}
+          </span>
+        );
+        const link = { href: p.href, label: p.href ? c.seeLabel(p.title) : undefined };
         return (
           <li class="is-piece" style={`--col:${slot.col};--dy:${slot.dy}`}>
-            <div class="is-pic">
-              {p.photo ? (
-                <Print
-                  photo={p.photo}
-                  sizes={sizesOf(i)}
-                  alt={altOf(p)}
-                  href={p.href}
-                  label={p.href ? c.seeLabel(p.title) : undefined}
-                  tilt={spread ? slot.tilt : -3}
-                  ratio={ratioOf(p)}
-                  mark={ratioOf(p) === 0.75 ? p.art.mark : undefined}
-                >
-                  {!forSale && (
-                    <span class="is-seal" aria-hidden="true">
-                      <b>{statusLabel[p.status]}</b>
-                      {actLabel && <span>{actLabel}</span>}
-                    </span>
-                  )}
-                </Print>
-              ) : (
-                <p class="is-nopic"><span>{c.noPhoto}</span></p>
-              )}
-              {forSale && (
-                <p class="is-badge" data-live={p.product!.handle}>
-                  <b class="num" data-live-price>{formatPrice(p.product!.price)}</b>
-                  <span class="is-badge-on">{status.live}</span>
-                  <span class="is-badge-off">{status.soldout}</span>
-                </p>
-              )}
-            </div>
+            {view && (
+              <div class="is-pic">
+                {'cut' in view ? (
+                  <div class="is-ground halftone">
+                    <Print cutout={p.art.cutout} side="front" sizes={sizesOf(i)} {...link} tilt={tilt} />
+                    {seal}
+                  </div>
+                ) : view.photo.kind === 'shopify' ? (
+                  <div class="is-ground halftone">
+                    <Print photo={view.photo} sizes={sizesOf(i)} alt={altOf(p, view.photo)} {...link} ratio={ratioOf(view.photo)} />
+                    {seal}
+                  </div>
+                ) : (
+                  <Print photo={view.photo} sizes={sizesOf(i)} alt={altOf(p, view.photo)} {...link} tilt={tilt} ratio={ratioOf(view.photo)}>
+                    {seal}
+                  </Print>
+                )}
+                {forSale && (
+                  <p class="is-badge" data-live={p.product!.handle}>
+                    <b class="num" data-live-price>{formatPrice(p.product!.price)}</b>
+                    <span class="is-badge-on">{status.live}</span>
+                    <span class="is-badge-off">{status.soldout}</span>
+                  </p>
+                )}
+              </div>
+            )}
             <div class="is-cap">
               <HP class="is-ptitle">{p.title}</HP>
               <p class="is-meta">{metaOf(p)}</p>
-              {p.art.pending && <p class="is-pend"><span class="stamp">{pending.stamp}</span> {p.art.pending}</p>}
               {!forSale && p.description && <p class="is-desc">{p.description}</p>}
               {p.href && (
                 <a class="is-go" href={p.href}>
@@ -160,6 +192,20 @@ const metaOf = (p: Piece) => {
         );
       })}
     </ul>
+  )}
+
+  {more.length > 0 && (
+    <div class="is-more">
+      {more.map((ph, i) => (
+        <Print
+          photo={ph}
+          sizes="(min-width: 1000px) 38vw, (min-width: 700px) 46vw, 72vw"
+          alt={ph.kind === 'local' ? ph.alt : ''}
+          tilt={i % 2 ? -2 : 2.5}
+          ratio={ratioOf(ph)}
+        />
+      ))}
+    </div>
   )}
 
   {hasWords && (
@@ -179,7 +225,7 @@ const metaOf = (p: Piece) => {
   )}
 
   <div class="is-play">
-    <Player act={act} class={quiet ? 'is-quiet' : undefined} />
+    <Player act={act} heading={live ? 3 : 4} />
   </div>
 
   {act.line && <p class="is-end">{act.line}</p>}
@@ -201,14 +247,15 @@ const metaOf = (p: Piece) => {
   }
   .is-dark { --lc: var(--white); --qm: var(--yellow); }
 
-  /* the head: the act stamp, the title wearing its tape, the issue line */
+  /* the head: the title wearing its tags, then the issue line. The tags (the act stamp on the
+     left, the tape on the right) ride a row of their own above the title, so the tape never
+     crosses its letters at any width (D7). */
   .is-head { display: grid; justify-items: start; gap: 10px; }
+  .is-tw { display: grid; }
+  .is-title { grid-row: 2; font: 400 clamp(84px, 26vw, 150px)/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; text-wrap: balance; }
+  .is-tags { grid-row: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-bottom: 18px; }
   .is-act { font-size: 13px; background: var(--white); rotate: -4deg; }
-  .is-tw { position: relative; }
-  .is-tw:has(.is-tape) { margin-top: 14px; }
-  .is-title { font: 400 clamp(84px, 26vw, 150px)/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; text-wrap: balance; }
-  /* the tape sits on the top corner of the title, over the tops of the letters, never across them */
-  .is-tape { right: -6px; bottom: 100%; translate: 0 34%; font-size: 32px; white-space: nowrap; rotate: -6deg; }
+  .is-tape { position: relative; margin: 0 -6px 0 auto; font-size: 32px; white-space: nowrap; rotate: -6deg; }
   .is-line { justify-self: stretch; margin-top: 4px; padding: 6px 0 5px; border-top: 3px solid currentColor; border-bottom: 1px solid currentColor; font: 800 10.5px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
 
   /* the dictionary entry */
@@ -223,7 +270,20 @@ const metaOf = (p: Piece) => {
   .is-pic :global(.ph) { --shadow: rgb(11 11 11 / .55); }
   .is-dark .is-pic :global(.ph) { --shadow: rgb(0 0 0 / .5); }
   .is-pic :global(.ph > img) { width: 100%; }
-  .is-nopic { display: grid; place-items: center; aspect-ratio: 3 / 4; border: 6px solid var(--white); background: var(--ink); color: var(--yellow); font: 400 44px/.9 var(--gothic); text-transform: uppercase; rotate: -2deg; box-shadow: 11px 13px 6px rgb(11 11 11 / .45); }
+
+  /* a cut-out (or a product shot) on its contrasting ground: a square of flat colour pasted into
+     the issue with the same hard, slightly blurred shadow as the prints */
+  .is-ground {
+    --dot: rgb(11 11 11 / .12);
+    --fade: radial-gradient(80% 70% at 30% 20%, #000, transparent 78%);
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    background: var(--panel, var(--yellow));
+    box-shadow: 10px 12px 5px rgb(11 11 11 / .45);
+  }
+  .is-ground :global(.cut) { width: 62%; }
+  .is-ground :global(.shot) { width: 84%; }
 
   /* the archive stamp, pressed on the print's corner in the issue's own colours */
   .is-seal {
@@ -277,9 +337,6 @@ const metaOf = (p: Piece) => {
   .is-ptitle { font: 400 40px/.88 var(--gothic); text-transform: uppercase; }
   .is-meta { font: 800 10.5px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
   .is-desc { max-width: 38ch; margin-top: 3px; font: 500 14px/1.42 var(--sans); }
-  /* a fact about the piece he has not confirmed, beside its stamp */
-  .is-pend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: 38ch; margin-top: 3px; color: var(--lc); font: 700 13px/1.35 var(--sans); }
-  .is-pend .stamp { background: var(--white); }
   .is-go {
     display: inline-flex;
     align-items: center;
@@ -299,6 +356,11 @@ const metaOf = (p: Piece) => {
   .is-go svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--base) var(--ease-out); }
   .is-go:active { translate: 0 1px; }
 
+  /* the issue's other campaign photos, dropped in at the other side */
+  .is-more { display: grid; gap: 32px; justify-items: end; padding: 4px 6px 10px 0; }
+  .is-more :global(.ph) { --shadow: rgb(11 11 11 / .55); width: 72%; }
+  .is-more :global(.ph > img) { width: 100%; }
+
   /* the quote and the credits */
   .is-words { display: grid; gap: 22px; align-content: start; }
   .is-quote p { font: 400 44px/.92 var(--gothic); text-transform: uppercase; text-wrap: balance; }
@@ -309,9 +371,8 @@ const metaOf = (p: Piece) => {
   .is-credits dt { display: inline; font: 800 10.5px/1.4 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
   .is-credits dd { display: inline; font: 600 13px/1.4 var(--sans); overflow-wrap: anywhere; }
 
-  /* the playlist box */
+  /* the playlist: the strip keeps its own height (Player.astro) */
   .is-play { min-width: 0; }
-  .is-play :global(.is-quiet .pl-title) { font: 800 17px/1.25 var(--sans); letter-spacing: .01em; text-transform: none; }
 
   /* the closing line, on a black strip across the bottom of the issue */
   .is-end {
@@ -327,11 +388,11 @@ const metaOf = (p: Piece) => {
     .is { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-areas: none; column-gap: 20px; row-gap: 30px; padding: 44px var(--pad) 60px; }
     .is-head { grid-column: 1 / -1; }
     .is-title { font-size: 16vw; }
-    .is-tape { right: -22px; font-size: 40px; }
+    .is-tape { margin-right: -14px; font-size: 40px; }
     .is-line { font-size: 11px; }
     .is-def { grid-column: 1 / 10; font-size: 19px; }
     .is-pieces { grid-column: 1 / -1; }
-    .is-words, .is-play { grid-column: 1 / -1; }
+    .is-words, .is-play, .is-more { grid-column: 1 / -1; }
     .is-end { grid-column: 1 / -1; margin-bottom: -60px; font-size: 10vw; }
 
     /* one piece: the print beside the quote, the playlist under both */
@@ -342,6 +403,12 @@ const metaOf = (p: Piece) => {
        so the half beside it is never left empty */
     .is-bare .is-pieces { grid-row: 2; }
     .is-bare .is-def { grid-column: 7 / -1; grid-row: 2; align-self: center; }
+    /* one piece and more campaign photos: they drop in beside the print, the credits under them */
+    .has-more .is-pieces { grid-row: 3 / span 2; }
+    .has-more .is-more { grid-column: 7 / -1; grid-row: 3; align-self: start; justify-items: stretch; padding: 7vw 8px 0 4px; }
+    .has-more .is-more :global(.ph) { width: 100%; }
+    .has-more .is-words { grid-column: 7 / -1; grid-row: 4; align-self: start; }
+    .has-more .is-play { grid-row: 5; }
 
     /* several pieces: a spread of different sizes, dropped at different heights */
     .is-spread .is-pieces { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 20px; row-gap: 48px; align-items: start; }
@@ -356,7 +423,8 @@ const metaOf = (p: Piece) => {
     .is { column-gap: 24px; row-gap: 2.8vw; padding: 3.6vw var(--pad) 4.4vw; }
     .is-head { grid-column: 1 / 9; grid-row: 1; align-self: end; }
     .is-title { font-size: 12vw; }
-    .is-tape { right: -5.4vw; font-size: max(40px, 3.2vw); }
+    .is-tags { margin-bottom: 1.4vw; }
+    .is-tape { margin-right: -2.4vw; font-size: max(40px, 3.2vw); }
     .is-line { font-size: 12px; }
     .is-def { grid-column: 9 / 13; grid-row: 1; align-self: end; margin-bottom: 4px; font-size: max(18px, 1.45vw); }
     .is-quote p { font-size: max(44px, 3.6vw); }
@@ -367,17 +435,24 @@ const metaOf = (p: Piece) => {
     .is-solo .is-play { grid-column: 6 / 13; grid-row: 2; }
     .is-solo .is-words { grid-column: 6 / 13; grid-row: 3; align-self: start; }
     .is-badge { right: -1.6vw; top: -1.8vw; width: max(104px, 9.4vw); height: max(104px, 9.4vw); }
+    /* one piece: the playlist starts level with the print's top, so the sticker stays on the
+       print's corner instead of hanging into the gap (D7) */
+    .is-solo .is-badge { right: .4vw; }
     .is-badge b { font-size: max(46px, 4.2vw); }
     .is-badge span { font-size: max(10.5px, .82vw); }
     .is-solo .is-ptitle { font-size: max(40px, 3.6vw); }
-    /* no quote or credits: the entry goes back beside the title, and the playlist box takes the
-       whole height beside the print, its contents centred, so no empty row is left under it */
+    /* no quote or credits: the entry goes back beside the title; the playlist keeps its own
+       height beside the print, centred on it, never stretched into an empty box (r2-4) */
     .is-bare .is-def { grid-column: 9 / 13; grid-row: 1; align-self: end; }
     .is-bare .is-pieces { grid-row: 2; }
-    .is-bare .is-play { display: grid; grid-row: 2; }
-    .is-bare .is-play :global(.pl-box) { display: grid; grid-template-rows: auto 1fr; }
-    .is-bare .is-play :global(.pl-body) { align-content: center; }
+    .is-bare .is-play { grid-row: 2; align-self: center; }
     .is-bare .is-end { grid-row: 3; }
+    /* more campaign photos: the playlist strip across the top of the right side, the second
+       photo under it and the credits beside that photo, so the side of the print is full */
+    .has-more .is-pieces { grid-row: 2 / 4; }
+    .has-more .is-play { grid-column: 6 / 13; grid-row: 2; }
+    .has-more .is-more { grid-column: 6 / 11; grid-row: 3; padding: .6vw 1vw 0 1.6vw; }
+    .has-more .is-words { grid-column: 11 / 13; grid-row: 3; align-self: end; }
 
     .is-spread .is-pieces { grid-column: 1 / 13; grid-row: 2; column-gap: 24px; padding-bottom: 1vw; }
     .is-spread .is-words { grid-column: 1 / 6; grid-row: 3; }

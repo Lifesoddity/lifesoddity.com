@@ -1,7 +1,8 @@
-// The product page: each product is a cover story. Every line is his (his captions, the tee's
-// own print) or a plain label. What he has not given (fabric, fit, measurements) comes from
-// copy/common.ts `pending` with an UNCONFIRMED stamp, never invented here. Shipping is a known
-// fact (taxes and shipping are calculated at Shopify's checkout), so it carries no stamp.
+// The product page: each product is a cover story. Every line is the brand's own (its captions,
+// the tee's own print) or a plain label. What has not been given (fabric, fit, measurements) is
+// left out, not stamped (D1): a Details row appears only when the product has a description in
+// Shopify. The fit line under the sizes and the shipping line are shared words (copy/common.ts
+// `buy.between`, `bag.shipping`).
 //
 // For the owner of the project:
 // - "Printed on the tee" is true of the She Devil tee only (its print carries the she-devil
@@ -27,9 +28,8 @@ export const product = {
   dropLead: 'The drop:',
   actName: (n: number, title: string) => `Act ${n}: ${title}`,
 
-  facts: { details: 'Details:', sizeGuide: 'Size guide:', shipping: 'Shipping:' },
-
-  helpLead: 'Got a question?',
+  /** The heading over the product's description from Shopify, when it has one. */
+  details: 'Details:',
 
   gallery: {
     label: (title: string) => `Photos of the ${title}`,
