@@ -49,6 +49,7 @@ const thumb = product.images[0];
     const buy = document.querySelector<HTMLElement>('[data-sb-buy]');
     const end = document.querySelector<HTMLElement>('[data-sb-end]');
     const sheet = bar?.querySelector<HTMLElement>('.sb-sheet');
+    const row = bar?.querySelector<HTMLElement>('.sb-row');
     const go = bar?.querySelector<HTMLButtonElement>('[data-sb-go]');
     const note = bar?.querySelector<HTMLElement>('[data-sb-note]');
 
@@ -75,10 +76,13 @@ const thumb = product.images[0];
         if (go.dataset.state !== 'added') go.setAttribute('aria-expanded', String(on));
         if (on && focus) sheet.querySelector<HTMLButtonElement>('[data-variant]:not([aria-disabled="true"])')?.focus();
       };
+      const root = document.documentElement.style;
       const sync = () => {
         const on = past && !atEnd;
         if (!on && !sheet.hasAttribute('hidden')) open(false, false);
         bar.classList.toggle('is-on', on);
+        // the docked radio rides just above the bar (Radio.astro)
+        root.setProperty('--sb-up', on && row ? `${row.offsetHeight}px` : '0px');
       };
       // the header covers the top of the screen: the price box is gone once it slides under it
       const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 60;
@@ -92,7 +96,7 @@ const thumb = product.images[0];
         sync();
       });
       if (end) endIo.observe(end);
-      signal.addEventListener('abort', () => { pastIo.disconnect(); endIo.disconnect(); });
+      signal.addEventListener('abort', () => { pastIo.disconnect(); endIo.disconnect(); root.removeProperty('--sb-up'); });
 
       go.addEventListener('click', () => {
         if (go.dataset.state === 'added') { document.dispatchEvent(new CustomEvent('lo:open-bag')); return; }
@@ -135,6 +139,8 @@ const thumb = product.images[0];
     visibility: hidden;
     transition: translate var(--slap) var(--ease-out), visibility 0s linear var(--slap);
   }
+  /* the sizes open over the docked radio (Radio.astro), which otherwise rides above the bar */
+  .sb:has(.sb-sheet:not([hidden])) { z-index: 29; }
   /* the live stock check found none left: no bar */
   .sb[data-soldout] { display: none; }
   .sb.is-on { translate: 0 0; visibility: visible; transition: translate var(--slap) var(--ease-out); }

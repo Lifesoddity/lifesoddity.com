@@ -106,7 +106,7 @@ await launchCheck();
         ev.swap = () => {
           const doc = ev.newDocument;
           swapFunctions.deselectScripts(doc);
-          // the radio's room (--radio-top, --radio-h, --radio-b) lives on the root and stays
+          // the radio's room (--radio-b) lives on the root and stays
           const rootStyle = document.documentElement.getAttribute('style');
           swapFunctions.swapRootAttributes(doc);
           if (rootStyle) document.documentElement.setAttribute('style', rootStyle);

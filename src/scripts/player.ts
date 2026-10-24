@@ -8,8 +8,8 @@
 // Where the player shows:
 // - "box": the box it was played from is on screen. The radio is laid over that box's print,
 //   placed in the page (not on the screen), so it scrolls with it at no cost.
-// - "dock": that box has scrolled away, or the visitor went to another page. A strip under the
-//   masthead (phones) or along the bottom (wider), with Open in Spotify and a stop.
+// - "dock": that box has scrolled away, or the visitor went to another page. A strip along the
+//   bottom, with Open in Spotify and a stop.
 // - "off": never played, or stopped.
 // Visitors not logged into Spotify in this browser (most, inside Instagram) hear 30-second
 // previews; the honest line under the box says so, and Open in Spotify has the full songs.
@@ -117,17 +117,12 @@ function setMode() {
     radio.style.removeProperty('translate');
     radio.style.removeProperty('--frame-h');
   }
-  // docked on a phone, the strip hangs from the masthead and anchor jumps land below it; on
-  // wider screens it runs along the bottom and the page keeps that much room at its end
-  const root = document.documentElement.style;
-  const phone = matchMedia('(max-width: 699px)').matches;
+  // docked along the bottom: the page keeps that much room at its end, so nothing stays hidden
   const docked = mode === 'dock';
-  if (docked && phone) root.setProperty('--radio-top', `${document.querySelector<HTMLElement>('.mast')?.offsetHeight ?? 0}px`);
-  root.setProperty('--radio-h', docked && phone ? `${radio.offsetHeight}px` : '0px');
-  root.setProperty('--radio-b', docked && !phone ? `${radio.offsetHeight}px` : '0px');
+  document.documentElement.style.setProperty('--radio-b', docked ? `${radio.offsetHeight}px` : '0px');
   if (docked && was !== 'dock' && !reduceMotion()) {
     radio.animate(
-      [{ transform: `translateY(${phone ? '-100%' : '100%'})` }, { transform: 'none' }],
+      [{ transform: 'translateY(100%)' }, { transform: 'none' }],
       { duration: 160, easing: 'cubic-bezier(.2, .7, .2, 1)' },
     );
   }

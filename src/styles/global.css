@@ -39,11 +39,11 @@
 /* ---------- reset and browser surfaces ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-/* focus moving up never lands under the sticky masthead, nor under the radio docked below it */
-html { scroll-padding-top: calc(var(--header-h) + var(--radio-h, 0px) + 12px); }
+/* focus moving up never lands under the sticky masthead, moving down never under the docked radio */
+html { scroll-padding-top: calc(var(--header-h) + 12px); scroll-padding-bottom: calc(var(--radio-b, 0px) + 12px); }
 body {
   margin: 0;
-  /* room for the radio docked along the bottom (wider screens, scripts/player.ts) */
+  /* room for the radio docked along the bottom (scripts/player.ts) */
   padding-bottom: var(--radio-b, 0px);
   overflow-x: clip;
   background: var(--white);
