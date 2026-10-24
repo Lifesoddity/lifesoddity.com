@@ -371,6 +371,55 @@ html { scrollbar-color: var(--ink) var(--paper); }
   .foot-links a:hover { text-decoration-color: var(--pink); }
 }
 
+/* ---------- parallax drift: layers slide at their own speed as the page scrolls ----------
+   On the browser's own scroll timeline: no script and no work on the page's thread while
+   scrolling, and only the translate property moves (a layer keeps its own tilt). --drift is how
+   far a layer travels either side of where it is laid out while it crosses the screen: positive
+   is slower than the page, negative faster. The speeds are set so neighbours part as the page
+   scrolls instead of meeting: nothing slides over text, and the text you read, the buy box and
+   the shop never move. A first-screen layer (drift-top) starts where it is laid out and moves
+   only as the page leaves the top.
+   Browsers without scroll timelines, and reduced motion, show the page still. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* drop: the live issue and the back issues */
+    .is-head { --drift: 22px; }
+    .is-piece:nth-child(odd) { --drift: -30px; }
+    .is-piece:nth-child(even) { --drift: -54px; }
+    /* lookbook: each act's giant title runs ahead, its photos follow at two speeds */
+    .lb-word { --drift: -40px; }
+    .lb-shot:nth-child(odd) { --drift: -22px; }
+    .lb-shot:nth-child(even) { --drift: -52px; }
+    /* about: the timeline's radio cover and the big question mark (the price tag stays put) */
+    .tl-vis:has(.tl-print) { --drift: -24px; }
+    .tl-q { --drift: -40px; }
+    /* product page: the love letter's title runs ahead, its two photos at two speeds */
+    .lt-title { --drift: -30px; }
+    .lt-prints > :nth-child(odd) { --drift: -30px; }
+    .lt-prints > :nth-child(even) { --drift: -56px; }
+    /* longhands only: the build folds a shorthand and its timeline into one that browsers drop */
+    .is-head, .is-piece, .lb-word, .lb-shot, .tl-vis:has(.tl-print), .tl-q, .lt-title, .lt-prints > * {
+      animation-name: drift;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+    /* first screens: the drop's blank next cover and the About page's letter rise ahead of the page */
+    .nx-cover { --drift: -72px; }
+    .pf-print { --drift: -84px; }
+    .nx-cover, .pf-print {
+      animation-name: drift-top;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root);
+      animation-range: 0 90vh;
+    }
+  }
+}
+@keyframes drift { from { translate: 0 calc(-1 * var(--drift, 0px)); } to { translate: 0 var(--drift, 0px); } }
+@keyframes drift-top { to { translate: 0 var(--drift, 0px); } }
+
 /* ---------- reduced motion: no flash, nothing slides ---------- */
 @media (prefers-reduced-motion: reduce) {
   .ph-flash { display: none; }

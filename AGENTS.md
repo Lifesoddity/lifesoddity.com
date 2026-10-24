@@ -57,6 +57,8 @@ newer Node than the owner's machine has.
 - Use the width: no lone narrow column with half the screen empty.
 - Motion: animate only `transform` and `opacity`, nothing loops, nothing page-tall repaints, and
   every effect has a still version under reduced motion. The owner notices lag.
+- The parallax drift (what moves on scroll, and how fast) is one block in `global.css`. Moving a
+  layer next to text: check that the two part as the page scrolls, never meet.
 - The buy button is never greyed out unless the piece is sold out: PICK A SIZE, then ADD TO BAG,
   then CHECKOUT · BAG (n).
 
