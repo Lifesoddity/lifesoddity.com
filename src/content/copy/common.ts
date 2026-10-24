@@ -95,6 +95,23 @@ export const player = {
   close: 'Close the radio',
 };
 
+/** The way in (components/layout/Gate.astro): an all-access pass, once per visit. Pressing
+ *  Spotify's own play enters with sound; it is the one tap every phone accepts for music. */
+export const gate = {
+  label: "Enter Life's Oddity",
+  kicker: 'Spotted: you',
+  pass: ['All', 'access'],
+  issue: (title: string) => `The ${title} issue`,
+  tape: 'VIP',
+  title: 'Enter now',
+  press: 'press play',
+  loading: 'Loading the radio…',
+  quiet: 'Enter without sound',
+  /** When the radio cannot load (no link, or Spotify blocked): a plain way in. */
+  go: 'Let me in',
+  granted: 'Access granted',
+};
+
 export const status = {
   live: 'Out now',
   soldout: 'Sold out',

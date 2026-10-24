@@ -1,0 +1,212 @@
+---
+// The way in, once per visit: an ALL ACCESS pass on a lanyard, ENTER NOW, and Spotify's own
+// player with "press play" pointing at its button. That tap is the one every phone accepts for
+// music (a tap on our page cannot reach into Spotify's player on an iPhone), so pressing play is
+// how the visitor enters with sound: ACCESS GRANTED slaps onto the pass, the screen lifts, and
+// the player drops into the radio strip still playing (scripts/player.ts lays the radio's one
+// player over this slot, so it never reloads). "Enter without sound" and Escape go in quietly.
+// Without script nothing shows: the inline script below raises it before the page paints.
+import { Image } from 'astro:assets';
+import { brand } from '../../assets';
+import { gate } from '../../content/copy/common';
+import { liveAct, radioAct } from '../../content/acts';
+import { site } from '../../content/site';
+
+const act = liveAct();
+const playable = Boolean(radioAct());
+---
+
+<div class="gate halftone" role="dialog" aria-modal="true" aria-labelledby="gate-title" tabindex="-1" data-gate data-keep hidden>
+  <span class="gate-flash" aria-hidden="true"></span>
+  <div class="gate-in">
+    <div class="gate-pass" aria-hidden="true">
+      <span class="gate-strap"></span>
+      <p class="tape gate-tape">{gate.tape}</p>
+      <div class="gate-card">
+        <span class="gate-hole"></span>
+        <div class="gate-band"><Image class="gate-logo" src={brand.logo} alt="" widths={[300, 600]} sizes="300px" loading="eager" /></div>
+        <p class="gate-access">{gate.pass.map((w) => <span>{w}</span>)}</p>
+        <p class="gate-bio">{site.bio}</p>
+        <p class="gate-issue">{gate.issue(act.title)}</p>
+        <svg class="gate-bars" viewBox="0 0 64 40" preserveAspectRatio="none"><path d="M0 0h2v40H0zM3 0h1v40H3zM5 0h1v40H5zM8 0h3v40H8zM12 0h1v40h-1zM14 0h2v40h-2zM17 0h1v40h-1zM19 0h1v40h-1zM22 0h3v40h-3zM26 0h2v40h-2zM29 0h1v40h-1zM31 0h1v40h-1zM34 0h2v40h-2zM37 0h3v40h-3zM41 0h1v40h-1zM43 0h1v40h-1zM46 0h2v40h-2zM49 0h1v40h-1zM51 0h3v40h-3zM55 0h1v40h-1zM57 0h2v40h-2zM60 0h1v40h-1zM62 0h2v40h-2z"></path></svg>
+        <span class="gate-sheen"></span>
+        <p class="stamp gate-stamp" data-gate-stamp>{gate.granted}</p>
+      </div>
+    </div>
+
+    <div class="gate-side">
+      <p class="gate-kicker">{gate.kicker}</p>
+      <h2 class="gate-title" id="gate-title"><span class="vh">{gate.label}: </span>{gate.title}</h2>
+      {playable && (
+        <>
+          <p class="gate-press" data-gate-press aria-hidden="true">
+            {gate.press}
+            <svg viewBox="0 0 70 60"><path d="M6 8c28-2 50 10 56 40M50 42l12 8 4-14"></path></svg>
+          </p>
+          <div class="gate-player" data-gate-slot><span>{gate.loading}</span></div>
+        </>
+      )}
+      <button class="addbag gate-go" type="button" data-gate-go hidden={playable}><span>{gate.go}</span></button>
+      <button class="gate-quiet" type="button" data-gate-quiet>{gate.quiet}</button>
+    </div>
+  </div>
+</div>
+<script is:inline>
+  // Raised before the page paints, once per visit. It closes three ways: Spotify's play
+  // (player.ts sends lo:granted), ENTER NOW when the radio cannot load (lo:granted too, with the
+  // stamp), or quietly (Enter without sound, Escape). As it lifts it sends lo:gate-lift, so the
+  // radio drops into its strip or stays quiet.
+  (() => {
+    const gate = document.currentScript && document.currentScript.previousElementSibling;
+    if (!gate || !gate.matches('[data-gate]')) return;
+    try { if (sessionStorage.getItem('lo-entered') === '1') return; } catch (e) { /* storage blocked: show it */ }
+    const root = document.documentElement;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    root.classList.add('gate-on');
+    gate.hidden = false;
+    // the page behind waits out of reach of Tab and screen readers (the radio stays reachable:
+    // its player is the way in)
+    const behind = () => [...document.body.children].filter((el) => el !== gate && !el.matches('[data-radio], script'));
+    document.addEventListener('DOMContentLoaded', () => { behind().forEach((el) => { el.inert = true; }); gate.focus({ preventScroll: true }); }, { once: true });
+    const flash = () => { if (!still) gate.querySelector('.gate-flash').animate([{ opacity: 0 }, { opacity: 0.85, offset: 0.3 }, { opacity: 0 }], { duration: 180 }); };
+    requestAnimationFrame(flash);
+
+    let done = false;
+    const close = (sound) => {
+      if (done) return;
+      done = true;
+      gate.dataset.entered = sound ? 'sound' : 'quiet';
+      try { sessionStorage.setItem('lo-entered', '1'); } catch (e) { /* this page only */ }
+      const stamp = gate.querySelector('[data-gate-stamp]');
+      const finish = () => {
+        gate.hidden = true;
+        root.classList.remove('gate-on');
+        behind().forEach((el) => { el.inert = false; });
+        const page = document.getElementById('page');
+        if (page) page.focus({ preventScroll: true });
+      };
+      const lift = () => {
+        document.dispatchEvent(new CustomEvent('lo:gate-lift', { detail: { sound } }));
+        if (still) { finish(); return; }
+        gate.animate([{ transform: 'none' }, { transform: 'translateY(-100%)' }], { duration: 380, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' }).finished.then(finish, finish);
+      };
+      if (!sound) { lift(); return; }
+      // ACCESS GRANTED: the stamp comes down on the pass with the flash, then the screen lifts
+      stamp.style.opacity = '1';
+      if (!still) {
+        stamp.animate([{ opacity: 0, scale: 1.7, rotate: '-26deg' }, { opacity: 1, scale: 1, rotate: '-12deg' }], { duration: 220, easing: 'cubic-bezier(.3, 1.6, .5, 1)' });
+        flash();
+      }
+      setTimeout(lift, still ? 450 : 700);
+    };
+    gate.querySelector('[data-gate-quiet]').addEventListener('click', () => close(false));
+    gate.querySelector('[data-gate-go]').addEventListener('click', () => close(true));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !done) close(false); });
+    document.addEventListener('lo:granted', () => close(true));
+    // a page change while it is up (nothing behind it can be reached, but just in case): go in quietly
+    document.addEventListener('astro:before-swap', () => { if (!done) close(false); });
+    // the radio could not load: the plain way in replaces the player
+    document.addEventListener('lo:gate-fallback', () => {
+      gate.querySelectorAll('[data-gate-slot], [data-gate-press]').forEach((el) => { el.hidden = true; });
+      gate.querySelector('[data-gate-go]').hidden = false;
+    });
+  })();
+</script>
+
+<style>
+  .gate {
+    --dot: rgb(225 6 0 / .5);
+    --fade: radial-gradient(65% 55% at 50% 45%, #000, transparent 78%);
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: grid;
+    place-items: center;
+    overflow: clip;
+    padding: max(18px, env(safe-area-inset-top, 0px)) var(--pad) max(18px, env(safe-area-inset-bottom, 0px));
+    background: var(--ink);
+    color: var(--white);
+    outline: none;
+  }
+  :global(html.gate-on) { overflow: hidden; }
+  .gate-flash { position: absolute; inset: 0; z-index: 6; background: var(--white); opacity: 0; pointer-events: none; }
+  .gate-in { position: relative; z-index: 1; display: grid; justify-items: center; gap: clamp(16px, 3svh, 30px); width: min(100%, 420px); }
+
+  /* the pass, on its lanyard */
+  .gate-pass { position: relative; width: min(280px, 62vw, 31svh); rotate: -4deg; }
+  .gate-strap { position: absolute; left: 50%; bottom: calc(100% - 22px); width: 44%; height: 60svh; translate: -50% 0; }
+  .gate-strap::before, .gate-strap::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    width: 22px;
+    height: 100%;
+    background: var(--red) repeating-linear-gradient(0deg, transparent 0 14px, rgb(11 11 11 / .25) 14px 16px);
+  }
+  .gate-strap::before { left: 0; rotate: 9deg; transform-origin: bottom center; }
+  .gate-strap::after { right: 0; rotate: -9deg; transform-origin: bottom center; }
+  .gate-card {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto auto auto 1fr auto auto;
+    aspect-ratio: 5 / 7;
+    padding: 12px 15px 12px;
+    overflow: clip;
+    border-radius: 10px;
+    background: var(--white);
+    color: var(--ink);
+    box-shadow: 10px 12px 0 rgb(0 0 0 / .5);
+    container-type: inline-size;
+  }
+  .gate-hole { justify-self: center; width: 46px; height: 9px; margin-bottom: 10px; border-radius: 5px; background: var(--ink); }
+  .gate-band { margin: 0 -15px; padding: 8px 15px 6px; background: var(--yellow); }
+  .gate-band :global(.gate-logo) { width: 100%; height: auto; }
+  /* ACCESS nearly fills the card's width (League Gothic runs about .4em a letter) */
+  .gate-access { display: grid; margin-top: 10px; color: var(--red); font: 400 34cqw/.8 var(--gothic); letter-spacing: .01em; text-transform: uppercase; }
+  /* one line at any pass size */
+  .gate-bio { margin: 8px 0 10px; font: 800 4.3cqw/1.25 var(--sans); white-space: nowrap; }
+  .gate-issue { align-self: end; padding-top: 6px; border-top: 2px solid var(--ink); font: 800 10.5px/1.3 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+  .gate-bars { width: 100%; height: 24px; margin-top: 7px; fill: var(--ink); }
+  /* the laminate catches the light: one still sheen, no motion */
+  .gate-sheen { position: absolute; inset: 0; background: linear-gradient(118deg, transparent 34%, rgb(255 255 255 / .5) 44%, transparent 56%); pointer-events: none; }
+  /* the tape is stuck over the card's edge beside ALL, so it sits outside the card's clip */
+  .gate-tape { top: 38%; right: -24px; z-index: 6; font-size: 38px; rotate: 9deg; }
+  .gate-stamp {
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    padding: .42em .55em .34em;
+    border-width: 3px;
+    background: rgb(255 255 255 / .92);
+    font-size: clamp(17px, 2.6svh, 24px);
+    white-space: nowrap;
+    rotate: -12deg;
+    opacity: 0;
+    box-shadow: inset 0 0 0 2px var(--white), inset 0 0 0 4px var(--red), 0 4px 10px rgb(11 11 11 / .3);
+  }
+
+  /* the way in */
+  .gate-side { display: grid; justify-items: center; gap: 12px; width: 100%; }
+  .gate-kicker { color: var(--yellow); font: 800 12px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase; }
+  .gate-title { color: var(--yellow); font: 400 clamp(56px, 9.5svh, 96px)/.82 var(--gothic); letter-spacing: .01em; text-align: center; text-transform: uppercase; }
+  .gate-press { justify-self: end; display: flex; align-items: flex-start; gap: 2px; margin: -4px 4px -14px 0; color: var(--pink); font: 400 32px/1 var(--script); rotate: -4deg; }
+  .gate-press svg { width: 52px; height: 44px; margin-top: 12px; fill: none; stroke: var(--pink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  /* the slot player.ts lays Spotify's player over; until it loads, a quiet line */
+  .gate-player { display: grid; place-items: center; width: 100%; height: 80px; border-radius: 12px; background: #282828; color: rgb(255 255 255 / .7); font: 600 12.5px/1.3 var(--sans); }
+  .gate-go { max-width: 360px; }
+  .gate-quiet { min-height: 44px; padding: 0 8px; color: var(--white); font: 800 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .32em; }
+  .gate :focus-visible { outline-color: var(--yellow); }
+
+  /* wide screens: the pass beside the way in */
+  @media (min-width: 900px) and (min-aspect-ratio: 1 / 1) {
+    .gate-in { grid-template-columns: auto minmax(0, 420px); align-items: center; column-gap: clamp(48px, 7vw, 120px); width: auto; }
+    .gate-pass { width: min(330px, 40svh); }
+    .gate-side { justify-items: start; }
+    .gate-title { text-align: left; font-size: clamp(80px, 12svh, 128px); }
+  }
+  @media (hover: hover) {
+    .gate-quiet:hover { color: var(--yellow); }
+  }
+</style>

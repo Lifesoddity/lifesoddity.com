@@ -57,6 +57,12 @@ const name = player.name(title);
   .radio[data-mode="box"] { position: absolute; z-index: 20; top: 0; left: 0; }
   .radio[data-mode="box"] .radio-ctl { display: none; }
 
+  /* in the way in (Gate.astro): over the pass's slot, above that screen, until the visitor goes in;
+     still above it while it drops into the strip */
+  .radio[data-mode="gate"] { position: fixed; z-index: 95; top: 0; left: 0; }
+  .radio[data-mode="gate"] .radio-ctl { display: none; }
+  .radio.is-flying { z-index: 95; }
+
   /* the strip along the bottom, waiting (ready) or playing (dock); on a phone's product page it
      rides above the buy bar (--sb-up, StickyBuy.astro), moving with it */
   .radio:is([data-mode="ready"], [data-mode="dock"]) {

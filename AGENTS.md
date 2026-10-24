@@ -40,6 +40,7 @@ newer Node than the owner's machine has.
 | A page's layout | `src/components/<page>/`. The route files in `src/pages/` only assemble them. |
 | Parts every page uses (buy box, player, page head, print, waitlist form, header, footer, bag) | `src/components/ui/` and `src/components/layout/`. A change there shows on every page: check them all. |
 | Behaviour in the browser (bag, buy button, live price, scroll story, player, waitlist) | `src/scripts/`. |
+| The way in (the ALL ACCESS pass, once per visit) | `src/components/layout/Gate.astro`; its words in `copy/common.ts` (`gate`). Pressing Spotify's own play on it is how a visitor enters with sound: on an iPhone no other tap can start the music. |
 | The radio that keeps playing between pages | `src/components/layout/Radio.astro` (the docked strip) and `src/scripts/player.ts`. A playlist marked `standIn` in `acts.ts` is a placeholder until the real link is in. |
 | Reading Shopify | `src/lib/shopify.ts`. It uses the Storefront API when `SHOPIFY_STOREFRONT_TOKEN` is set, otherwise the store's public product pages, and falls back to `src/data/products.snapshot.json` if Shopify cannot be reached. |
 | Headers, redirects, build settings | `netlify.toml`. |

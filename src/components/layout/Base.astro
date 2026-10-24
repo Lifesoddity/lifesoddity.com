@@ -4,13 +4,14 @@
 // and image.
 // Pages change without a reload (ClientRouter) so the radio keeps playing: the new page's head
 // and body replace the old ones, except what is marked data-keep (the bag, the radio, the
-// polite announcer), which stays as it is. No animation between pages: a hard cut, as before.
+// polite announcer, the way in), which stays as it is. No animation between pages: a hard cut, as before.
 import { Font } from 'astro:assets';
 import '../../styles/global.css';
 import Header from './Header.astro';
 import Footer from './Footer.astro';
 import CartDrawer from './CartDrawer.astro';
 import Radio from './Radio.astro';
+import Gate from './Gate.astro';
 import { ClientRouter } from 'astro:transitions';
 import { site } from '../../content/site';
 import { header } from '../../content/copy/common';
@@ -79,6 +80,7 @@ await launchCheck();
     <ClientRouter fallback="swap" />
   </head>
   <body>
+    <Gate />
     <a class="skip" href="#page">{header.skip}</a>
     <Header />
     <main id="page" tabindex="-1">
