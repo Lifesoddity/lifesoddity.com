@@ -21,12 +21,12 @@ const preview = image ? `${shopifyImage(image.src, 1200)}&height=630&crop=center
 
 <Base
   title={product.title}
-  description={productSummary(product)}
+  description={productSummary(product, piece.art.line ?? piece.act.definition)}
   image={preview}
   imageAlt={image?.alt || product.title}
   type="product"
   price={{ amount: (product.price / 100).toFixed(2), currency: product.currency }}
-  ld={[productGroupLd(product), breadcrumbLd([{ name: 'Shop', path: '/shop' }, { name: product.title, path: `/products/${product.handle}` }])]}
+  ld={[productGroupLd(product), breadcrumbLd([{ name: 'Shop', path: '/shop/' }, { name: product.title, path: `/products/${product.handle}/` }])]}
 >
   <ProductPage piece={piece} />
 </Base>

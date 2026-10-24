@@ -22,9 +22,12 @@ const archived = pieces.filter((p) => p.status === 'archive');
 const groups = acts
   .map((act) => ({ act, pieces: archived.filter((p) => p.act.slug === act.slug) }))
   .filter((g) => g.pieces.length > 0);
+// The archive coverline names an act "Act 1: Party Animal"; the deck, a sentence that already
+// has a colon, names it "Party Animal (Act 1)".
 const actNames = groups.map((g) => shop.actName(g.act.number, g.act.title));
+const deckActs = groups.map((g) => shop.deckActName(g.act.number, g.act.title));
 
-const deck = shop.deck({ out: live.map((p) => p.title), sold: sold.map((p) => p.title), acts: actNames });
+const deck = shop.deck({ out: live.map((p) => p.title), sold: sold.map((p) => p.title), acts: deckActs });
 const layoutOf = (i: number) => (i === 0 ? 'lead' : (store.length - 1) % 2 === 1 && i === store.length - 1 ? 'wide' : 'pair') as 'lead' | 'pair' | 'wide';
 
 // The first coverline: the one piece's price and sizes (refreshed from Shopify), or a count.
@@ -103,11 +106,22 @@ const c = shop.contents;
   .lines a { display: flex; align-items: center; min-height: 44px; text-decoration: none; }
   .ln-title { font: 800 11.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
   .ln-line { display: none; }
+  /* on phones the first coverline carries its price inline, so $20 and the sizes are in the first screen */
+  .lines li:first-child .ln-line { display: inline; margin-left: 6px; font: 700 11.5px/1 var(--sans); letter-spacing: .06em; }
+  /* and takes its own row there, so the next row never opens on a middle dot */
+  .lines li:first-child { flex-basis: 100%; }
+  .lines li:first-child + li::before { content: none; }
   .ln-stamp { margin-right: 8px; background: var(--white); font-size: 11px; }
   .lines a:focus-visible { outline-color: var(--ink); }
 
   @media (hover: hover) {
     .lines a:hover .ln-title { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .3em; }
+  }
+
+  @media (min-width: 700px) {
+    /* wide enough for the three coverlines on one row */
+    .lines li:first-child { flex-basis: auto; }
+    .lines li:first-child + li::before { content: "·"; }
   }
 
   @media (min-width: 1000px) {
@@ -133,10 +147,10 @@ const c = shop.contents;
       color: var(--white);
     }
     .lines ul { display: grid; gap: 1.6vw; }
-    .lines li + li::before { content: none; }
+    .lines li + li::before, .lines li:first-child + li::before { content: none; }
     .lines a { display: grid; gap: 8px; justify-items: start; min-height: 0; }
     .ln-title { color: var(--yellow); font: 400 min(3.9vw, 66px)/.86 var(--gothic); letter-spacing: .01em; }
-    .ln-line { display: block; font: 600 14px/1.35 var(--sans); }
+    .ln-line, .lines li:first-child .ln-line { display: block; margin-left: 0; font: 600 14px/1.35 var(--sans); letter-spacing: normal; }
     .ln-line .num { font-weight: 800; }
     .ln-stamp { font-size: 11px; }
     .lines a:focus-visible { outline-color: var(--yellow); }

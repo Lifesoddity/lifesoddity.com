@@ -31,6 +31,8 @@ export interface Act {
   /** A line from his captions that closes or frames the act. */
   line: string | null;
   quote: string | null;
+  /** A line from a personal caption, kept off every page until he says yes. To print it, move it into quote. */
+  heldQuote?: string;
   /** The act's soundtrack; `cover` is its playlist artwork when he has one. */
   playlist: { name: string; spotify: string | null; apple: string | null; cover?: { image: ImageMetadata; alt: string } };
   credits: Credit[];
@@ -51,7 +53,8 @@ export const acts: Act[] = [
     openedLabel: 'Feb 14, 2026',
     status: 'live',
     line: null,
-    quote: 'To every woman that has loved me for who I am, thank you.',
+    quote: null,
+    heldQuote: 'To every woman that has loved me for who I am, thank you.',
     playlist: { name: 'A love letter to Mutsumi', spotify: null, apple: null },
     credits: [{ role: 'Creative directed and shot by', names: ['_shaysstudio'] }],
     photos: [

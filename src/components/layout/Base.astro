@@ -30,16 +30,20 @@ const { title, description = site.description, image, imageAlt, type = 'website'
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const fullTitle = bare ? title : `${title} | ${site.name}`;
 const previewImage = image ?? new URL('/og.jpg', Astro.site).href;
+// the default preview card is the logo over the tagline
+const previewAlt = imageAlt ?? (image ? undefined : `${site.name}: ${site.tagline}`);
+/** JSON-LD inside a script tag: a "<" typed into a Shopify title cannot close the tag. */
+const jsonLd = (obj: object) => JSON.stringify(obj).replace(/</g, '\\u003c');
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-store={site.checkoutDomain}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
-    <link rel="canonical" href={canonical} />
+    {!noindex && <link rel="canonical" href={canonical} />}
     {noindex && <meta name="robots" content="noindex" />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
@@ -49,11 +53,11 @@ const previewImage = image ?? new URL('/og.jpg', Astro.site).href;
     <meta property="og:type" content={type} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
+    {!noindex && <meta property="og:url" content={canonical} />}
     <meta property="og:image" content={previewImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    {imageAlt && <meta property="og:image:alt" content={imageAlt} />}
+    {previewAlt && <meta property="og:image:alt" content={previewAlt} />}
     {price && <meta property="og:price:amount" content={price.amount} />}
     {price && <meta property="og:price:currency" content={price.currency} />}
     <meta name="twitter:card" content="summary_large_image" />
@@ -62,7 +66,7 @@ const previewImage = image ?? new URL('/og.jpg', Astro.site).href;
     <Font cssVariable="--font-sans" />
     <Font cssVariable="--font-script" />
 
-    {ld.map((obj) => <script type="application/ld+json" set:html={JSON.stringify(obj)} />)}
+    {ld.map((obj) => <script type="application/ld+json" set:html={jsonLd(obj)} />)}
   </head>
   <body>
     <a class="skip" href="#page">{header.skip}</a>
@@ -71,6 +75,7 @@ const previewImage = image ?? new URL('/og.jpg', Astro.site).href;
       <slot />
     </main>
     <Footer />
+    <p class="vh" aria-live="polite" data-announce></p>
     <CartDrawer />
     <script>
       import { initBag } from '../../scripts/bag';
@@ -81,14 +86,18 @@ const previewImage = image ?? new URL('/og.jpg', Astro.site).href;
       import { initPlayers } from '../../scripts/player';
       import { initWaitlists } from '../../scripts/waitlist';
 
-      const domain = document.documentElement.dataset.store ?? document.body.dataset.store ?? 'lifesoddity.myshopify.com';
-      initBag();
-      initBuy();
-      initLive(domain);
-      bindFlash();
-      initStory();
-      initPlayers();
-      initWaitlists();
+      const domain = document.documentElement.dataset.store || 'lifesoddity.myshopify.com';
+      // each one on its own: one failure cannot stop the others
+      const run = (name: string, init: () => void) => {
+        try { init(); } catch (err) { console.error(`[${name}]`, err); }
+      };
+      run('bag', () => initBag());
+      run('buy', () => initBuy());
+      run('live', () => initLive(domain));
+      run('flash', () => bindFlash());
+      run('story', () => initStory());
+      run('players', () => initPlayers());
+      run('waitlists', () => initWaitlists());
     </script>
   </body>
 </html>

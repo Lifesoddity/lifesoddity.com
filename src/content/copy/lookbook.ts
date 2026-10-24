@@ -19,7 +19,7 @@ export const lookbook = {
   title: 'Lookbook',
   /** The pink script over the title card (decorative, hidden from screen readers). */
   script: 'all the pics',
-  deck: 'Every act, caught on camera. Tap a pic to see it big.',
+  deck: 'Every drop, caught on camera. Open any pic to see it big.',
   jumpLabel: 'The acts in this spread',
 
   /** The act's issue line. */
@@ -41,6 +41,8 @@ export const lookbook = {
 
   look: {
     title: 'Get the look',
+    /** The title when nothing in the act can be bought. */
+    titleArchive: 'In this act',
     shopLive: (act: string) => `Shop ${act}`,
     shopArchive: (act: string) => `See ${act} in the shop`,
   },

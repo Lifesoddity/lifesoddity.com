@@ -7,7 +7,8 @@ cart to Shopify's checkout.
 
 ## Status
 
-Design phase: the visual direction is being chosen. No site code yet.
+First version in progress on the `build/v1` branch (direction "Spotted": a gossip weekly where
+every drop is the cover story). Not live yet: lifesoddity.com still shows the Shopify store.
 
 ## How it fits together
 
@@ -26,7 +27,16 @@ Design phase: the visual direction is being chosen. No site code yet.
 
 1. Shopify: turn on the product access the site reads from (the Buy Button sales channel).
 2. Netlify: import this repo (only this repo), then add lifesoddity.com and www.lifesoddity.com.
-3. Shopify DNS (Settings → Domains → lifesoddity.com → DNS settings): point the main domain and
-   www at Netlify (Netlify shows the values when the domain is added), connect a `shop` subdomain
-   to Shopify so checkout keeps working, and leave the email records as they are.
-4. To undo: point the main domain and www back at Shopify and the Shopify store returns.
+3. The domain, in this order. The order matters: Shopify sends its own store address to whatever
+   domain is the store's primary one, and the site's checkout goes through that address.
+   1. In Shopify (Settings → Domains), add the `shop` subdomain to the store.
+   2. Make the `shop` subdomain the store's primary domain, and check that the store and its
+      checkout open there.
+   3. Only then, in Shopify's DNS settings for lifesoddity.com, point the main domain and www at
+      Netlify (Netlify shows the values when the domain is added). Leave the email records as
+      they are.
+   4. Place one real order from the new site, end to end, on a phone.
+4. To undo: point the main domain and www back at Shopify and make lifesoddity.com the primary
+   domain again; the Shopify store returns.
+5. With each drop: email the waitlist (Netlify lists the sign-ups) before or with the Instagram
+   post, since the site promises sign-ups hear first.

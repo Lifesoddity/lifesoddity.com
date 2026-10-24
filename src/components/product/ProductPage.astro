@@ -3,7 +3,8 @@
 // spread: the left page is the piece's photos on its own ground; the right page sets the title
 // huge with the garment word in pink script, prints the price with the cover's bars, and is the
 // buy control (size stamps XS to 2XL, ADD TO BAG once a size is picked). Then the deck in his
-// words, the drop it belongs to, and the facts he has not given yet, stamped UNCONFIRMED. After
+// words, the drop it belongs to, the facts he has not given yet stamped UNCONFIRMED (details,
+// size guide) and the one he has (shipping and taxes at checkout) printed plainly. After
 // the spread, the act's campaign shoot as an inset, and at the end more from the act or the list
 // for the next drop. On a phone a buy bar rises once the price box has scrolled away.
 //
@@ -80,7 +81,7 @@ const more = (await getPieces()).filter((p) => p.act.slug === act.slug && p.key 
     {deck && (
       <p class="st-deck">
         {cut > 0 ? <><b>{deck.slice(0, cut + 1)}</b>{deck.slice(cut + 1)}</> : deck}
-        {printed && <span class="st-printed">{printed}</span>}
+        {printed && <>{' '}<span class="st-printed">{printed}</span></>}
       </p>
     )}
 
@@ -103,7 +104,7 @@ const more = (await getPieces()).filter((p) => p.act.slug === act.slug && p.key 
       </div>
       <div>
         <dt>{copy.facts.shipping}</dt>
-        <dd><span class="stamp">{pending.stamp}</span><span class="st-why">{pending.shipping}</span></dd>
+        <dd><span class="st-why">{pending.shipping}</span></dd>
       </div>
     </dl>
 
@@ -155,9 +156,11 @@ const more = (await getPieces()).filter((p) => p.act.slug === act.slug && p.key 
 
   .st-deck { max-width: 46ch; font: 600 17px/1.45 var(--sans); }
   .st-deck b { font-weight: 800; font-style: italic; }
-  .st-printed { display: block; margin-top: 8px; color: var(--muted); font: 800 11px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+  /* the tee's own print, signed after the definition's last word: pink on white is 3.58:1,
+     large text at 26px */
+  .st-printed { display: inline-block; margin-left: 8px; color: var(--pink); font: 400 26px/1 var(--script); text-transform: none; letter-spacing: 0; rotate: -4deg; }
 
-  .st-drop { justify-self: start; padding: 10px 14px 8px; background: var(--ink); color: var(--yellow); font: 400 26px/1.05 var(--gothic); letter-spacing: .02em; text-transform: uppercase; }
+  .st-drop { justify-self: start; margin-top: 10px; padding: 10px 14px 8px; background: var(--ink); color: var(--yellow); font: 400 26px/1.05 var(--gothic); letter-spacing: .02em; text-transform: uppercase; }
   .st-drop b { color: var(--white); font-weight: 400; }
 
   /* what he has not given yet, stamped */
@@ -192,7 +195,7 @@ const more = (await getPieces()).filter((p) => p.act.slug === act.slug && p.key 
     .st-sizehead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font: 800 11.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
     .st-range { color: var(--muted); font-weight: 700; letter-spacing: .06em; }
     .st-deck { grid-area: deck; }
-    .st-drop { grid-area: drop; align-self: start; }
+    .st-drop { grid-area: drop; align-self: start; margin-top: 0; }
     .st-facts { grid-area: facts; align-self: start; }
     .st-help { grid-area: help; align-self: start; }
   }
@@ -210,7 +213,8 @@ const more = (await getPieces()).filter((p) => p.act.slug === act.slug && p.key 
     .st-deck { font-size: max(16px, 1.2vw); }
     .st-drop { font-size: min(1.9vw, 34px); }
     .st-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 20px; }
-    .st-facts > div { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
+    /* each fact starts under its own heading, also the shorter, unstamped Shipping */
+    .st-facts > div { grid-template-columns: minmax(0, 1fr); row-gap: 8px; align-content: start; }
     .st-facts dt { font-size: min(2.1vw, 38px); }
   }
 

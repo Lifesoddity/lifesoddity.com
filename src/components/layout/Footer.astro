@@ -1,12 +1,17 @@
 ---
+// The back page: LIFE IS ODD across the full width in yellow on black, the logo, his line, his
+// profiles and the four sections.
 import { Image } from 'astro:assets';
 import { brand } from '../../assets';
 import { site, social, contact, nav } from '../../content/site';
+import { layoutWord } from '../../lib/words';
 
 const year = new Date().getFullYear();
+const word = layoutWord(site.tagline);
 ---
 
-<footer class="foot">
+<footer class="foot on-dark">
+  <p class="foot-word" aria-hidden="true" style={`--w:${word.w}`}>{site.tagline}</p>
   <Image class="foot-logo" src={brand.logo} alt={site.name} width={264} height={99} />
   <p class="foot-line">{site.line}</p>
   <ul class="foot-links">
@@ -14,6 +19,6 @@ const year = new Date().getFullYear();
     <li><a href={contact.href} rel="noopener">{contact.label}</a></li>
   </ul>
   <p class="foot-legal">
-    © {year} {site.name}. {nav.map((n, i) => <>{i > 0 && ' '}<a href={n.href}>{n.label}</a></>)}
+    © {year} {site.name}. <span class="foot-nav">{nav.map((n) => <a href={n.href}>{n.label}</a>)}</span>
   </p>
 </footer>

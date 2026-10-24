@@ -2,7 +2,7 @@
 // The title card of the profile: LIFE IS ODD in giant type on the cover's pink, credited to
 // where he wrote it. Beside it, where a profile prints its subject's portrait, a black print
 // with no photo on it yet: WHO IS HE?, flash-lit, and an UNCONFIRMED sticker saying his story
-// is coming in his own words. Nothing about him is guessed.
+// is not on the record yet. Nothing about him is guessed, and nothing is promised.
 import { acts } from '../../content/acts';
 import { site } from '../../content/site';
 import { about } from '../../content/copy/about';
@@ -67,9 +67,10 @@ const issue = [about.issueLead, span, site.bio].filter(Boolean).join(' · ');
   .pf-script { position: absolute; left: 92%; top: 20%; color: var(--white); font: 400 clamp(44px, 12vw, 110px)/1 var(--script); letter-spacing: 0; text-transform: none; rotate: -8deg; white-space: nowrap; pointer-events: none; }
   .pf-credit { max-width: 32ch; font: 700 14.5px/1.38 var(--sans); }
 
-  /* where the portrait goes: a black print, no photo yet */
-  .pf-who { grid-area: who; position: relative; display: grid; justify-items: center; padding-top: 14px; }
-  .pf-print { width: min(80%, 440px); padding: 7px; background: var(--white); rotate: 3deg; }
+  /* where the portrait goes: a black print, no photo yet. On a phone it takes the right half,
+     with the UNCONFIRMED sticker beside it, so his own lines start inside the second screen */
+  .pf-who { grid-area: who; position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; column-gap: 12px; justify-items: center; padding-top: 14px; }
+  .pf-print { grid-column: 2; grid-row: 1; width: 100%; padding: 7px; background: var(--white); rotate: 3deg; }
   .pf-dark {
     --dot: rgb(255 46 110 / .26);
     --fade: radial-gradient(80% 70% at 50% 40%, #000, transparent 80%);
@@ -86,8 +87,9 @@ const issue = [about.issueLead, span, site.bio].filter(Boolean).join(' · ');
   .pf-cam { width: 22cqi; height: 22cqi; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .pf-q { font: 400 34cqi/.84 var(--gothic); text-align: center; text-transform: uppercase; }
   .pf-q span { display: block; }
-  .pf-tape { left: 4%; top: 2px; font-size: 32px; rotate: -6deg; }
-  .pf-pending { position: relative; z-index: 3; justify-self: start; display: grid; gap: 8px; justify-items: start; max-width: 300px; margin-top: -54px; padding: 12px 14px 13px; background: var(--white); font: 700 14px/1.38 var(--sans); box-shadow: 0 8px 14px rgb(60 0 18 / .35); }
+  /* the tape tags the print's top-left corner, wherever the print sits */
+  .pf-tape { left: 44%; top: 2px; font-size: 24px; rotate: -6deg; }
+  .pf-pending { grid-column: 1; grid-row: 1; position: relative; z-index: 3; justify-self: start; display: grid; gap: 8px; justify-items: start; max-width: none; margin-top: 0; padding: 12px 14px 13px; background: var(--white); font: 700 14px/1.38 var(--sans); box-shadow: 0 8px 14px rgb(60 0 18 / .35); }
 
   .pf-issue { grid-area: issue; padding: 6px 0 5px; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); font: 800 10.5px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
 
@@ -97,9 +99,11 @@ const issue = [about.issueLead, span, site.bio].filter(Boolean).join(' · ');
     .pf-title { font-size: min(25vw, 360px); }
     .pf-script { left: 96%; top: 30%; font-size: 5.4vw; }
     .pf-credit { font-size: 16px; }
-    .pf-who { align-self: start; padding-top: 6px; }
-    .pf-print { width: 86%; }
-    .pf-pending { justify-self: start; margin: -22px 0 0 -8%; }
+    /* one column again: the print, then the sticker overlapping its foot */
+    .pf-who { grid-template-columns: minmax(0, 1fr); align-items: normal; column-gap: 0; align-self: start; padding-top: 6px; }
+    .pf-print { grid-column: auto; grid-row: auto; width: 86%; }
+    .pf-tape { left: 4%; font-size: 32px; }
+    .pf-pending { grid-column: auto; grid-row: auto; justify-self: start; max-width: 300px; margin: -22px 0 0 -8%; }
     .pf-issue { margin-top: 8px; font-size: 11px; }
   }
 

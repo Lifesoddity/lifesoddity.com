@@ -1,8 +1,11 @@
 ---
 // One act of the archive: its title, its vice in pink script, the ACT stamp, his dictionary
-// entry, the day it dropped and his closing line; then every piece of the act as one of his
-// photos, printed and tilted, with the script caption and arrow of a paparazzi shot, the pink
-// marker circle where the piece has one, and the ARCHIVE stamp. No price, no sizes.
+// entry, the day it dropped, his closing line and the way on to its pictures in the lookbook;
+// then every piece of the act as one of his photos, printed and tilted, with the script caption
+// and arrow of a paparazzi shot, the pink marker circle where the piece has one, and the
+// ARCHIVE stamp. Each print links to the act in the lookbook. A fact about a piece he has not
+// confirmed (art.pending) sits under its description beside the UNCONFIRMED stamp. No price,
+// no sizes.
 //
 // The grid never leaves a hole: from 1000px, six columns in rows of three (two columns each),
 // and a remainder becomes rows of two (three columns each); from 700px, two columns with an
@@ -12,7 +15,7 @@ import NoPics from './NoPics.astro';
 import type { Act } from '../../content/acts';
 import type { Piece } from '../../lib/pieces';
 import { shop } from '../../content/copy/shop';
-import { status } from '../../content/copy/common';
+import { pending, status } from '../../content/copy/common';
 
 interface Props {
   act: Act;
@@ -22,6 +25,7 @@ interface Props {
 const { act, pieces } = Astro.props;
 const a = shop.archive;
 const n = pieces.length;
+const pics = `/lookbook/#${act.slug}`;
 
 function desktopSpans(count: number): number[] {
   if (count === 1) return [6];
@@ -76,6 +80,10 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
       {def && <p class="act-def">{term ? <><b>{term}:</b>{def.slice(colon + 1)}</> : def}</p>}
       <p class="act-date">{a.dropped} <time datetime={act.opened}>{act.openedLabel}</time></p>
       {act.line && <p class="act-line">{act.line}</p>}
+      <a class="act-more" href={pics}>
+        <span>{a.allPics}<span class="vh">: {act.title}</span></span>
+        <svg viewBox="0 0 24 12" aria-hidden="true"><path d="M1 6h21M17 1.5 22 6l-5 4.5"></path></svg>
+      </a>
     </div>
   </header>
 
@@ -85,7 +93,7 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
         <div class="ap-pic">
           <p class="ap-cap" aria-hidden="true">{a.spotted(p.art.tag)}</p>
           {p.photo ? (
-            <Print class="ap-print" photo={p.photo} sizes="(min-width: 1000px) 27vw, (min-width: 700px) 40vw, 80vw" tilt={tilts[j % tilts.length]} mark={p.art.mark}>
+            <Print class="ap-print" photo={p.photo} sizes="(min-width: 1000px) 27vw, (min-width: 700px) 40vw, 80vw" href={pics} label={a.seePics(p.title)} tilt={tilts[j % tilts.length]} mark={p.art.mark}>
               {p.art.mark && (
                 <svg class="mark ap-arrow" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true"><path d={arrow(p.art.mark)}></path></svg>
               )}
@@ -98,6 +106,7 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
         <div class="ap-copy">
           <h4 class="ap-name">{p.title}</h4>
           {p.description && <p class="ap-desc">{p.description}</p>}
+          {p.art.pending && <p class="ap-pend"><span class="stamp">{pending.stamp}</span> {p.art.pending}</p>}
         </div>
       </li>
     ))}
@@ -119,6 +128,23 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
   .act-def b { font-weight: 800; font-style: italic; color: var(--yellow); }
   .act-date { padding: 6px 0 5px; border-top: 3px solid var(--white); border-bottom: 1px solid var(--white); font: 800 11px/1.25 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
   .act-line { color: var(--pink); font: 400 40px/.9 var(--gothic); text-transform: uppercase; }
+
+  /* the way on to the act's pictures: the shop's arrow link, in white on the black ground */
+  .act-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    color: var(--white);
+    font: 800 13px/1 var(--sans);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: .4em;
+    transition: text-decoration-color var(--fast) ease-out;
+  }
+  .act-more svg { width: 24px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--base) var(--ease-out); }
 
   /* the pieces: his photos as prints, the caption in pink script with its arrow */
   .act-grid { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 56px; }
@@ -143,6 +169,9 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
   .ap-copy { display: grid; gap: 8px; }
   .ap-name { color: var(--white); font: 400 clamp(40px, 11vw, 56px)/.86 var(--gothic); text-transform: uppercase; }
   .ap-desc { max-width: 40ch; font: 500 15px/1.45 var(--sans); }
+  /* a fact he has not confirmed, beside the stamp (on white, so the red reads on the black ground) */
+  .ap-pend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: 40ch; color: var(--white); font: 700 13px/1.35 var(--sans); }
+  .ap-pend .stamp { background: var(--white); }
 
   @media (min-width: 700px) {
     .act-head { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); column-gap: 5vw; align-items: end; }
@@ -180,5 +209,10 @@ function arrow(m: { x: number; y: number; rx: number; ry: number }) {
     .ap-name { font-size: min(3.9vw, 66px); }
     .ap-desc { font-size: 15.5px; }
     .ap-stamp { font-size: 15px; }
+  }
+
+  @media (hover: hover) {
+    .act-more:hover { text-decoration-color: var(--pink); }
+    .act-more:hover svg { translate: 4px 0; }
   }
 </style>

@@ -19,7 +19,7 @@ export const drop = {
     nameLabel: 'Name',
     namePending: 'Not on the record yet.',
     dateLabel: 'Date',
-    datePending: 'No date on the record, so no countdown. Yet.',
+    datePending: 'No date on the record yet.',
     /** The issue line printed on the next issue's blank cover. */
     coverIssue: 'The next issue',
     coverDate: 'Date unconfirmed',
@@ -39,15 +39,18 @@ export const drop = {
   },
   issue: {
     name: (title: string) => `The ${title} issue`,
-    opened: (label: string) => `Opened ${label}`,
+    opened: (label: string) => `Dropped ${label}`,
     act: (n: number) => `Act ${n}`,
     see: 'See the piece',
     seeLabel: (title: string) => `${title}, see the piece`,
+    /** The heading over an act's credits, printed only in an issue that shows the photos they credit. */
+    credits: 'Credits',
     noPhoto: 'No pics yet.',
   },
   back: {
     title: 'Back issues',
-    deck: 'Past drops, kept on file: every piece, its pics and its playlist.',
+    /** Add "and its playlist" back once the acts' playlist links are in. */
+    deck: 'Past drops, kept on file: every piece and its pics.',
     restockLabel: 'Coming back?',
     restockPending: 'No word on a restock yet. We are watching.',
   },

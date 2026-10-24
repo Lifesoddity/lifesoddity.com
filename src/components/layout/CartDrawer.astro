@@ -19,7 +19,7 @@ import { site } from '../../content/site';
 
     <div class="drawer-empty" data-empty>
       <p>{bag.empty}</p>
-      <a class="drawer-empty-link" href="/shop">{bag.emptyLink}</a>
+      <a class="drawer-empty-link" href="/shop/">{bag.emptyLink}</a>
     </div>
 
     <div class="drawer-foot" data-foot hidden>
@@ -28,6 +28,7 @@ import { site } from '../../content/site';
       <a class="addbag drawer-checkout" href="#" data-checkout><span>{bag.checkout}</span></a>
       <p class="drawer-note">{bag.checkoutNote}</p>
     </div>
+    <p class="vh" aria-live="polite" data-drawer-live></p>
   </div>
 
   <template data-row>
@@ -39,7 +40,7 @@ import { site } from '../../content/site';
       </div>
       <div class="drawer-qty" role="group">
         <button class="drawer-step" type="button" data-step="-1" aria-label={bag.less}>−</button>
-        <span class="drawer-n num" aria-live="polite"></span>
+        <span class="drawer-n num"></span>
         <button class="drawer-step" type="button" data-step="1" aria-label={bag.more}>+</button>
       </div>
       <button class="drawer-remove" type="button" data-remove>{bag.remove}</button>
@@ -48,8 +49,9 @@ import { site } from '../../content/site';
 </dialog>
 
 <script>
-  import { bagItems, checkoutUrl, setQty } from '../../scripts/bag';
+  import { bagItems, checkoutUrl, setQty, type BagItem } from '../../scripts/bag';
   import { formatPrice } from '../../lib/money';
+  import { bag } from '../../content/copy/common';
 
   const drawer = document.querySelector<HTMLDialogElement>('dialog.drawer');
   if (drawer) {
@@ -59,35 +61,90 @@ import { site } from '../../content/site';
     const subtotal = drawer.querySelector<HTMLElement>('[data-subtotal]')!;
     const checkout = drawer.querySelector<HTMLAnchorElement>('[data-checkout]')!;
     const row = drawer.querySelector<HTMLTemplateElement>('template[data-row]')!;
+    const live = drawer.querySelector<HTMLElement>('[data-drawer-live]')!;
+    const closeBtn = drawer.querySelector<HTMLButtonElement>('[data-close-bag]')!;
     const domain = drawer.dataset.domain!;
+    /** One row per variant, kept across renders so a focused button is never destroyed. */
+    const rows = new Map<number, HTMLLIElement>();
+
+    const titleOf = (it: BagItem) => it.t || bag.missingItem;
+    const current = (v: number) => bagItems().find((i) => i.v === v);
+
+    /** One persistent polite region says what changed; cleared first so a repeat is heard. */
+    const announce = (msg: string) => {
+      live.textContent = '';
+      requestAnimationFrame(() => { live.textContent = msg; });
+    };
+
+    /** Take a line out, then move focus to the next row's Remove, else the previous one's, else close. */
+    const removeLine = (v: number) => {
+      const it = current(v);
+      if (!it) return;
+      const order = bagItems().map((i) => i.v);
+      const at = order.indexOf(v);
+      setQty(v, 0);
+      const nextV = order[at + 1] ?? order[at - 1];
+      const target = nextV !== undefined ? rows.get(nextV)?.querySelector<HTMLButtonElement>('[data-remove]') : null;
+      (target ?? closeBtn).focus();
+      announce(bag.removed(titleOf(it)));
+    };
+
+    const makeRow = (v: number) => {
+      const li = row.content.firstElementChild!.cloneNode(true) as HTMLLIElement;
+      li.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const it = current(v);
+          if (!it) return;
+          const n = Math.min(it.q + Number(b.dataset.step), 9);
+          if (n <= 0) { removeLine(v); return; }
+          setQty(v, n);
+          announce(bag.qtyNow(n));
+        }),
+      );
+      li.querySelector<HTMLButtonElement>('[data-remove]')!.addEventListener('click', () => removeLine(v));
+      return li;
+    };
+
+    const fill = (li: HTMLLIElement, it: BagItem) => {
+      const t = titleOf(it);
+      let img = li.querySelector<HTMLImageElement>('.drawer-thumb');
+      if (it.i && !img) {
+        img = document.createElement('img');
+        img.className = 'drawer-thumb';
+        img.alt = '';
+        img.width = 72;
+        img.height = 72;
+        img.loading = 'lazy';
+        li.prepend(img);
+      }
+      if (img && !it.i) img.remove();
+      else if (img && img.getAttribute('src') !== it.i) img.src = it.i;
+      const name = li.querySelector<HTMLAnchorElement>('.drawer-name')!;
+      name.textContent = t;
+      if (it.h) name.href = `/products/${it.h}/`; else name.removeAttribute('href');
+      li.querySelector('.drawer-size')!.textContent = it.s ? `${bag.size} ${it.s}` : '';
+      li.querySelector('.drawer-price')!.textContent = it.p ? formatPrice(it.p * it.q) : '';
+      li.querySelector('.drawer-n')!.textContent = String(it.q);
+      li.querySelector('.drawer-qty')!.setAttribute('aria-label', `${t}, size ${it.s}`);
+      const [less, more] = li.querySelectorAll<HTMLButtonElement>('[data-step]');
+      less.setAttribute('aria-label', bag.lessFor(t, it.s));
+      more.setAttribute('aria-label', bag.moreFor(t, it.s));
+      li.querySelector('[data-remove]')!.setAttribute('aria-label', bag.removeFor(t, it.s));
+    };
 
     const render = () => {
       const items = bagItems();
-      list.replaceChildren();
+      const want: HTMLLIElement[] = [];
       for (const it of items) {
-        const li = row.content.firstElementChild!.cloneNode(true) as HTMLLIElement;
-        if (it.i) {
-          const img = document.createElement('img');
-          img.className = 'drawer-thumb';
-          img.alt = '';
-          img.width = 72;
-          img.height = 72;
-          img.loading = 'lazy';
-          img.src = it.i;
-          li.prepend(img);
-        }
-        const name = li.querySelector<HTMLAnchorElement>('.drawer-name')!;
-        name.textContent = it.t;
-        if (it.h) name.href = `/products/${it.h}`; else name.removeAttribute('href');
-        li.querySelector('.drawer-size')!.textContent = it.s ? `Size ${it.s}` : '';
-        li.querySelector('.drawer-price')!.textContent = it.p ? formatPrice(it.p * it.q) : '';
-        li.querySelector('.drawer-n')!.textContent = String(it.q);
-        li.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) =>
-          b.addEventListener('click', () => setQty(it.v, it.q + Number(b.dataset.step))),
-        );
-        li.querySelector<HTMLButtonElement>('[data-remove]')!.addEventListener('click', () => setQty(it.v, 0));
-        list.appendChild(li);
+        let li = rows.get(it.v);
+        if (!li) { li = makeRow(it.v); rows.set(it.v, li); }
+        fill(li, it);
+        want.push(li);
       }
+      const keep = new Set(items.map((i) => i.v));
+      for (const [v, li] of rows) if (!keep.has(v)) { li.remove(); rows.delete(v); }
+      const have = [...list.children];
+      if (have.length !== want.length || want.some((li, i) => have[i] !== li)) list.append(...want);
       const total = items.reduce((n, i) => n + i.p * i.q, 0);
       subtotal.textContent = formatPrice(total);
       empty.hidden = items.length > 0;
@@ -95,16 +152,17 @@ import { site } from '../../content/site';
       checkout.href = items.length ? checkoutUrl(domain) : '#';
     };
 
+    const open = () => { render(); if (!drawer.open) drawer.showModal(); };
+
     document.addEventListener('lo:bag', render);
     document.addEventListener('lo:bag-render', render);
-    document.querySelectorAll('[data-open-bag]').forEach((b) =>
-      b.addEventListener('click', () => { render(); drawer.showModal(); }),
-    );
-    drawer.querySelector('[data-close-bag]')?.addEventListener('click', () => drawer.close());
+    document.addEventListener('lo:open-bag', open);
+    document.querySelectorAll('[data-open-bag]').forEach((b) => b.addEventListener('click', open));
+    closeBtn.addEventListener('click', () => drawer.close());
     drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.close(); });
     checkout.addEventListener('click', (e) => {
-      if (!bagItems().length) { e.preventDefault(); return; }
       e.preventDefault();
+      if (!bagItems().length) return;
       location.assign(checkoutUrl(domain));
     });
     render();
@@ -150,8 +208,8 @@ import { site } from '../../content/site';
   .drawer-name { font: 400 26px/.95 var(--gothic); text-transform: uppercase; text-decoration: none; }
   .drawer-name[href]:hover { text-decoration: underline; }
   .drawer-size, .drawer-price { font: 700 13px/1.2 var(--sans); }
-  .drawer-qty { grid-area: qty; display: flex; align-items: center; gap: 4px; }
-  .drawer-step { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid var(--ink); background: var(--white); font: 800 18px/1 var(--sans); }
+  .drawer-qty { grid-area: qty; display: flex; align-items: center; gap: 8px; }
+  .drawer-step { display: grid; place-items: center; width: 44px; height: 44px; border: 2px solid var(--ink); background: var(--white); font: 800 18px/1 var(--sans); }
   .drawer-n { min-width: 1.5ch; text-align: center; font: 800 15px/1 var(--sans); }
   .drawer-remove { grid-area: remove; justify-self: start; padding: 6px 0; font: 700 12px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; text-decoration: underline; text-underline-offset: .25em; }
   .drawer-empty { display: grid; gap: 14px; align-content: start; padding-top: 22px; font: 700 17px/1.35 var(--sans); }
@@ -161,5 +219,11 @@ import { site } from '../../content/site';
   .drawer-sub b { font: 400 40px/.85 var(--gothic); letter-spacing: 0; }
   .drawer-ship, .drawer-note { font: 600 13px/1.4 var(--sans); }
   .drawer-checkout { display: grid; place-items: center; text-decoration: none; }
+  @media (hover: hover) {
+    .drawer-step:hover { background: var(--ink); color: var(--yellow); }
+    .drawer-close svg { transition: rotate var(--fast) ease-out; }
+    .drawer-close:hover svg { rotate: 90deg; }
+    .drawer-remove:hover { text-decoration-color: var(--red); }
+  }
   @media (prefers-reduced-motion: reduce) { .drawer[open] { animation: none; } }
 </style>

@@ -29,6 +29,8 @@ export const shop = {
   },
   /** An act as the page names it: "Act 1: Party Animal", or "She Devil" (never numbered). */
   actName: (number: number | null, title: string) => (number ? `Act ${number}: ${title}` : title),
+  /** An act as the deck names it, so the deck never reads two colons: "Party Animal (Act 1)". */
+  deckActName: (number: number | null, title: string) => (number ? `${title} (Act ${number})` : title),
   /** The drop a piece came out in, for its issue line: "Act 1: Party Animal", "The She Devil drop". */
   dropName: (number: number | null, title: string) => (number ? `Act ${number}: ${title}` : `The ${title} drop`),
 
@@ -42,7 +44,8 @@ export const shop = {
     /** Several pieces in the store. */
     many: (n: number) => `${n} pieces in the store`,
     archive: 'The archive',
-    archiveLine: (n: number, acts: string[]) => `${n} ${n === 1 ? 'piece' : 'pieces'} from ${andList(acts)}`,
+    /** No count: two archive cards may turn out to be one piece (art.pending in content/pieces.ts). */
+    archiveLine: (_n: number, acts: string[]) => `Pieces from ${andList(acts)}`,
     next: 'Who’s next?',
     nextLine: 'Get on the list',
   },
@@ -53,8 +56,8 @@ export const shop = {
     exclusive: 'Exclusive',
     see: (title: string) => `${title}, see the piece`,
     from: 'From',
-    hint: 'Tap a size. It goes straight in your bag.',
-    sizes: (title: string) => `${title}: tap a size to add it to your bag`,
+    hint: 'Pick a size: it goes straight in your bag.',
+    sizes: (title: string) => `${title}: pick a size to add it to your bag`,
     soldLine: 'Every size is gone. The full story is still up.',
     more: 'The full story',
   },
@@ -67,6 +70,10 @@ export const shop = {
     dropped: 'Dropped',
     /** The script caption over each print: "spotted: the Showtime hoodie, Act 1". */
     spotted: (tag: string) => `spotted: ${tag.charAt(0).toLowerCase()}${tag.slice(1)}`.replace(/\bAct (\d+)/g, 'Act\u00a0$1'),
+    /** Each print links to its act in the lookbook. */
+    seePics: (title: string) => `See the pics: ${title}`,
+    /** After the act's facts: the way on to its pictures in the lookbook. */
+    allPics: 'See all the pics',
   },
 
   /** The last card: the next drop, which links to the drop page and its waitlist. */

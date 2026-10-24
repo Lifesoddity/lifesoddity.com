@@ -24,7 +24,7 @@ export function organizationLd() {
 
 /** One ProductGroup per product, one Product per size, each with its own Offer. */
 export function productGroupLd(product: Product) {
-  const url = `${site.url}/products/${product.handle}`;
+  const url = `${site.url}/products/${product.handle}/`;
   const image = product.images.map((i) => i.src);
   return {
     '@context': 'https://schema.org',
@@ -61,9 +61,11 @@ export function breadcrumbLd(items: { name: string; path: string }[]) {
   };
 }
 
-/** A product's text for link previews: its description, else its title and price. */
-export function productSummary(product: Product): string {
+/** A product's text for link previews: its description, else its title, price, sizes and its
+ *  line in the magazine (his words). */
+export function productSummary(product: Product, line?: string | null): string {
   const sizes = product.variants.map((v) => v.size);
   const range = sizes.length > 1 ? `Sizes ${sizes[0]} to ${sizes[sizes.length - 1]}.` : '';
-  return product.description?.split('\n')[0] ?? `${product.title}, ${formatPrice(product.price)}. ${range}`.trim();
+  const said = line?.trim() ? (/[.!?]$/.test(line.trim()) ? line.trim() : `${line.trim()}.`) : '';
+  return product.description?.split('\n')[0] ?? `${product.title}, ${formatPrice(product.price)}. ${range} ${said}`.replace(/\s+/g, ' ').trim();
 }

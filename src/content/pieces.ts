@@ -27,6 +27,8 @@ export interface PieceArt {
   line?: string;
   /** The marker circle drawn on a photo print: centre and radii in a 300x400 box. */
   mark?: { x: number; y: number; rx: number; ry: number };
+  /** A fact about this piece he has not confirmed: pages print it beside an UNCONFIRMED stamp. */
+  pending?: string;
 }
 
 export const productArt: Record<string, PieceArt> = {
@@ -62,7 +64,7 @@ export const archivePieces: ArchivePiece[] = [
     title: 'Showtime hoodie',
     act: 'party-animal',
     word: 'Showtime',
-    description: 'A black hoodie printed on the back SECURITY and LIFE OF THE PARTY.',
+    description: 'A black hoodie with SECURITY and LIFE OF THE PARTY printed on the back.',
     ground: '#BA0B19',
     ink: 'white',
     dot: 'rgb(0 0 0 / .22)',
@@ -110,6 +112,7 @@ export const archivePieces: ArchivePiece[] = [
     },
     tag: 'The Party Animal jacket, Act 1',
     line: 'This concludes Act 1.',
+    pending: 'Same piece as the Showtime hoodie?',
     photos: [
       { image: campaign.partyAnimalJacketBack, alt: "Back of the Party Animal jacket: SECURITY and LIFE OF THE PARTY over a party collage, LIFE'S ODDITY down the sleeves" },
       { image: campaign.partyAnimalJacketFront, alt: "Front of the Party Animal jacket: a washed black zip hoodie with SECURITY on the chest" },

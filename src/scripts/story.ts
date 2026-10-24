@@ -22,6 +22,9 @@ export function initStory() {
   };
 
   if (track && stage && scenes.length && !reduceMotion()) {
+    // the pinned styles apply only once this runs (.ss.is-pinned): without script the scenes
+    // stand as still panels instead of a blank, pinned stage
+    track.closest('.ss')?.classList.add('is-pinned');
     const last = scenes.map(() => NaN);
     let queued = false;
     const gMax = scenes.length - 0.5;

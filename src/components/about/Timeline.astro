@@ -68,7 +68,7 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
           <span class="stamp tl-stamp">{statusLabel[e.state]}</span>
           <h3 class="tl-name">{e.name}</h3>
           {e.meaning && <p class="tl-def">{e.term && <b>{e.term}:</b>}{e.meaning}</p>}
-          {e.names.length > 0 && <p class="tl-pieces"><b>{t.pieces}</b> {e.names.join(', ')}.</p>}
+          {e.names.length > 0 && <p class="tl-pieces"><b>{t.pieces}</b> {t.pieceList(e.names)}.</p>}
           {e.act.line && <p class="tl-line">{e.act.line}</p>}
           {e.shop?.href ? (
             <a class="tl-go" href={e.shop.href}>{t.seePiece}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a>

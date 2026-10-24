@@ -18,7 +18,7 @@ const ld = {
   '@context': 'https://schema.org',
   '@type': 'ImageGallery',
   name: copy.galleryName,
-  url: `${site.url}/lookbook`,
+  url: `${site.url}/lookbook/`,
   image: spreads.flatMap((s) =>
     s.shots.map((shot) => ({
       '@type': 'ImageObject',
@@ -42,7 +42,7 @@ const ld = {
   {spreads.map((s, i) => <ActSpread spread={s} first={i === 0} />)}
 
   <Viewer />
-  <script type="application/ld+json" is:inline set:html={JSON.stringify(ld)}></script>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(ld).replace(/</g, '\\u003c')}></script>
 </div>
 
 <script>

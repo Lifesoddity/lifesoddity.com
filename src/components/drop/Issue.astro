@@ -1,9 +1,10 @@
 ---
 // One act, printed as one issue of the magazine: its title with the vice on a tape tag, the
-// issue line (its name, the day it opened, its state), its dictionary entry, its pieces as
-// flash prints (live ones link to their product page and carry their price; archive ones carry
-// a rubber stamp and no price), its quote, its credits, its playlist box and, when he wrote one,
-// its closing line. The ground comes from the act's first piece, so every issue keeps the
+// issue line (its name, the day it dropped and its state, unless the tape already says it), its
+// dictionary entry, its pieces as flash prints (live ones link to their product page and carry
+// their price; archive ones carry a rubber stamp and no price), its quote, its credits (only in
+// an issue that shows the photos they credit), its playlist box and, when he wrote one, its
+// closing line. The ground comes from the act's first piece, so every issue keeps the
 // colours of its own material. Everything is read from content/acts.ts and the pieces, so a new
 // act is a new issue with no change here.
 import Print from '../ui/Print.astro';
@@ -12,7 +13,7 @@ import type { Act } from '../../content/acts';
 import { statusLabel, type Piece } from '../../lib/pieces';
 import { formatPrice } from '../../lib/money';
 import { drop } from '../../content/copy/drop';
-import { status } from '../../content/copy/common';
+import { pending, status } from '../../content/copy/common';
 
 interface Props {
   act: Act;
@@ -32,10 +33,22 @@ const dark = lead?.art.ink === 'white';
 const dot = lead?.art.dot ?? 'rgb(11 11 11 / .1)';
 const onSale = pieces.some((p) => p.status === 'live');
 const state = act.status === 'archive' ? status.archive : onSale ? status.live : status.soldout;
-const issueLine = [c.name(act.title), c.opened(act.openedLabel), state].join(' · ');
 const actLabel = act.number ? c.act(act.number) : null;
 // the vice rides the title on a tape tag; an act with no vice gets its state instead
 const tape = act.vice ?? (act.status === 'live' ? state : null);
+// the issue line says the state only when the tape does not
+const issueLine = [c.name(act.title), act.openedLabel ? c.opened(act.openedLabel) : null, tape === state ? null : state]
+  .filter(Boolean)
+  .join(' · ');
+
+// the credits name the people behind his campaign photos, so they print only in an issue that
+// shows those photos, never as a byline under a Shopify mockup they did not shoot
+const showsCampaign = pieces.some((p) => {
+  const ph = p.photo;
+  return ph?.kind === 'local' && act.photos.some((a) => a.image.src === ph.image.src);
+});
+const credits = showsCampaign ? act.credits : [];
+const hasWords = !!act.quote || credits.length > 0;
 
 const def = act.definition;
 const cut = def ? def.indexOf(':') : -1;
@@ -69,11 +82,16 @@ const altOf = (p: Piece) => {
   if (ph.kind === 'local') return ph.alt;
   return ph.image.alt || p.art.cutout?.alt || p.title;
 };
-const metaOf = (p: Piece) => `${statusLabel[p.status]}. ${actLabel ? `${actLabel}: ` : ''}${act.title}`;
+const forSaleOf = (p: Piece) => p.status === 'live' && !!p.product;
+// a piece on sale leaves its status to the price sticker, which already says OUT NOW
+const metaOf = (p: Piece) => {
+  const where = `${actLabel ? `${actLabel}: ` : ''}${act.title}`;
+  return forSaleOf(p) ? where : `${statusLabel[p.status]}. ${where}`;
+};
 ---
 
 <article
-  class:list={['is', 'halftone', spread ? 'is-spread' : 'is-solo', dark && 'on-dark', dark && 'is-dark']}
+  class:list={['is', 'halftone', spread ? 'is-spread' : 'is-solo', !hasWords && 'is-bare', dark && 'on-dark', dark && 'is-dark']}
   id={act.slug}
   aria-labelledby={`${act.slug}-title`}
   style={`--g:${ground};--dot:${dot}`}
@@ -82,7 +100,7 @@ const metaOf = (p: Piece) => `${statusLabel[p.status]}. ${actLabel ? `${actLabel
     {actLabel && <p class="stamp is-act">{actLabel}</p>}
     <div class="is-tw">
       <H class="is-title" id={`${act.slug}-title`}>{act.title}</H>
-      {tape && <p class="tape is-tape" aria-hidden={act.vice ? undefined : 'true'}>{tape}</p>}
+      {tape && <p class="tape is-tape">{tape}</p>}
     </div>
     <p class="is-line">{issueLine}</p>
   </header>
@@ -93,7 +111,7 @@ const metaOf = (p: Piece) => `${statusLabel[p.status]}. ${actLabel ? `${actLabel
     <ul class="is-pieces">
       {pieces.map((p, i) => {
         const slot = slotOf(i);
-        const forSale = p.status === 'live' && !!p.product;
+        const forSale = forSaleOf(p);
         return (
           <li class="is-piece" style={`--col:${slot.col};--dy:${slot.dy}`}>
             <div class="is-pic">
@@ -129,6 +147,7 @@ const metaOf = (p: Piece) => `${statusLabel[p.status]}. ${actLabel ? `${actLabel
             <div class="is-cap">
               <HP class="is-ptitle">{p.title}</HP>
               <p class="is-meta">{metaOf(p)}</p>
+              {p.art.pending && <p class="is-pend"><span class="stamp">{pending.stamp}</span> {p.art.pending}</p>}
               {!forSale && p.description && <p class="is-desc">{p.description}</p>}
               {p.href && (
                 <a class="is-go" href={p.href}>
@@ -143,15 +162,18 @@ const metaOf = (p: Piece) => `${statusLabel[p.status]}. ${actLabel ? `${actLabel
     </ul>
   )}
 
-  {(act.quote || act.credits.length > 0) && (
+  {hasWords && (
     <div class="is-words">
       {act.quote && <blockquote class="is-quote"><p>{act.quote}</p></blockquote>}
-      {act.credits.length > 0 && (
-        <dl class="is-credits">
-          {act.credits.map((cr) => (
-            <div><dt>{cr.role}</dt> <dd>{cr.names.map((nm) => `@${nm}`).join(', ')}</dd></div>
-          ))}
-        </dl>
+      {credits.length > 0 && (
+        <div class="is-cr">
+          <HP class="is-cr-h">{c.credits}</HP>
+          <dl class="is-credits">
+            {credits.map((cr) => (
+              <div><dt>{cr.role}</dt> <dd>{cr.names.map((nm) => `@${nm}`).join(', ')}</dd></div>
+            ))}
+          </dl>
+        </div>
       )}
     </div>
   )}
@@ -255,6 +277,9 @@ const metaOf = (p: Piece) => `${statusLabel[p.status]}. ${actLabel ? `${actLabel
   .is-ptitle { font: 400 40px/.88 var(--gothic); text-transform: uppercase; }
   .is-meta { font: 800 10.5px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
   .is-desc { max-width: 38ch; margin-top: 3px; font: 500 14px/1.42 var(--sans); }
+  /* a fact about the piece he has not confirmed, beside its stamp */
+  .is-pend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: 38ch; margin-top: 3px; color: var(--lc); font: 700 13px/1.35 var(--sans); }
+  .is-pend .stamp { background: var(--white); }
   .is-go {
     display: inline-flex;
     align-items: center;
@@ -278,7 +303,9 @@ const metaOf = (p: Piece) => `${statusLabel[p.status]}. ${actLabel ? `${actLabel
   .is-words { display: grid; gap: 22px; align-content: start; }
   .is-quote p { font: 400 44px/.92 var(--gothic); text-transform: uppercase; text-wrap: balance; }
   .is-quote::before { content: "\201C"; display: block; height: .36em; color: var(--qm); font: 400 112px/.9 var(--gothic); }
-  .is-credits { display: grid; gap: 5px; padding-top: 10px; border-top: 1px solid currentColor; }
+  .is-cr { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid currentColor; }
+  .is-cr-h { font: 800 11.5px/1.3 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+  .is-credits { display: grid; gap: 5px; }
   .is-credits dt { display: inline; font: 800 10.5px/1.4 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
   .is-credits dd { display: inline; font: 600 13px/1.4 var(--sans); overflow-wrap: anywhere; }
 
@@ -311,6 +338,10 @@ const metaOf = (p: Piece) => `${statusLabel[p.status]}. ${actLabel ? `${actLabel
     .is-solo .is-pieces { grid-column: 1 / 7; }
     .is-solo .is-piece { width: 100%; }
     .is-solo .is-words { grid-column: 7 / -1; align-self: center; }
+    /* one piece and no quote or credits under it: the dictionary entry moves up beside the print,
+       so the half beside it is never left empty */
+    .is-bare .is-pieces { grid-row: 2; }
+    .is-bare .is-def { grid-column: 7 / -1; grid-row: 2; align-self: center; }
 
     /* several pieces: a spread of different sizes, dropped at different heights */
     .is-spread .is-pieces { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 20px; row-gap: 48px; align-items: start; }
@@ -339,6 +370,14 @@ const metaOf = (p: Piece) => `${statusLabel[p.status]}. ${actLabel ? `${actLabel
     .is-badge b { font-size: max(46px, 4.2vw); }
     .is-badge span { font-size: max(10.5px, .82vw); }
     .is-solo .is-ptitle { font-size: max(40px, 3.6vw); }
+    /* no quote or credits: the entry goes back beside the title, and the playlist box takes the
+       whole height beside the print, its contents centred, so no empty row is left under it */
+    .is-bare .is-def { grid-column: 9 / 13; grid-row: 1; align-self: end; }
+    .is-bare .is-pieces { grid-row: 2; }
+    .is-bare .is-play { display: grid; grid-row: 2; }
+    .is-bare .is-play :global(.pl-box) { display: grid; grid-template-rows: auto 1fr; }
+    .is-bare .is-play :global(.pl-body) { align-content: center; }
+    .is-bare .is-end { grid-row: 3; }
 
     .is-spread .is-pieces { grid-column: 1 / 13; grid-row: 2; column-gap: 24px; padding-bottom: 1vw; }
     .is-spread .is-words { grid-column: 1 / 6; grid-row: 3; }

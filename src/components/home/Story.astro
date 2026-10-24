@@ -7,13 +7,13 @@
 // Base styles are the still version (reduced motion): one screen-tall panel per scene. With
 // motion welcome, the scenes stack in one sticky stage and story.ts writes --p (0 to 1) per
 // scene; CSS turns that one number into every transform.
-import { Image } from 'astro:assets';
+import { Image, getImage } from 'astro:assets';
 import BuyBox from '../ui/BuyBox.astro';
 import PieceImage from '../ui/PieceImage.astro';
 import type { Piece } from '../../lib/pieces';
 import { formatPrice } from '../../lib/money';
 import { home } from '../../content/copy/home';
-import { status as statusCopy } from '../../content/copy/common';
+import { pending, status as statusCopy } from '../../content/copy/common';
 
 interface Props { pieces: Piece[] }
 const { pieces } = Astro.props;
@@ -24,6 +24,46 @@ const open = { letters: [...s.openWord.toUpperCase()], w: 2.586 };
 
 const scenes = pieces.filter((p) => p.photo || p.art.cutout);
 const total = scenes.length + 1;
+
+// the opening card's contact strip: the archive's first three photos, as the act's paparazzi shots
+const strip = scenes.filter((p) => p.status === 'archive' && p.photo).slice(0, 3);
+const stripTilts = [-4, 3, -2];
+
+// The strip's marker arrow, drawn as the archive's (src/components/shop/ArchiveAct.astro): from
+// under the caption down to the top of the piece's marker circle, bowing out to the right, with
+// an open head. Drawn in the print's own 300x400 box, so it lands at any size. A piece without a
+// circle gets its arrow at the top of the print.
+const r1 = (v: number) => Math.round(v * 10) / 10;
+function arrow(m: { x: number; y: number; rx: number; ry: number }) {
+  const hx = m.x + m.rx * 0.35;
+  const hy = m.y - m.ry - 8;
+  const tx = Math.min(m.x + m.rx + 56, 272);
+  const ty = -12;
+  const c1 = [tx + 10, ty + (hy - ty) * 0.5];
+  const c2 = [hx + (tx - hx) * 0.35, hy - (hy - ty) * 0.45];
+  const dx = hx - c2[0];
+  const dy = hy - c2[1];
+  const len = Math.hypot(dx, dy);
+  const ux = -dx / len;
+  const uy = -dy / len;
+  const t = 0.62;
+  const L = 17;
+  const wing = (sign: number) => [hx + L * (ux * Math.cos(t) - sign * uy * Math.sin(t)), hy + L * (sign * ux * Math.sin(t) + uy * Math.cos(t))];
+  const [ax, ay] = wing(1);
+  const [bx, by] = wing(-1);
+  return `M${r1(tx)} ${ty}C${r1(c1[0])} ${r1(c1[1])} ${r1(c2[0])} ${r1(c2[1])} ${r1(hx)} ${r1(hy)}M${r1(ax)} ${r1(ay)}L${r1(hx)} ${r1(hy)}L${r1(bx)} ${r1(by)}`;
+}
+const unmarked = { x: 150, y: 120, rx: 60, ry: 60 };
+
+// the flash is masked by the cut-out's own edge: the same file the visible image loads (its 900w
+// variant), so the mask never downloads a second copy
+const masks: Record<string, string> = Object.fromEntries(
+  await Promise.all(
+    scenes
+      .filter((p) => p.art.cutout)
+      .map(async (p) => [p.key, (await getImage({ src: p.art.cutout!.front, width: 900, format: 'webp' })).src]),
+  ),
+);
 
 function sceneStyle(p: Piece, i: number) {
   const cut = p.art.cutout;
@@ -41,28 +81,54 @@ function sceneStyle(p: Piece, i: number) {
   if (cut) {
     vars['--shadow-img'] = `url(${cut.shadow.src})`;
     vars['--overhang'] = cut.overhang;
-    vars['--cut'] = `url(${cut.front.src})`;
+    vars['--cut'] = `url(${masks[p.key]})`;
   }
   return Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';');
 }
 const kind = (p: Piece) => (p.art.cutout ? (p.art.cutout.front.width >= p.art.cutout.front.height ? 'is-cut-wide' : 'is-cut-tall') : 'is-print');
 const firstSentence = (t: string | null) => (t ? t.split(/(?<=[.!?])\s/)[0] : null);
+const lineOf = (p: Piece) => p.art.line ?? firstSentence(p.description) ?? p.act.definition;
+// "Act 1" never breaks across lines on the tape
+const keepAct = (t: string) => t.replace(/\bAct (\d+)/g, 'Act\u00a0$1');
+const actName = (p: Piece) => (p.act.number ? s.act(p.act.number) : p.act.title);
+const stateOf = (p: Piece) => (p.status === 'live' ? statusCopy.live : p.status === 'soldout' ? statusCopy.soldout : `${statusCopy.archive}, ${actName(p)}`);
 let k = 0;
 ---
 
 <section class="ss" aria-label={s.label} style={`--n:${total}`}>
+  <ul class="vh">
+    {scenes.map((p) => <li>{s.summary(p.title, stateOf(p), lineOf(p), p.art.pending ? `${p.art.pending} ${pending.stamp}.` : null)}</li>)}
+  </ul>
   <div class="ss-track">
     <div class="ss-stage">
       <div class="ss-scene ss-open" style={`--g:var(--yellow);--lc:var(--ink);--w:${open.w};--wl:${open.w};--gap:0em`}>
         <div class="ss-flood halftone" aria-hidden="true"></div>
         <h2 class="ss-word" aria-label={s.openWord}><span class="ss-l" aria-hidden="true">{open.letters.map((ch, j) => <i style={`--k:${j}`}>{ch}</i>)}</span></h2>
         <p class="ss-line">{s.openLine}</p>
+        {strip.length > 0 && (
+          <ul class="ss-strip" aria-hidden="true">
+            {strip.map((p, i) => (
+              <li class="ss-snap" style={`--t:${stripTilts[i % stripTilts.length]}deg;--k:${i}`}>
+                <p class="ss-snap-cap">{s.spotted(p.art.tag)}</p>
+                <figure class="ss-snap-pic print ph" data-flash>
+                  <span class="ph-sh" aria-hidden="true"></span>
+                  <PieceImage photo={p.photo!} sizes="(min-width: 700px) 18vw, 28vw" ratio={0.75} />
+                  <span class="ph-flash" aria-hidden="true"></span>
+                  <svg class="mark" viewBox="0 0 300 400" preserveAspectRatio="none">
+                    {p.art.mark && <path transform={`translate(${p.art.mark.x} ${p.art.mark.y}) scale(${p.art.mark.rx} ${p.art.mark.ry})`} d="M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05.6-1.02.02-1-.5-.55-.95.1-1.05"></path>}
+                    <path class="ss-snap-arrow" d={arrow(p.art.mark ?? unmarked)}></path>
+                  </svg>
+                </figure>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {scenes.map((p, i) => {
         k = 0;
         const buyable = p.product && p.status === 'live';
-        const line = p.art.line ?? firstSentence(p.description) ?? p.act.definition;
+        const line = lineOf(p);
         return (
           <article class:list={['ss-scene', kind(p), p.art.ink === 'white' && 'on-dark']} style={sceneStyle(p, i)} aria-label={p.title}>
             <div class="ss-flood halftone" aria-hidden="true"></div>
@@ -73,14 +139,14 @@ let k = 0;
             </p>
 
             {p.art.cutout ? (
-              <a class="ss-prod ss-cut ph" href={p.href ?? undefined} aria-label={p.href ? `${p.title}, see the piece` : undefined}>
+              <a class="ss-prod ss-cut ph" data-flash href={p.href ?? undefined} aria-label={p.href ? `${p.title}, see the piece` : undefined}>
                 <span class="ph-sh ss-sh" aria-hidden="true"></span>
                 <Image class="ss-front" src={p.art.cutout.front} alt={p.art.cutout.alt} widths={[500, 900]} sizes="(min-width: 700px) 46vw, 92vw" />
                 {p.art.cutout.back && <Image class="ss-back" src={p.art.cutout.back} alt={p.art.cutout.backAlt ?? ''} widths={[500, 900]} sizes="(min-width: 700px) 46vw, 92vw" />}
                 <span class="ph-flash" aria-hidden="true"></span>
               </a>
             ) : (
-              <figure class="ss-prod ss-print print ph">
+              <figure class="ss-prod ss-print print ph" data-flash>
                 <span class="ph-sh" aria-hidden="true"></span>
                 {p.photo && <PieceImage photo={p.photo} sizes="(min-width: 700px) 32vw, 64vw" ratio={0.75} />}
                 <span class="ph-flash" aria-hidden="true"></span>
@@ -92,12 +158,12 @@ let k = 0;
               </figure>
             )}
 
-            <h3 class="tape ss-tag">{p.art.tag}</h3>
+            <h3 class="tape ss-tag">{keepAct(p.art.tag)}</h3>
 
             {buyable ? (
-              <div class="ss-buy">
+              <div class="ss-buy" data-live={p.product!.handle}>
                 <button class="ss-badge ss-badge-buy" type="button" aria-expanded="false" aria-controls={`ss-sizes-${p.key}`}>
-                  <b class="num">{formatPrice(p.product!.price)}</b><span>{s.buyLabel}</span>
+                  <b class="num" data-live-price>{formatPrice(p.product!.price)}</b><span>{s.buyLabel}</span>
                 </button>
                 <div class="ss-sizes" id={`ss-sizes-${p.key}`} role="group" aria-label={s.sizesTitle} hidden>
                   <p class="ss-sizes-h">{s.sizesTitle}</p>
@@ -108,9 +174,11 @@ let k = 0;
             ) : (
               <span class="ss-badge ss-stamp" aria-hidden="true">
                 <b>{p.status === 'soldout' ? statusCopy.soldout : statusCopy.archive}</b>
-                <span>{p.act.number ? `Act ${p.act.number}` : p.act.title}</span>
+                <span>{actName(p)}</span>
               </span>
             )}
+
+            {p.art.pending && <p class="ss-pend"><span class="stamp">{pending.stamp}</span> <span>{p.art.pending}</span></p>}
 
             {line && <p class="ss-line">{line.includes(':') ? <><b>{line.split(':')[0]}:</b>{line.slice(line.indexOf(':') + 1)}</> : line}</p>}
           </article>
@@ -219,6 +287,49 @@ let k = 0;
   .ss-line b { font-weight: 800; font-style: italic; }
   .ss-open .ss-line { font-size: 17px; font-weight: 700; }
   .ss-scene :focus-visible { outline-color: var(--lc); }
+
+  /* the opening card: SPOTTED! and its line high, the act's contact strip along the bottom */
+  .ss-open .ss-word { top: calc(var(--hd) + (var(--sh) - var(--hd)) * .27); }
+  .ss-open .ss-line { top: calc(var(--hd) + (var(--sh) - var(--hd)) * .45); bottom: auto; }
+  .ss-strip {
+    position: absolute;
+    z-index: 2;
+    left: var(--pad);
+    right: var(--pad);
+    bottom: max(20px, 4%);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4vw;
+    align-items: end;
+  }
+  .ss-snap { display: grid; justify-items: center; }
+  .ss-snap-pic { width: min(100%, calc(var(--sh) * .22)); rotate: var(--t); }
+  .ss-snap-pic .mark { stroke-width: 3; }
+  .ss-snap-cap, .ss-snap-arrow { display: none; }
+
+  /* a fact he has not confirmed, stuck on paper: under the badge from 700px; on a phone the badge
+     sits at the right edge with the line just below it, so the note goes above the tag instead */
+  .ss-pend {
+    position: absolute;
+    z-index: 3;
+    left: var(--pad);
+    bottom: calc(var(--sh) - var(--cy) + var(--ph) / 2 + 34px + 16px);
+    max-width: min(300px, calc(100% - 2 * var(--pad)));
+    display: grid;
+    gap: 5px;
+    justify-items: start;
+    padding: 9px 11px;
+    background: var(--white);
+    color: var(--ink);
+    font: 700 13px/1.35 var(--sans);
+    rotate: -3deg;
+    box-shadow: 0 6px 12px rgb(0 0 0 / .25);
+  }
+
+  @media (hover: hover) {
+    .ss-badge-buy { transition: background-color 120ms ease-out; }
+    .ss-badge-buy:not([aria-expanded="true"]):hover { background: var(--white); }
+  }
   .ss-sizes :focus-visible { outline-color: var(--ink); }
 
   @media (min-width: 700px) {
@@ -234,13 +345,25 @@ let k = 0;
     .ss-sizes { left: auto; right: var(--pad); bottom: auto; top: calc(var(--cy) - var(--ph) / 2 + 10vw + clamp(112px, 10vw, 150px) + 14px); width: 360px; }
     .ss-line { font-size: 16px; }
     .ss-open .ss-line { font-size: 20px; }
+    .ss-open .ss-word { font-size: min(calc(92vw / var(--w)), calc(var(--sh) * .34)); top: calc(var(--hd) + (var(--sh) - var(--hd)) * .3); }
+    .ss-open .ss-line { top: calc(var(--hd) + (var(--sh) - var(--hd)) * .52); }
+    .ss-snap-cap { display: block; width: 100%; margin-bottom: 14px; color: var(--ink); font: 400 min(clamp(18px, 1.9vw, 30px), calc(var(--sh) * .032))/1.05 var(--script); text-align: center; text-wrap: balance; rotate: -4deg; }
+    .ss-snap-arrow { display: inline; }
+    .ss-snap-pic .mark { stroke-width: 4; }
+    .ss-pend { left: calc(50% + var(--pw) / 2 - 3vw); top: calc(var(--cy) - var(--ph) / 2 + 10vw + clamp(112px, 10vw, 150px) + 12px); bottom: auto; max-width: 210px; }
+  }
+  /* a short laptop screen: the strip's prints come down a size so their captions clear the line */
+  @media (min-width: 700px) and (max-height: 800px) {
+    .ss-snap-pic { width: min(100%, calc(var(--sh) * .2)); }
   }
 
-  /* ---------- the pin and the motion, only when motion is welcome ---------- */
+  /* ---------- the pin and the motion, only when motion is welcome and story.ts runs ----------
+     story.ts adds .is-pinned only when it runs (not under reduced motion, not without script), so
+     without it the scenes stand as the still panels above, never a blank pinned stage. */
   @media (prefers-reduced-motion: no-preference) {
-    .ss-track { height: calc(var(--sh) * ((var(--n) - .5) * 1.5 + 1)); }
-    .ss-stage { position: sticky; top: 0; height: var(--sh); overflow: clip; }
-    .ss-scene {
+    .ss.is-pinned .ss-track { height: calc(var(--sh) * ((var(--n) - .5) * 1.5 + 1)); }
+    .ss.is-pinned .ss-stage { position: sticky; top: 0; height: var(--sh); overflow: clip; }
+    .ss.is-pinned .ss-scene {
       --p: 0;
       --e: clamp(0, var(--p) * 3, 1);
       --x: clamp(0, (var(--p) - .6667) * 3, 1);
@@ -255,16 +378,16 @@ let k = 0;
       height: auto;
     }
     /* the ground floods up from below: one composited panel sliding, nothing repainted */
-    .ss-flood { transform: translate3d(0, calc((1 - var(--eF)) * (1 - var(--eF)) * 100%), 0); will-change: transform; }
+    .ss.is-pinned .ss-flood { transform: translate3d(0, calc((1 - var(--eF)) * (1 - var(--eF)) * 100%), 0); will-change: transform; }
     /* letters roll up through their line, staggered; on the way out the word rolls down nearly as one */
-    .ss-word i {
+    .ss.is-pinned .ss-word i {
       --eL: clamp(0, (var(--e) - .35 - var(--k) * .025) / .4, 1);
       --xL: clamp(0, (var(--x) - var(--k) * .01) / .3, 1);
       transform: translate3d(0, calc(((1 - var(--eL)) * (1 - var(--eL)) + var(--xL) * var(--xL)) * 112%), 0);
       will-change: transform;
     }
     /* the piece flies in tilted from below, lands, and flies off the other way */
-    .ss-prod {
+    .ss.is-pinned .ss-prod {
       transform: translate3d(
           calc(var(--dir, 1) * (var(--rP) * 24vw - var(--xP) * var(--xP) * 30vw)),
           calc(var(--rP) * var(--sh) * .9 - var(--xP) * var(--xP) * var(--sh) * 1.1),
@@ -272,20 +395,22 @@ let k = 0;
         rotate(calc(var(--dir, 1) * (var(--rP) * 26deg - var(--xP) * var(--xP) * 32deg)));
       will-change: transform;
     }
-    /* tag, badge and line arrive last and leave first */
-    .ss-tag { opacity: calc(var(--eT) - var(--xT)); transform: translate3d(0, calc(var(--xT) * -24px), 0) scale(calc(1.3 - .3 * var(--eT))); will-change: transform, opacity; }
-    .ss-badge { opacity: calc(var(--eT) - var(--xT)); transform: scale(calc(.35 + .65 * (1 - (1 - var(--eT)) * (1 - var(--eT))))) rotate(calc((1 - var(--eT)) * -70deg)); will-change: transform, opacity; }
-    .ss-line { opacity: calc(var(--eT) - var(--xT)); transform: translate3d(0, calc((1 - var(--eT)) * 18px), 0); will-change: transform, opacity; }
-    .ss-open .ss-line { opacity: calc(1 - var(--xT)); transform: none; }
+    /* tag, badge, line and the unconfirmed note arrive last and leave first */
+    .ss.is-pinned .ss-tag { opacity: calc(var(--eT) - var(--xT)); transform: translate3d(0, calc(var(--xT) * -24px), 0) scale(calc(1.3 - .3 * var(--eT))); will-change: transform, opacity; }
+    .ss.is-pinned .ss-badge { opacity: calc(var(--eT) - var(--xT)); transform: scale(calc(.35 + .65 * (1 - (1 - var(--eT)) * (1 - var(--eT))))) rotate(calc((1 - var(--eT)) * -70deg)); will-change: transform, opacity; }
+    .ss.is-pinned .ss-line, .ss.is-pinned .ss-pend { opacity: calc(var(--eT) - var(--xT)); transform: translate3d(0, calc((1 - var(--eT)) * 18px), 0); will-change: transform, opacity; }
+    .ss.is-pinned .ss-open .ss-line { opacity: calc(1 - var(--xT)); transform: none; }
+    /* the opening card's strip comes up after the letters, one print after another, and leaves first */
+    .ss.is-pinned .ss-snap { opacity: calc(var(--eT) - var(--xT)); transform: translate3d(0, calc((1 - var(--eT)) * (48px + var(--k) * 16px)), 0); will-change: transform, opacity; }
     /* a piece with a back turns in the middle of its hold, in real perspective */
-    .ss-scene { --t0: clamp(0, (var(--p) - .42) / .16, 1); --tr: calc(var(--t0) * var(--t0) * (3 - 2 * var(--t0))); }
-    .ss-cut :global(.ss-back) { display: block; position: absolute; inset: 0; width: 100%; }
-    .ss-cut :global(.ss-front), .ss-cut :global(.ss-back) { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-    .ss-cut:has(:global(.ss-back)) :global(.ss-front) { transform: perspective(1400px) rotateY(calc(var(--tr) * 180deg)); }
-    .ss-cut :global(.ss-back) { transform: perspective(1400px) rotateY(calc(var(--tr) * 180deg - 180deg)); }
-    .ss-cut:has(:global(.ss-back)) .ss-sh { transform: scaleX(cos(calc(var(--tr) * 180deg))); }
+    .ss.is-pinned .ss-scene { --t0: clamp(0, (var(--p) - .42) / .16, 1); --tr: calc(var(--t0) * var(--t0) * (3 - 2 * var(--t0))); }
+    .ss.is-pinned .ss-cut :global(.ss-back) { display: block; position: absolute; inset: 0; width: 100%; }
+    .ss.is-pinned .ss-cut :global(.ss-front), .ss.is-pinned .ss-cut :global(.ss-back) { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .ss.is-pinned .ss-cut:has(:global(.ss-back)) :global(.ss-front) { transform: perspective(1400px) rotateY(calc(var(--tr) * 180deg)); }
+    .ss.is-pinned .ss-cut :global(.ss-back) { transform: perspective(1400px) rotateY(calc(var(--tr) * 180deg - 180deg)); }
+    .ss.is-pinned .ss-cut:has(:global(.ss-back)) .ss-sh { transform: scaleX(cos(calc(var(--tr) * 180deg))); will-change: transform; }
     /* a scene not started (0) or finished and covered (1) draws nothing */
-    @container style(--p: 0) { .ss-scene > * { visibility: hidden; } }
-    @container style(--p: 1) { .ss-scene > * { visibility: hidden; } }
+    @container style(--p: 0) { .ss.is-pinned .ss-scene > * { visibility: hidden; } }
+    @container style(--p: 1) { .ss.is-pinned .ss-scene > * { visibility: hidden; } }
   }
 </style>

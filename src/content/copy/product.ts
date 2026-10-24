@@ -1,6 +1,7 @@
 // The product page: each product is a cover story. Every line is his (his captions, the tee's
-// own print) or a plain label. What he has not given (fabric, fit, measurements, shipping) comes
-// from copy/common.ts `pending` with an UNCONFIRMED stamp, never invented here.
+// own print) or a plain label. What he has not given (fabric, fit, measurements) comes from
+// copy/common.ts `pending` with an UNCONFIRMED stamp, never invented here. Shipping is a known
+// fact (taxes and shipping are calculated at Shopify's checkout), so it carries no stamp.
 //
 // For the owner of the project:
 // - "Printed on the tee" is true of the She Devil tee only (its print carries the she-devil
@@ -19,8 +20,9 @@ export const product = {
   from: 'From',
   addToBag: 'Add to bag',
 
-  /** Under the deck, when the deck is printed on the piece itself. Keyed by Shopify handle. */
-  printedOn: { 'she-devil-tee': 'Printed on the tee' } as Record<string, string>,
+  /** A script tag after the deck's last word, when the deck is printed on the piece itself.
+   *  Keyed by Shopify handle. */
+  printedOn: { 'she-devil-tee': 'printed on the tee' } as Record<string, string>,
 
   dropLead: 'The drop:',
   actName: (n: number, title: string) => `Act ${n}: ${title}`,
@@ -49,8 +51,8 @@ export const product = {
 
   next: {
     title: ['To be', 'continued'],
-    tag: 'next act',
-    deck: 'The next act is in the works. Be the first to know when it drops.',
+    tag: 'next drop',
+    deck: 'The next drop is in the works. Be the first to know when it drops.',
     named: (name: string, when: string | null) => `Next drop: ${name}${when ? `, ${when}` : ''}. Be the first to know.`,
     all: 'See all the pieces',
   },

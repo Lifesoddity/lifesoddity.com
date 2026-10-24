@@ -35,13 +35,25 @@ export function slap(el: Element | null) {
   );
 }
 
-/** Photos flash when the pointer arrives (mouse) or on touch. */
+/** Photos flash when they first appear, when the pointer arrives (mouse) or on touch. */
 export function bindFlash(root: ParentNode = document) {
-  root.querySelectorAll<HTMLElement>('.ph[data-flash]').forEach((ph) => {
+  const prints = [...root.querySelectorAll<HTMLElement>('.ph[data-flash]')];
+  prints.forEach((ph) => {
     snap(ph.querySelector('.ph-sh'));
     ph.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') flash(ph); });
     ph.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') flash(ph); });
   });
+  // the first time each print scrolls in; flash()'s once-a-second rule keeps a row from strobing
+  if (!reduceMotion() && typeof IntersectionObserver === 'function') {
+    const seen = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        flash(entry.target);
+        seen.unobserve(entry.target);
+      }
+    }, { threshold: 0.45 });
+    prints.filter((ph) => !ph.hasAttribute('data-flash-first')).forEach((ph) => seen.observe(ph));
+  }
   const hero = root.querySelector('.ph[data-flash-first]');
   if (hero) {
     const img = hero.querySelector('img');

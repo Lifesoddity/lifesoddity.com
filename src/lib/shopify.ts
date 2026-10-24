@@ -12,7 +12,9 @@
 import snapshot from '../data/products.snapshot.json';
 import { bySize, normalizeSize } from './sizes';
 
-/** The store's own Shopify address: it keeps working after the domain moves to this site. */
+/** The store's Shopify address. myshopify.com redirects to the store's primary domain, so before the
+ *  main domain points at this site, the shop subdomain must become Shopify's primary domain and this
+ *  variable must be set to it (README, Going live). */
 export const STORE_DOMAIN = import.meta.env.PUBLIC_SHOPIFY_DOMAIN ?? 'lifesoddity.myshopify.com';
 const TOKEN = import.meta.env.SHOPIFY_STOREFRONT_TOKEN as string | undefined;
 // Storefront API version: Shopify supports each for a year; bump it when the build log warns.

@@ -65,7 +65,7 @@ export function getPieces(): Promise<Piece[]> {
         status: statusOf(product),
         act: actFor(product, art),
         product,
-        href: `/products/${product.handle}`,
+        href: `/products/${product.handle}/`,
         photo: photos[0] ?? null,
         photos,
         description: product.description,

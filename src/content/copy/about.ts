@@ -3,7 +3,7 @@
 // acts.ts; this file holds only the page's own words.
 //
 // FOR THE OWNER: his own story is missing (who is behind the label, where, since when). The
-// page shows an UNCONFIRMED stamp in its place until he writes it. Nothing here guesses it.
+// page shows an UNCONFIRMED stamp in its place, and promises nothing. Nothing here guesses it.
 // Sources of the credits under each line: .bunshin/harvest/facts.md ("The brand").
 
 export const about = {
@@ -21,7 +21,7 @@ export const about = {
     print: 'Who is he?',
     tape: 'no pics yet',
     /** Beside the UNCONFIRMED stamp. */
-    line: 'Who he is, where he is from, when it started: his story is coming, in his own words.',
+    line: 'Who he is, where he is from, when it started: not on the record yet.',
     label: 'No photo of him yet',
   },
 
@@ -36,6 +36,11 @@ export const about = {
     title: 'How it went down',
     deck: 'The acts so far, on the day each one dropped.',
     pieces: 'In it:',
+    /** The act's pieces as one phrase: "the Showtime hoodie, the Spotlight tee and the Party Animal jacket". */
+    pieceList: (names: readonly string[]) => {
+      const the = names.map((n) => (/^the /i.test(n) ? `the ${n.slice(4)}` : `the ${n}`));
+      return the.length > 1 ? `${the.slice(0, -1).join(', ')} and ${the[the.length - 1]}` : (the[0] ?? '');
+    },
     seePics: 'See the pics',
     seePiece: 'See the piece',
     radio: "Life's Oddity radio: the sound behind the collection",
@@ -49,13 +54,13 @@ export const about = {
 
   crew: {
     title: 'The crew',
-    deck: 'Credited the way his captions credit them.',
+    deck: 'The people behind the shoots.',
     on: 'on Instagram',
   },
 
   reach: {
     title: 'Got a tip?',
-    deck: 'Reach him where he posts: a message on Instagram.',
+    deck: 'Reach him where he posts.',
     profiles: 'Where he posts',
     /** His handles as they read on each profile (facts.md, "Channels"). */
     handles: {

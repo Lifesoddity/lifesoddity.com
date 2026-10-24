@@ -19,3 +19,27 @@
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "frame-ancestors 'none'"
+    X-Frame-Options = "DENY"
+
+# The old Shopify store's paths, which reach this site once the main domain points here.
+# Collections and pages were permanent; the cart and search land on the shop for now.
+[[redirects]]
+  from = "/collections/*"
+  to = "/shop/"
+  status = 301
+
+[[redirects]]
+  from = "/pages/*"
+  to = "/about/"
+  status = 301
+
+[[redirects]]
+  from = "/cart"
+  to = "/shop/"
+  status = 302
+
+[[redirects]]
+  from = "/search"
+  to = "/shop/"
+  status = 302

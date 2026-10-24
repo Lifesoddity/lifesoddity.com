@@ -9,7 +9,8 @@ import type { Product } from '../../lib/shopify';
 import { formatPrice } from '../../lib/money';
 import { shopifyImage } from '../../lib/shopify';
 import { home } from '../../content/copy/home';
-import { status } from '../../content/copy/common';
+import { bag, status } from '../../content/copy/common';
+import { site } from '../../content/site';
 
 interface Props {
   product: Product;
@@ -23,6 +24,7 @@ interface Props {
 
 const { product, mode = 'box', class: cls, showPrice = false, addLabel = home.cover.addToBag, sizeLabel = 'Size' } = Astro.props;
 const thumb = product.images[0] ? shopifyImage(product.images[0].src, 200) : '';
+const noteText = mode === 'box' && product.available ? home.cover.pickSize : '';
 ---
 
 <div
@@ -53,5 +55,8 @@ const thumb = product.images[0] ? shopifyImage(product.images[0].src, 200) : '';
   {mode === 'box' && (
     <button class="addbag" type="button" data-add disabled><span>{product.available ? addLabel : status.soldout}</span></button>
   )}
-  <p class="buy-note" data-note aria-live="polite">{mode === 'box' && product.available ? home.cover.pickSize : ''}</p>
+  {mode === 'box' && (
+    <noscript><a class="buy-fallback" href={`https://${site.checkoutDomain}/products/${product.handle}`}>{bag.noScript}</a></noscript>
+  )}
+  <p class="buy-note" data-note data-note-initial={noteText} aria-live="polite">{noteText}</p>
 </div>

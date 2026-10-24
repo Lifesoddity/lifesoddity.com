@@ -21,12 +21,36 @@ const REF_KEY = 'lo-ref';
 let items: BagItem[] = [];
 let memoryOnly = false;
 
+/** Only well-formed lines survive a reload: a broken stored entry must not break the page. */
+function clean(raw: unknown): BagItem[] {
+  if (!Array.isArray(raw)) return [];
+  const str = (x: unknown) => (typeof x === 'string' ? x : '');
+  return raw
+    .filter((e): e is Record<string, unknown> => typeof e === 'object' && e !== null)
+    .filter((e) => Number.isInteger(e.v) && (e.v as number) > 0 && Number.isInteger(e.q) && (e.q as number) >= 1 && (e.q as number) <= 9)
+    .map((e) => ({
+      v: e.v as number,
+      q: e.q as number,
+      h: str(e.h),
+      t: str(e.t),
+      s: str(e.s),
+      i: str(e.i),
+      p: typeof e.p === 'number' && Number.isFinite(e.p) ? e.p : 0,
+    }));
+}
+
 function load() {
+  let stored: string | null;
   try {
-    items = JSON.parse(localStorage.getItem(KEY) ?? '[]');
-    if (!Array.isArray(items)) items = [];
+    stored = localStorage.getItem(KEY);
   } catch {
     memoryOnly = true;
+    items = [];
+    return;
+  }
+  try {
+    items = clean(JSON.parse(stored ?? '[]'));
+  } catch {
     items = [];
   }
 }
@@ -72,18 +96,6 @@ export function currentRef(): string | null {
   try { return sessionStorage.getItem(REF_KEY); } catch { return null; }
 }
 
-/** A bag link carried in the URL (?cart=id:qty,id:qty) is merged in: the escape from an in-app
- *  browser to Safari loses storage, so the link carries the bag across. */
-function restoreFromUrl() {
-  const cart = new URLSearchParams(location.search).get('cart');
-  if (!cart) return;
-  for (const part of cart.split(',')) {
-    const [v, q] = part.split(':').map(Number);
-    if (v && q && !items.some((i) => i.v === v)) items.push({ v, q, h: '', t: 'Item from your bag', s: '', p: 0, i: '' });
-  }
-  emit();
-}
-
 export function checkoutUrl(domain: string): string {
   const lines = items.map((i) => `${i.v}:${i.q}`).join(',');
   const ref = currentRef();
@@ -93,7 +105,6 @@ export function checkoutUrl(domain: string): string {
 export function initBag() {
   load();
   rememberRef();
-  restoreFromUrl();
   const sync = () => {
     const n = bagCount();
     document.querySelectorAll('[data-bag-count]').forEach((el) => { el.textContent = String(n); });
