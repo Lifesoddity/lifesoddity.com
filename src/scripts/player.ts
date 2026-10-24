@@ -1,8 +1,9 @@
 // LIFE'S ODDITY RADIO. The playlist boxes exist only once an act has a Spotify link (without
 // one, Player.astro prints a coverline strip and nothing here runs). Nothing from Spotify loads
-// until the visitor presses PLAY: then Spotify's own player (an iframe, its design) is made once,
-// inside the docked radio (layout/Radio.astro), which stays put while pages change, and our PLAY
-// sticker drives it through Spotify's iFrame API.
+// until the visitor presses PLAY: then Spotify's own player (an iframe, its design, in its dark
+// version: near-black whatever the playlist's cover) is made once, inside the docked radio
+// (layout/Radio.astro), which stays put while pages change, and our PLAY sticker drives it
+// through Spotify's iFrame API.
 //
 // Where the player shows:
 // - "box": the box it was played from is on screen. The radio is laid over that box's print,
@@ -20,11 +21,11 @@ interface Controller {
   play(): void;
   pause(): void;
   resume(): void;
-  loadUri(uri: string): void;
+  loadEntity(url: string): void;
   addListener(event: 'playback_update', cb: (e: { data: { isPaused: boolean; playingURI: string } }) => void): void;
 }
 interface IFrameAPI {
-  createController(el: HTMLElement, options: { uri: string; width: string; height: number }, cb: (c: Controller) => void): void;
+  createController(el: HTMLElement, options: { url: string; width: string; height: number }, cb: (c: Controller) => void): void;
 }
 declare global {
   interface Window { onSpotifyIframeApiReady?: (api: IFrameAPI) => void }
@@ -46,10 +47,12 @@ function loadApi(): Promise<IFrameAPI> {
   return apiPromise;
 }
 
-/** "https://open.spotify.com/playlist/ID?si=..." to "spotify:playlist:ID". */
-const toUri = (url: string) => {
-  const m = url.match(/open\.spotify\.com\/(playlist|album|track)\/([A-Za-z0-9]+)/);
-  return m ? `spotify:${m[1]}:${m[2]}` : url;
+/** The link without its sharing tags, asking for Spotify's dark player (theme=0). */
+const dark = (url: string) => {
+  const u = new URL(url);
+  u.search = '';
+  u.searchParams.set('theme', '0');
+  return u.href;
 };
 
 type Mode = 'off' | 'box' | 'dock';
@@ -155,7 +158,7 @@ function attach(box: HTMLElement | null) {
 function make(url: string): Promise<Controller> {
   making ??= loadApi().then((api) => new Promise<Controller>((resolve) => {
     const mount = radio!.querySelector<HTMLElement>('[data-radio-mount]')!;
-    api.createController(mount, { uri: toUri(url), width: '100%', height: DOCK_H }, (c) => {
+    api.createController(mount, { url: dark(url), width: '100%', height: DOCK_H }, (c) => {
       c.addListener('playback_update', (e) => {
         paused = e.data.isPaused;
         sync();
@@ -181,7 +184,7 @@ async function start(box: HTMLElement) {
     const c = controller ?? (controller = await make(url));
     if (current?.url !== url) {
       // another playlist: load it and play it from the top
-      if (!fresh) c.loadUri(toUri(url));
+      if (!fresh) c.loadEntity(dark(url));
       current = { url, name };
       if (openLink) {
         openLink.href = url;
