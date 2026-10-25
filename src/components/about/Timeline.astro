@@ -248,7 +248,7 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
   @media (prefers-reduced-motion: no-preference) {
     @supports (animation-timeline: view()) {
       /* phone and tablet: the rail down the left grows with the reading */
-      .tl-list { position: relative; border-left-color: transparent; view-timeline-name: --rail; }
+      .tl-list { position: relative; border-left-color: transparent; view-timeline-name: --rail; view-timeline-inset: var(--seen-top) var(--seen-end); }
       .tl-list::before {
         content: "";
         position: absolute;
@@ -267,7 +267,7 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
       /* desktop: each act's thick rule draws left to right as it arrives, one after another */
       @media (min-width: 1000px) {
         .tl-list::before { display: none; }
-        .tl-item { border-top-color: transparent; view-timeline-name: --act; }
+        .tl-item { border-top-color: transparent; view-timeline-name: --act; view-timeline-inset: var(--seen-top) var(--seen-end); }
         .tl-item::before {
           display: block;
           left: 0;

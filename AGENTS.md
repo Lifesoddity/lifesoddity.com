@@ -59,7 +59,7 @@ newer Node than the owner's machine has.
 - Motion: animate only `transform` and `opacity`, nothing loops, nothing page-tall repaints, and
   every effect has a still version under reduced motion. The owner notices lag.
 - The parallax drift (what moves on scroll, and how fast) is one block in `global.css`, scaled by
-  `--k` on wider screens; the About timeline's self-drawing rails are in `Timeline.astro`. Moving a
+  `--dk` on wider screens; the About timeline's self-drawing rails are in `Timeline.astro`. Moving a
   layer next to text: check that the two part as the page scrolls, never meet, at 375, 768, 1024,
   1280 and 1440.
 - The buy button is never greyed out unless the piece is sold out: PICK A SIZE, then ADD TO BAG,

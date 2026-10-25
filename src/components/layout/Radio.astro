@@ -63,6 +63,13 @@ const name = player.name(title);
   .radio[data-mode="box"] { position: absolute; z-index: 20; top: 0; left: 0; }
   .radio[data-mode="box"] .radio-ctl { display: none; }
 
+  /* the way in (Gate.astro): Spotify's own play button, cut out of its 320x80 player (the white
+     circle at 282-314 x 44-76) and set exactly over the play disc of ENTER NOW, so the visitor's
+     tap is a tap on Spotify's button, the one an iPhone accepts for music. player.ts places it. */
+  .radio[data-mode="gate"] { position: fixed; z-index: 95; top: 0; left: 0; width: 320px; padding: 0; border: 0; background: none; clip-path: circle(16px at 298px 60px); }
+  .radio[data-mode="gate"] .radio-frame { height: 80px; border-radius: 0; background: none; }
+  .radio[data-mode="gate"] .radio-ctl { display: none; }
+
   /* iPhone: the music waits for a tap on Spotify's own play. A note above its button, never on it */
   .radio-hint {
     position: absolute;

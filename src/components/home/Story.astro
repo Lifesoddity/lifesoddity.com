@@ -5,8 +5,11 @@
 // hands over to the next. Scenes are built from the data, so a new product gets one by itself.
 //
 // Base styles are the still version (reduced motion): one screen-tall panel per scene. With
-// motion welcome, the scenes stack in one sticky stage and story.ts writes --p (0 to 1) per
-// scene; CSS turns that one number into every transform.
+// motion welcome, the scenes stack in one sticky stage and story.ts writes, per scene, how far it
+// has come in (--e), held (--h) and gone out (--x), each measured in screens of scroll; CSS turns
+// them into every transform, linearly, so the motion keeps pace with the finger: a ground rises
+// exactly as fast as the page scrolls, its piece rides in just ahead of it, and the scene it
+// covers drifts up slower behind it.
 import { Image, getImage } from 'astro:assets';
 import BuyBox from '../ui/BuyBox.astro';
 import PieceImage from '../ui/PieceImage.astro';
@@ -263,6 +266,9 @@ let k = 0;
     --sh: var(--lo-screen-h, 100svh);
     --hd: var(--header-h);
     --cy: calc(var(--hd) + (var(--sh) - var(--hd)) * .5);
+    /* the holds, in screens of scroll: each piece, and the opening card (story.ts reads them) */
+    --hold: .35;
+    --hold0: .35;
     position: relative;
   }
   .ss-scene {
@@ -419,38 +425,51 @@ let k = 0;
      story.ts adds .is-pinned only when it runs (not under reduced motion, not without script), so
      without it the scenes stand as the still panels above, never a blank pinned stage. */
   @media (prefers-reduced-motion: no-preference) {
-    .ss.is-pinned .ss-track { height: calc(var(--sh) * ((var(--n) - .5) * 1.5 + 1)); }
-    .ss.is-pinned .ss-stage { position: sticky; top: 0; height: var(--sh); overflow: clip; }
+    /* the track: the opening hold, then per piece one screen coming in and its hold, then the
+       screen the stage fills (the same sum story.ts measures with) */
+    .ss.is-pinned .ss-track { height: calc(var(--sh) * (var(--hold0) + (var(--n) - 1) * (1 + var(--hold)) + 1)); }
+    /* the stage ends above the radio strip, so nothing of the story hides under it; it follows the
+       phone's toolbars (dvh), and everything in it is placed in the screen the scroll measures */
+    .ss.is-pinned .ss-stage {
+      --sh: calc(var(--lo-screen-h, 100svh) - var(--radio-b, 0px));
+      --cy: calc(var(--hd) + (var(--sh) - var(--hd)) * .5);
+      position: sticky;
+      top: 0;
+      height: var(--sh);
+      height: calc(100dvh - var(--radio-b, 0px));
+      overflow: clip;
+    }
     .ss.is-pinned .ss-scene {
       --p: 0;
-      --e: clamp(0, var(--p) * 3, 1);
-      --x: clamp(0, (var(--p) - .6667) * 3, 1);
-      --eF: clamp(0, var(--e) * 1.7, 1);
-      --eP: clamp(0, (var(--e) - .2) * 1.25, 1);
-      --rP: calc((1 - var(--eP)) * (1 - var(--eP)) * (1 - var(--eP)));
-      --xP: clamp(0, var(--x) / .6, 1);
-      --eT: clamp(0, (var(--e) - .7) / .3, 1);
-      --xT: clamp(0, var(--x) / .3, 1);
+      --e: 0;
+      --h: 0;
+      --x: 0;
+      /* the piece lands a little before its ground settles; tag, badge and line come last and go first */
+      --eP: clamp(0, var(--e) / .85, 1);
+      --eT: clamp(0, (var(--e) - .75) / .25, 1);
+      --xT: clamp(0, var(--x) / .25, 1);
       position: absolute;
       inset: 0;
       height: auto;
     }
-    /* the ground floods up from below: one composited panel sliding, nothing repainted */
-    .ss.is-pinned .ss-flood { transform: translate3d(0, calc((1 - var(--eF)) * (1 - var(--eF)) * 100%), 0); will-change: transform; }
-    /* letters roll up through their line, staggered; on the way out the word rolls down nearly as one */
+    /* the ground rises exactly as fast as the page scrolls: one composited panel, nothing repainted */
+    .ss.is-pinned .ss-flood { transform: translate3d(0, calc((1 - var(--e)) * 100%), 0); will-change: transform; }
+    /* letters roll up through their line, staggered, as the ground rises */
     .ss.is-pinned .ss-word i {
-      --eL: clamp(0, (var(--e) - .35 - var(--k) * .025) / .4, 1);
-      --xL: clamp(0, (var(--x) - var(--k) * .01) / .3, 1);
-      transform: translate3d(0, calc(((1 - var(--eL)) * (1 - var(--eL)) + var(--xL) * var(--xL)) * 112%), 0);
+      --eL: clamp(0, (var(--e) - .3 - var(--k) * .025) / .5, 1);
+      transform: translate3d(0, calc((1 - var(--eL)) * 112%), 0);
       will-change: transform;
     }
-    /* the piece flies in tilted from below, lands, and flies off the other way */
+    /* covered by the next ground, the word drifts up slower than the page: it reads as further back */
+    .ss.is-pinned .ss-word { transform: translate3d(0, calc(var(--x) * var(--sh) * -.35), 0); will-change: transform; }
+    /* the piece rides in tilted, a little ahead of its ground, lands, and drifts off the other way
+       as the next ground covers it */
     .ss.is-pinned .ss-prod {
       transform: translate3d(
-          calc(var(--dir, 1) * (var(--rP) * 24vw - var(--xP) * var(--xP) * 30vw)),
-          calc(var(--rP) * var(--sh) * .9 - var(--xP) * var(--xP) * var(--sh) * 1.1),
+          calc(var(--dir, 1) * ((1 - var(--eP)) * 18vw - var(--x) * 10vw)),
+          calc((1 - var(--eP)) * var(--sh) - var(--x) * var(--sh) * .6),
           0)
-        rotate(calc(var(--dir, 1) * (var(--rP) * 26deg - var(--xP) * var(--xP) * 32deg)));
+        rotate(calc(var(--dir, 1) * ((1 - var(--eP)) * 20deg - var(--x) * 12deg)));
       will-change: transform;
     }
     /* tag, badge and line arrive last and leave first */
@@ -460,8 +479,8 @@ let k = 0;
     .ss.is-pinned .ss-open .ss-line { opacity: calc(1 - var(--xT)); transform: none; }
     /* the opening card's strip comes up after the letters, one print after another, and leaves first */
     .ss.is-pinned .ss-snap { opacity: calc(var(--eT) - var(--xT)); transform: translate3d(0, calc((1 - var(--eT)) * (48px + var(--k) * 16px)), 0); will-change: transform, opacity; }
-    /* a piece with a back turns in the middle of its hold, in real perspective */
-    .ss.is-pinned .ss-scene { --t0: clamp(0, (var(--p) - .42) / .16, 1); --tr: calc(var(--t0) * var(--t0) * (3 - 2 * var(--t0))); }
+    /* a piece with a back turns during its hold, in real perspective */
+    .ss.is-pinned .ss-scene { --t0: clamp(0, (var(--h) - .1) / .8, 1); --tr: calc(var(--t0) * var(--t0) * (3 - 2 * var(--t0))); }
     .ss.is-pinned .ss-cut :global(.ss-back) { display: block; position: absolute; inset: 0; width: 100%; }
     .ss.is-pinned .ss-cut :global(.ss-front), .ss.is-pinned .ss-cut :global(.ss-back) { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
     .ss.is-pinned .ss-cut:has(:global(.ss-back)) :global(.ss-front) { transform: perspective(1400px) rotateY(calc(var(--tr) * 180deg)); }

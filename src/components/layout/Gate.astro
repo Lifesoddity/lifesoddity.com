@@ -1,10 +1,13 @@
 ---
 // The way in, once per visit: an ALL ACCESS pass on a lanyard, the soundtrack's call (SHOWTIME
-// STARTS NOW.) and one button, ENTER NOW. The tap goes in and starts the radio: ACCESS GRANTED
-// slaps onto the pass, the screen lifts, and the radio is playing in its strip. (Computers and
-// Android play at once; an iPhone lets only Spotify's own play button start its music, so there
-// the strip comes up ready and says so, scripts/player.ts.) Escape goes in quietly. Without script
-// nothing shows: the inline script below raises it before the page paints.
+// STARTS NOW.) and one button, ENTER NOW, with a white play disc at its end. The tap goes in and
+// starts the radio: ACCESS GRANTED slaps onto the pass, the screen lifts, and the radio is playing
+// in its strip. Computers and Android play from anywhere on the button. An iPhone lets only
+// Spotify's own play button start its music, so once Spotify's player has loaded, the disc IS that
+// button: scripts/player.ts sets the radio's player over it, cut down to its play circle, and the
+// visitor's tap on it plays and goes in (lo:granted). Until then the disc is our own look-alike.
+// Escape goes in quietly. Without script nothing shows: the inline script below raises it before
+// the page paints.
 import { Image } from 'astro:assets';
 import { brand } from '../../assets';
 import { gate } from '../../content/copy/common';
@@ -38,7 +41,7 @@ const playlist = radioAct()?.playlist.name ?? null;
       <h2 class="gate-title" id="gate-title"><span class="vh">{gate.label}: </span>{gate.title(playlist)}</h2>
       <button class="gate-go" type="button" data-gate-go>
         <span class="gate-go-l">{gate.enter}</span>
-        <svg class="gate-go-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+        <span class="gate-go-play" data-gate-play aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8.5 6v12l9.5-6z"></path></svg></span>
       </button>
       {playlist && (
         <p class="gate-sound">
@@ -61,8 +64,9 @@ const playlist = radioAct()?.playlist.name ?? null;
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     root.classList.add('gate-on');
     gate.hidden = false;
-    // the page behind waits out of reach of Tab and screen readers
-    const behind = () => [...document.body.children].filter((el) => el !== gate && !el.matches('script'));
+    // the page behind waits out of reach of Tab and screen readers (not the radio: its play
+    // button is the disc on ENTER NOW)
+    const behind = () => [...document.body.children].filter((el) => el !== gate && !el.matches('[data-radio], script'));
     // focus on the screen itself (its name is read out); one Tab reaches ENTER NOW, so its ring only
     // shows for the keyboard
     document.addEventListener('DOMContentLoaded', () => { behind().forEach((el) => { el.inert = true; }); gate.focus({ preventScroll: true }); }, { once: true });
@@ -98,10 +102,12 @@ const playlist = radioAct()?.playlist.name ?? null;
       setTimeout(lift, still ? 450 : 700);
     };
     gate.querySelector('[data-gate-go]').addEventListener('click', () => {
-      // the radio starts inside this very tap, before anything else happens
+      // the radio starts inside this very tap (computers and Android), then in we go
       document.dispatchEvent(new CustomEvent('lo:enter'));
       close(true);
     });
+    // the disc was Spotify's own play button: it plays, so in we go (scripts/player.ts)
+    document.addEventListener('lo:granted', () => close(true));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !done) close(false); });
     // a page change while it is up (nothing behind it can be reached, but just in case): go in quietly
     document.addEventListener('astro:before-swap', () => { if (!done) close(false); });
@@ -222,7 +228,10 @@ const playlist = radioAct()?.playlist.name ?? null;
     border-bottom: 1px solid rgb(255 255 255 / .55);
   }
   .gate-go-l { position: relative; top: 2px; }
-  .gate-go-i { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) var(--ease-out); }
+  /* the play disc: Spotify's own play button sits exactly on it once loaded (white, 32px, a black
+     triangle), so ours looks the same until then */
+  .gate-go-play { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--white); color: var(--ink); }
+  .gate-go-play svg { width: 16px; height: 16px; fill: currentColor; }
   .gate-go:active { translate: 0 2px; }
   .gate-go:focus-visible { outline: 3px solid var(--yellow); outline-offset: 6px; }
   /* what the tap does: a quiet line, so the music is no surprise */
@@ -240,6 +249,5 @@ const playlist = radioAct()?.playlist.name ?? null;
   }
   @media (hover: hover) {
     .gate-go:hover::before { background: var(--red-press); }
-    .gate-go:hover .gate-go-i { translate: 5px 0; }
   }
 </style>

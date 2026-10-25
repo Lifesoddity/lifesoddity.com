@@ -5,12 +5,15 @@
 // (layout/Radio.astro), which stays put while pages change, and our PLAY sticker drives it
 // through Spotify's iFrame API.
 //
-// The way in (layout/Gate.astro), once per visit: while the pass is up, Spotify's player loads
-// out of sight, and ENTER NOW plays it inside that very tap. Computers and Android play at once.
-// An iPhone lets only Spotify's own play button start its music, so there the strip comes up with
-// the player ready and a small "tap play" note above its button, gone once it plays.
+// The way in (layout/Gate.astro), once per visit: while the pass is up, Spotify's player loads and
+// is cut down to its play button, set exactly over the white play disc of ENTER NOW ("gate"). A
+// tap on the disc is a tap on Spotify's own button, the one an iPhone accepts for music: it plays,
+// and the way in opens (lo:granted). A tap anywhere else on ENTER NOW plays through the API, which
+// computers and Android allow. If an iPhone still ends up quiet, the strip comes up with the player
+// ready and a small "tap play" note above its button, gone once it plays.
 //
 // Where the player shows:
+// - "gate": the way in is up; the player is the disc on ENTER NOW.
 // - "ready": the visitor has scrolled and nothing plays yet. The strip along the bottom offers
 //   the soundtrack (layout/Radio.astro) with PLAY. Browsers allow sound only once the page has
 //   had a tap or click, so the first scroll after one starts it by itself; until then it waits
@@ -64,7 +67,7 @@ const dark = (url: string) => {
   return u.href;
 };
 
-type Mode = 'off' | 'ready' | 'box' | 'dock';
+type Mode = 'off' | 'gate' | 'ready' | 'box' | 'dock';
 const strip = (m: string | undefined) => m === 'ready' || m === 'dock';
 
 const radio = document.querySelector<HTMLElement>('[data-radio]');
@@ -77,6 +80,9 @@ const offer = radio?.dataset.url ? { url: radio.dataset.url, name: radio.dataset
 const AWAY = 'lo-radio-away';
 const hint = radio?.querySelector<HTMLElement>('[data-radio-hint]') ?? null;
 const gateEl = document.querySelector<HTMLElement>('[data-gate]');
+const gateDisc = gateEl?.querySelector<HTMLElement>('[data-gate-play]') ?? null;
+/** The centre of Spotify's play button in its 320x80 player (measured: the circle at 282-314 x 44-76). */
+const PLAY_AT = { x: 298, y: 60 };
 
 let controller: Controller | null = null;
 let making: Promise<Controller> | null = null;
@@ -87,8 +93,8 @@ let paused = true;
 /** The strip has come up (first scroll), or was put away for this visit. */
 let revealed = false;
 let away = (() => { try { return sessionStorage.getItem(AWAY) === '1'; } catch { return false; } })();
-/** The way in is up: the player loads out of sight so ENTER NOW can play it at once. */
-const gating = Boolean(offer && gateEl && !gateEl.hidden && !gateEl.dataset.entered);
+/** The way in is up: the player loads at once and becomes the disc on ENTER NOW. */
+let gating = Boolean(offer && gateEl && gateDisc && !gateEl.hidden && !gateEl.dataset.entered);
 let hintTimer = 0;
 /** iPhone and iPad: only a tap on Spotify's own play starts its music, so nothing starts it by
  *  itself there (the strip offers PLAY instead). */
@@ -125,6 +131,13 @@ function sync() {
   }
 }
 
+/** Set Spotify's play button exactly over the disc on ENTER NOW (fixed, like the way in). */
+function placeOnDisc() {
+  if (!radio || !gateDisc) return;
+  const r = gateDisc.getBoundingClientRect();
+  radio.style.translate = `${Math.round(r.left + r.width / 2 - PLAY_AT.x)}px ${Math.round(r.top + r.height / 2 - PLAY_AT.y)}px`;
+}
+
 /** Lay the radio exactly over the box's print, in page coordinates. */
 function place() {
   if (!radio || !anchor) return;
@@ -137,12 +150,16 @@ function place() {
 function setMode() {
   if (!radio) return;
   const was = radio.dataset.mode as Mode;
-  const mode: Mode = on ? (anchor && anchorSeen ? 'box' : 'dock') : revealed && offer && !away ? 'ready' : 'off';
+  const mode: Mode = gating && controller ? 'gate' : on ? (anchor && anchorSeen ? 'box' : 'dock') : revealed && offer && !away ? 'ready' : 'off';
   radio.dataset.mode = mode;
   radio.hidden = mode === 'off';
   stopBtn?.setAttribute('aria-label', mode === 'ready' ? player.close : player.stop);
   if (mode === 'box') {
     place();
+  } else if (mode === 'gate') {
+    radio.style.removeProperty('width');
+    radio.style.removeProperty('--frame-h');
+    placeOnDisc();
   } else {
     radio.style.removeProperty('width');
     radio.style.removeProperty('translate');
@@ -150,7 +167,7 @@ function setMode() {
   }
   // the strip along the bottom: the page keeps that much room at its end, so nothing stays hidden
   document.documentElement.style.setProperty('--radio-b', strip(mode) ? `${radio.offsetHeight}px` : '0px');
-  if (strip(mode) && !strip(was) && !reduceMotion()) {
+  if (strip(mode) && !strip(was) && was !== 'gate' && !reduceMotion()) {
     radio.animate(
       [{ transform: 'translateY(100%)' }, { transform: 'none' }],
       { duration: 160, easing: 'cubic-bezier(.2, .7, .2, 1)' },
@@ -189,6 +206,11 @@ function make(url: string): Promise<Controller> {
       c.addListener('playback_update', (e) => {
         paused = e.data.isPaused;
         if (!paused) showHint(false);
+        // the disc on ENTER NOW was pressed (Spotify's own button): that is the visitor going in
+        if (gating && !paused && !on) {
+          on = true;
+          document.dispatchEvent(new CustomEvent('lo:granted'));
+        }
         sync();
       });
       resolve(c);
@@ -301,18 +323,20 @@ if (radio && frame) {
   // the box moved (a picture above it loaded, the window changed): follow it
   const follow = () => {
     if (radio.dataset.mode === 'box') place();
+    else if (radio.dataset.mode === 'gate') placeOnDisc();
     else if (strip(radio.dataset.mode)) setMode();
   };
   addEventListener('resize', follow, { passive: true });
   new ResizeObserver(follow).observe(document.body);
 }
 
-// the way in (layout/Gate.astro): the player loads while the pass is up, out of sight
+// the way in (layout/Gate.astro): the player loads while the pass is up and becomes the disc
 if (radio && gating && offer) {
   make(offer.url).then((c) => {
     controller = c;
     if (!current) tuneTo(offer.url, offer.name);
-  }).catch(() => { /* ENTER NOW still goes in; the strip's PLAY tries again */ });
+    setMode();
+  }).catch(() => { gating = false; /* ENTER NOW still goes in; the strip's PLAY tries again */ });
 }
 // ENTER NOW: play inside the tap itself
 document.addEventListener('lo:enter', () => {
@@ -320,11 +344,13 @@ document.addEventListener('lo:enter', () => {
 });
 // ENTER NOW was pressed before this script ran (a slow connection): play now
 if (offer && gateEl?.dataset.entered === 'sound') start(offer.url, offer.name, boxFor(offer.url));
-// Escape went in quietly: scrolling will not start the music either
+// the way in lifts: the radio leaves the disc for its strip (or, gone in quietly with Escape,
+// stays off, and scrolling will not start it either)
 document.addEventListener('lo:gate-lift', (e) => {
-  if ((e as CustomEvent<{ sound: boolean }>).detail?.sound) return;
-  hushed = true;
-  setMode();
+  gating = false;
+  if (!(e as CustomEvent<{ sound: boolean }>).detail?.sound) hushed = true;
+  if (on && current) attach(boxFor(current.url));
+  else setMode();
 });
 
 /** Each page: its boxes play, pause and switch; a box of the playing playlist takes the radio. */
