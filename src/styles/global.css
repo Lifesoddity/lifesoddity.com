@@ -533,8 +533,8 @@ html { scrollbar-color: var(--ink) var(--paper); }
        pen line, drawn from its start to its end, the arrow's head last: a dash as long as the line
        slides along it (its length on screen, --len, is measured by scripts/ink.ts). The
        archive's arrow comes down from its "spotted" caption first, then the circle closes round
-       the piece. Scrolling back up takes the ink off again. The marks in the home story draw
-       during each scene's hold instead (Story.astro), since its stage stands still. */
+       the piece. Scrolling back up takes the ink off again. Not on the home page: scripts/ink.ts
+       leaves its marks unmeasured, so they simply show, drawn. */
     .ph:not(.ss .ph), .lb-shot { view-timeline-name: --ink; view-timeline-inset: var(--seen-top) var(--seen-end); }
     /* :where keeps this light, so the archive's arrow-then-circle timing below can win */
     :where(.ph:not(.ss .ph), .lb-shot) .mark path[data-inked] {

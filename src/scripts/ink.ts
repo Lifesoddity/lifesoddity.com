@@ -1,11 +1,14 @@
 // The pen marks (the circles and arrows drawn on photos, .mark) draw themselves: CSS slides a dash
-// along each line, with the scroll (global.css) or during a story scene's hold (Story.astro). The
-// marks keep one pen width at any size (vector-effect: non-scaling-stroke), so the browser lays
+// along each line with the scroll (global.css). The home page is left out (the owner's call): its
+// marks simply show, drawn, and nothing pink moves there. The marks keep one pen width at any size (vector-effect: non-scaling-stroke), so the browser lays
 // that dash out on screen, not along the drawing: each line's length as drawn is measured here,
 // in px, and handed over as --len (data-inked says it is there). Without this the marks simply
 // show, fully drawn.
 
 import { reduceMotion } from './motion';
+
+/** The home page (the only one with the scroll story) keeps its own motion. */
+const onHome = () => document.querySelector('.ss') !== null;
 
 /** A line's length as drawn on screen: points along it, through its transforms, added up. */
 function drawnLength(path: SVGPathElement): number {
@@ -31,6 +34,7 @@ function drawnLength(path: SVGPathElement): number {
 }
 
 export function inkMarks(signal: AbortSignal) {
+  if (onHome()) return;
   const marks = [...document.querySelectorAll<SVGSVGElement>('svg.mark')];
   if (!marks.length) return;
   const measure = (svg: SVGSVGElement) => {
@@ -49,8 +53,7 @@ export function inkMarks(signal: AbortSignal) {
 
 // The pink on a page's first screen: everything pink draws itself as it comes up the screen
 // (global.css), but what is already on screen when a page opens has nothing left to scroll
-// through, so it does it once here as the page loads, top to bottom. It stays drawn after. Not on
-// the home page: its cover and story keep their own motion.
+// through, so it does it once here as the page loads, top to bottom. It stays drawn after.
 type Intro = { sel: string; name: string; frames: Keyframe[] | ((el: Element) => Keyframe[]); duration?: number; easing?: string; pseudo?: string };
 const INTRO: Intro[] = [
   { sel: '.pc-tape, .nx-tag, .gl-tape, .is-tape, .lb-tape, .lp-tape, .cr-act-name', name: 'unroll', frames: [
@@ -89,7 +92,7 @@ const INTRO: Intro[] = [
 ];
 
 export function inkIntro(signal: AbortSignal) {
-  if (reduceMotion() || typeof Element.prototype.animate !== 'function' || document.querySelector('.ss')) return;
+  if (reduceMotion() || typeof Element.prototype.animate !== 'function' || onHome()) return;
   const run = () => {
     if (signal.aborted) return;
     const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 60;

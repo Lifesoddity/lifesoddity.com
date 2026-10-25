@@ -62,12 +62,12 @@ newer Node than the owner's machine has.
   `--dk` on wider screens; the About timeline's self-drawing rails are in `Timeline.astro`. Moving a
   layer next to text: check that the two part as the page scrolls, never meet, at 375, 768, 1024,
   1280 and 1440. The pen marks (`.mark`) draw with the scroll too: `src/scripts/ink.ts` measures each
-  line's length on screen, global.css (and Story.astro for the story) slides the ink along it.
+  line's length on screen, global.css slides the ink along it.
 - Everything pink draws itself (the pink block in `global.css`): lettering writes on, tapes unroll,
   question marks are drawn, pink words sweep in, quote marks slap on. Pink on a page's first screen
   has no scroll left, so `inkIntro` in `ink.ts` plays it once on load (after the entry pass lifts),
-  top to bottom. Never on the home page (owner's call): it keeps its own motion. New pink goes in
-  both lists.
+  top to bottom. New pink goes in both lists. None of this, pen marks included, runs on the home
+  page (the owner's call): it keeps its own motion and its marks simply show.
 - The buy button is never greyed out unless the piece is sold out: PICK A SIZE, then ADD TO BAG,
   then CHECKOUT · BAG (n).
 
