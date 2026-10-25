@@ -3,9 +3,10 @@
 // STARTS NOW.) and one button, ENTER NOW, with a white play disc at its end. The tap goes in and
 // starts the radio: ACCESS GRANTED slaps onto the pass, the screen lifts, and the radio is playing
 // in its strip. Computers and Android play from anywhere on the button. An iPhone lets only
-// Spotify's own play button start its music, so once Spotify's player has loaded, the disc IS that
-// button: scripts/player.ts sets the radio's player over it, cut down to its play circle, and the
-// visitor's tap on it plays and goes in (lo:granted). Until then the disc is our own look-alike.
+// Spotify's own play button start its music, so once Spotify's player has loaded, that button lies
+// exactly under the disc: scripts/player.ts sets the radio's player there, cut down to its play
+// circle, with the same white disc drawn over it letting the tap through (Radio.astro). The
+// visitor's tap on it plays and goes in (lo:granted).
 // Escape goes in quietly. Without script nothing shows: the inline script below raises it before
 // the page paints.
 import { Image } from 'astro:assets';

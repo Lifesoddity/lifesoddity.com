@@ -35,6 +35,7 @@ const name = player.name(title);
   )}
   <div class="radio-frame">
     <div data-radio-mount></div>
+    <span class="radio-disc" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8.5 6v12l9.5-6z"></path></svg></span>
     <p class="radio-hint" data-radio-hint aria-live="polite" hidden>
       {player.tap}
       <svg viewBox="0 0 40 34" aria-hidden="true"><path d="M3 6c16-2 27 6 30 22M25 22l8 7 4-10"></path></svg>
@@ -63,13 +64,30 @@ const name = player.name(title);
   .radio[data-mode="box"] { position: absolute; z-index: 20; top: 0; left: 0; }
   .radio[data-mode="box"] .radio-ctl { display: none; }
 
-  /* the way in (Gate.astro): Spotify's own play button, cut out of its 320x80 player (the white
-     circle at 282-314 x 44-76, cut 1px inside its edge so its dark ground never shows) and set
-     exactly over the play disc of ENTER NOW, so the visitor's tap is a tap on Spotify's button,
-     the one an iPhone accepts for music. player.ts places it. */
-  .radio[data-mode="gate"] { position: fixed; z-index: 95; top: 0; left: 0; width: 320px; padding: 0; border: 0; background: none; clip-path: circle(15px at 298px 60px); }
+  /* the way in (Gate.astro): Spotify's own play button, cut out of its 320x80 player (the circle
+     at 282-314 x 44-76) and set exactly over the play disc of ENTER NOW, so the visitor's tap is a
+     tap on Spotify's button, the one an iPhone accepts for music. player.ts places it. Our white
+     disc is drawn over it, letting the tap through: Spotify's loading ground, and the few pixels
+     its button sits elsewhere for a visitor logged into Spotify, never show. */
+  .radio[data-mode="gate"] { position: fixed; z-index: 95; top: 0; left: 0; width: 320px; padding: 0; border: 0; background: none; clip-path: circle(16px at 298px 60px); }
   .radio[data-mode="gate"] .radio-frame { height: 80px; border-radius: 0; background: none; }
   .radio[data-mode="gate"] .radio-ctl { display: none; }
+  .radio-disc { display: none; }
+  .radio[data-mode="gate"] .radio-disc {
+    position: absolute;
+    z-index: 2;
+    left: 282px;
+    top: 44px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--white);
+    color: var(--ink);
+    pointer-events: none;
+  }
+  .radio-disc svg { width: 16px; height: 16px; fill: currentColor; }
 
   /* iPhone: the music waits for a tap on Spotify's own play. A note above its button, never on it */
   .radio-hint {
