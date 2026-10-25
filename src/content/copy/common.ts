@@ -93,22 +93,24 @@ export const player = {
   /** The docked radio (components/layout/Radio.astro): it stops and goes away for the visit. */
   stop: 'Stop the radio',
   close: 'Close the radio',
+  /** An iPhone lets only Spotify's own play button start its music: a small note above it, shown
+   *  only when the radio was asked to play and has not started. */
+  tap: 'tap play',
 };
 
-/** The way in (components/layout/Gate.astro): an all-access pass, once per visit. Pressing
- *  Spotify's own play enters with sound; it is the one tap every phone accepts for music. */
+/** The way in (components/layout/Gate.astro): an all-access pass, once per visit. ENTER NOW
+ *  goes in and starts the radio. */
 export const gate = {
   label: "Enter Life's Oddity",
   kicker: 'Spotted: you',
   pass: ['All', 'access'],
   issue: (title: string) => `The ${title} issue`,
   tape: 'VIP',
-  title: 'Enter now',
-  press: 'press play',
-  loading: 'Loading the radio…',
-  quiet: 'Enter without sound',
-  /** When the radio cannot load (no link, or Spotify blocked): a plain way in. */
-  go: 'Let me in',
+  /** The heading: the soundtrack's own call, "Showtime starts now." */
+  title: (playlist: string | null) => (playlist ? `${playlist} starts now.` : 'Enter now.'),
+  enter: 'Enter now',
+  /** Under the button, so the music is no surprise. */
+  sound: (playlist: string) => `Sound on · Life's Oddity radio: ${playlist}`,
   granted: 'Access granted',
 };
 

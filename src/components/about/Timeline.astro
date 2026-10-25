@@ -241,4 +241,51 @@ const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.ope
     .tl-go:hover, .tl-tag:hover .tl-go { text-decoration-color: var(--pink); }
     .tl-tag:hover .tl-go svg { translate: 4px 0; }
   }
+
+  /* the rails draw themselves in as the acts pass (the parallax drift of the entries, the
+     dates and the question mark is in global.css). Still without scroll timelines or with reduced
+     motion: the rails are simply there. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      /* phone and tablet: the rail down the left grows with the reading */
+      .tl-list { position: relative; border-left-color: transparent; view-timeline-name: --rail; }
+      .tl-list::before {
+        content: "";
+        position: absolute;
+        left: -4px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--ink);
+        transform-origin: top;
+        animation-name: draw-y;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: --rail;
+        animation-range: entry 40% cover 70%;
+      }
+      /* desktop: each act's thick rule draws left to right as it arrives, one after another */
+      @media (min-width: 1000px) {
+        .tl-list::before { display: none; }
+        .tl-item { border-top-color: transparent; view-timeline-name: --act; }
+        .tl-item::before {
+          display: block;
+          left: 0;
+          right: 0;
+          top: -6px;
+          width: auto;
+          height: 6px;
+          background: var(--ink);
+          transform-origin: left;
+          animation-name: draw-x;
+          animation-timing-function: cubic-bezier(.2, .7, .2, 1);
+          animation-fill-mode: both;
+          animation-timeline: --act;
+          animation-range: entry 10% cover 30%;
+        }
+        .tl-item:nth-child(2)::before { animation-range: entry 40% cover 38%; }
+        .tl-item:nth-child(3)::before { animation-range: entry 70% cover 46%; }
+      }
+    }
+  }
 </style>

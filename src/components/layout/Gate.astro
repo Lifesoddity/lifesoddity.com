@@ -1,11 +1,10 @@
 ---
-// The way in, once per visit: an ALL ACCESS pass on a lanyard, ENTER NOW, and Spotify's own
-// player with "press play" pointing at its button. That tap is the one every phone accepts for
-// music (a tap on our page cannot reach into Spotify's player on an iPhone), so pressing play is
-// how the visitor enters with sound: ACCESS GRANTED slaps onto the pass, the screen lifts, and
-// the player drops into the radio strip still playing (scripts/player.ts lays the radio's one
-// player over this slot, so it never reloads). "Enter without sound" and Escape go in quietly.
-// Without script nothing shows: the inline script below raises it before the page paints.
+// The way in, once per visit: an ALL ACCESS pass on a lanyard, the soundtrack's call (SHOWTIME
+// STARTS NOW.) and one button, ENTER NOW. The tap goes in and starts the radio: ACCESS GRANTED
+// slaps onto the pass, the screen lifts, and the radio is playing in its strip. (Computers and
+// Android play at once; an iPhone lets only Spotify's own play button start its music, so there
+// the strip comes up ready and says so, scripts/player.ts.) Escape goes in quietly. Without script
+// nothing shows: the inline script below raises it before the page paints.
 import { Image } from 'astro:assets';
 import { brand } from '../../assets';
 import { gate } from '../../content/copy/common';
@@ -13,7 +12,7 @@ import { liveAct, radioAct } from '../../content/acts';
 import { site } from '../../content/site';
 
 const act = liveAct();
-const playable = Boolean(radioAct());
+const playlist = radioAct()?.playlist.name ?? null;
 ---
 
 <div class="gate halftone" role="dialog" aria-modal="true" aria-labelledby="gate-title" tabindex="-1" data-gate data-keep hidden>
@@ -36,26 +35,24 @@ const playable = Boolean(radioAct());
 
     <div class="gate-side">
       <p class="gate-kicker">{gate.kicker}</p>
-      <h2 class="gate-title" id="gate-title"><span class="vh">{gate.label}: </span>{gate.title}</h2>
-      {playable && (
-        <>
-          <p class="gate-press" data-gate-press aria-hidden="true">
-            {gate.press}
-            <svg viewBox="0 0 70 60"><path d="M6 8c28-2 50 10 56 40M50 42l12 8 4-14"></path></svg>
-          </p>
-          <div class="gate-player" data-gate-slot><span>{gate.loading}</span></div>
-        </>
+      <h2 class="gate-title" id="gate-title"><span class="vh">{gate.label}: </span>{gate.title(playlist)}</h2>
+      <button class="gate-go" type="button" data-gate-go>
+        <span class="gate-go-l">{gate.enter}</span>
+        <svg class="gate-go-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+      </button>
+      {playlist && (
+        <p class="gate-sound">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.6 7.6 0 0 1 0 11"></path></svg>
+          {gate.sound(playlist)}
+        </p>
       )}
-      <button class="addbag gate-go" type="button" data-gate-go hidden={playable}><span>{gate.go}</span></button>
-      <button class="gate-quiet" type="button" data-gate-quiet>{gate.quiet}</button>
     </div>
   </div>
 </div>
 <script is:inline>
-  // Raised before the page paints, once per visit. It closes three ways: Spotify's play
-  // (player.ts sends lo:granted), ENTER NOW when the radio cannot load (lo:granted too, with the
-  // stamp), or quietly (Enter without sound, Escape). As it lifts it sends lo:gate-lift, so the
-  // radio drops into its strip or stays quiet.
+  // Raised before the page paints, once per visit. ENTER NOW tells the radio to play inside the
+  // tap itself (lo:enter, scripts/player.ts), then ACCESS GRANTED and the screen lifts; Escape goes
+  // in quietly. As it lifts it sends lo:gate-lift.
   (() => {
     const gate = document.currentScript && document.currentScript.previousElementSibling;
     if (!gate || !gate.matches('[data-gate]')) return;
@@ -64,9 +61,10 @@ const playable = Boolean(radioAct());
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     root.classList.add('gate-on');
     gate.hidden = false;
-    // the page behind waits out of reach of Tab and screen readers (the radio stays reachable:
-    // its player is the way in)
-    const behind = () => [...document.body.children].filter((el) => el !== gate && !el.matches('[data-radio], script'));
+    // the page behind waits out of reach of Tab and screen readers
+    const behind = () => [...document.body.children].filter((el) => el !== gate && !el.matches('script'));
+    // focus on the screen itself (its name is read out); one Tab reaches ENTER NOW, so its ring only
+    // shows for the keyboard
     document.addEventListener('DOMContentLoaded', () => { behind().forEach((el) => { el.inert = true; }); gate.focus({ preventScroll: true }); }, { once: true });
     const flash = () => { if (!still) gate.querySelector('.gate-flash').animate([{ opacity: 0 }, { opacity: 0.85, offset: 0.3 }, { opacity: 0 }], { duration: 180 }); };
     requestAnimationFrame(flash);
@@ -77,7 +75,6 @@ const playable = Boolean(radioAct());
       done = true;
       gate.dataset.entered = sound ? 'sound' : 'quiet';
       try { sessionStorage.setItem('lo-entered', '1'); } catch (e) { /* this page only */ }
-      const stamp = gate.querySelector('[data-gate-stamp]');
       const finish = () => {
         gate.hidden = true;
         root.classList.remove('gate-on');
@@ -92,6 +89,7 @@ const playable = Boolean(radioAct());
       };
       if (!sound) { lift(); return; }
       // ACCESS GRANTED: the stamp comes down on the pass with the flash, then the screen lifts
+      const stamp = gate.querySelector('[data-gate-stamp]');
       stamp.style.opacity = '1';
       if (!still) {
         stamp.animate([{ opacity: 0, scale: 1.7, rotate: '-26deg' }, { opacity: 1, scale: 1, rotate: '-12deg' }], { duration: 220, easing: 'cubic-bezier(.3, 1.6, .5, 1)' });
@@ -99,17 +97,14 @@ const playable = Boolean(radioAct());
       }
       setTimeout(lift, still ? 450 : 700);
     };
-    gate.querySelector('[data-gate-quiet]').addEventListener('click', () => close(false));
-    gate.querySelector('[data-gate-go]').addEventListener('click', () => close(true));
+    gate.querySelector('[data-gate-go]').addEventListener('click', () => {
+      // the radio starts inside this very tap, before anything else happens
+      document.dispatchEvent(new CustomEvent('lo:enter'));
+      close(true);
+    });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !done) close(false); });
-    document.addEventListener('lo:granted', () => close(true));
     // a page change while it is up (nothing behind it can be reached, but just in case): go in quietly
     document.addEventListener('astro:before-swap', () => { if (!done) close(false); });
-    // the radio could not load: the plain way in replaces the player
-    document.addEventListener('lo:gate-fallback', () => {
-      gate.querySelectorAll('[data-gate-slot], [data-gate-press]').forEach((el) => { el.hidden = true; });
-      gate.querySelector('[data-gate-go]').hidden = false;
-    });
   })();
 </script>
 
@@ -191,12 +186,48 @@ const playable = Boolean(radioAct());
   .gate-side { display: grid; justify-items: center; gap: 12px; width: 100%; }
   .gate-kicker { color: var(--yellow); font: 800 12px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase; }
   .gate-title { color: var(--yellow); font: 400 clamp(56px, 9.5svh, 96px)/.82 var(--gothic); letter-spacing: .01em; text-align: center; text-transform: uppercase; }
-  .gate-press { justify-self: end; display: flex; align-items: flex-start; gap: 2px; margin: -4px 4px -14px 0; color: var(--pink); font: 400 32px/1 var(--script); rotate: -4deg; }
-  .gate-press svg { width: 52px; height: 44px; margin-top: 12px; fill: none; stroke: var(--pink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-  /* the slot player.ts lays Spotify's player over; until it loads, a quiet line */
-  .gate-player { display: grid; place-items: center; width: 100%; height: 80px; border-radius: 12px; background: #282828; color: rgb(255 255 255 / .7); font: 600 12.5px/1.3 var(--sans); }
-  .gate-go { max-width: 360px; }
-  .gate-quiet { min-height: 44px; padding: 0 8px; color: var(--white); font: 800 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .32em; }
+  /* ENTER NOW: the red flag of the cover's banners, with its arrow; a white hairline inside */
+  .gate-go {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    width: min(100%, 380px);
+    height: 70px;
+    margin-top: 6px;
+    color: var(--white);
+    font: 400 40px/1 var(--gothic);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    transition: translate var(--fast) var(--ease-out);
+  }
+  .gate-go::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--red);
+    clip-path: polygon(0 0, 100% 0, 96.5% 50%, 100% 100%, 0 100%, 3.5% 50%);
+    box-shadow: none;
+    transition: background-color var(--fast) ease-out;
+  }
+  .gate-go::after {
+    content: "";
+    position: absolute;
+    inset: 6px 18px;
+    z-index: -1;
+    border-top: 1px solid rgb(255 255 255 / .55);
+    border-bottom: 1px solid rgb(255 255 255 / .55);
+  }
+  .gate-go-l { position: relative; top: 2px; }
+  .gate-go-i { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) var(--ease-out); }
+  .gate-go:active { translate: 0 2px; }
+  .gate-go:focus-visible { outline: 3px solid var(--yellow); outline-offset: 6px; }
+  /* what the tap does: a quiet line, so the music is no surprise */
+  .gate-sound { display: inline-flex; align-items: center; gap: 8px; color: rgb(255 255 255 / .72); font: 700 11.5px/1.3 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
+  .gate-sound svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .gate :focus-visible { outline-color: var(--yellow); }
 
   /* wide screens: the pass beside the way in */
@@ -204,9 +235,11 @@ const playable = Boolean(radioAct());
     .gate-in { grid-template-columns: auto minmax(0, 420px); align-items: center; column-gap: clamp(48px, 7vw, 120px); width: auto; }
     .gate-pass { width: min(330px, 40svh); }
     .gate-side { justify-items: start; }
-    .gate-title { text-align: left; font-size: clamp(80px, 12svh, 128px); }
+    .gate-title { text-align: left; font-size: clamp(76px, 11svh, 120px); }
+    .gate-go { justify-content: center; }
   }
   @media (hover: hover) {
-    .gate-quiet:hover { color: var(--yellow); }
+    .gate-go:hover::before { background: var(--red-press); }
+    .gate-go:hover .gate-go-i { translate: 5px 0; }
   }
 </style>

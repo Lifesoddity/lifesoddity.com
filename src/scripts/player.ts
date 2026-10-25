@@ -5,10 +5,12 @@
 // (layout/Radio.astro), which stays put while pages change, and our PLAY sticker drives it
 // through Spotify's iFrame API.
 //
+// The way in (layout/Gate.astro), once per visit: while the pass is up, Spotify's player loads
+// out of sight, and ENTER NOW plays it inside that very tap. Computers and Android play at once.
+// An iPhone lets only Spotify's own play button start its music, so there the strip comes up with
+// the player ready and a small "tap play" note above its button, gone once it plays.
+//
 // Where the player shows:
-// - "gate": the way in is up (layout/Gate.astro), once per visit. The player waits in the pass's
-//   slot; the visitor's tap on its play is the one tap every phone accepts for music, so playing
-//   is how they enter: ACCESS GRANTED, the screen lifts and the player drops into the strip.
 // - "ready": the visitor has scrolled and nothing plays yet. The strip along the bottom offers
 //   the soundtrack (layout/Radio.astro) with PLAY. Browsers allow sound only once the page has
 //   had a tap or click, so the first scroll after one starts it by itself; until then it waits
@@ -62,7 +64,7 @@ const dark = (url: string) => {
   return u.href;
 };
 
-type Mode = 'off' | 'gate' | 'ready' | 'box' | 'dock';
+type Mode = 'off' | 'ready' | 'box' | 'dock';
 const strip = (m: string | undefined) => m === 'ready' || m === 'dock';
 
 const radio = document.querySelector<HTMLElement>('[data-radio]');
@@ -73,8 +75,8 @@ const playBtn = radio?.querySelector<HTMLButtonElement>('[data-radio-play]') ?? 
 /** What the strip offers before anything plays: the home page's soundtrack (acts.ts radioAct). */
 const offer = radio?.dataset.url ? { url: radio.dataset.url, name: radio.dataset.name ?? player.name('') } : null;
 const AWAY = 'lo-radio-away';
+const hint = radio?.querySelector<HTMLElement>('[data-radio-hint]') ?? null;
 const gateEl = document.querySelector<HTMLElement>('[data-gate]');
-const gateSlot = gateEl?.querySelector<HTMLElement>('[data-gate-slot]') ?? null;
 
 let controller: Controller | null = null;
 let making: Promise<Controller> | null = null;
@@ -85,8 +87,14 @@ let paused = true;
 /** The strip has come up (first scroll), or was put away for this visit. */
 let revealed = false;
 let away = (() => { try { return sessionStorage.getItem(AWAY) === '1'; } catch { return false; } })();
-/** The way in is up and the player waits in its slot. */
-let gating = Boolean(offer && gateEl && gateSlot && !gateEl.hidden && !gateEl.dataset.entered);
+/** The way in is up: the player loads out of sight so ENTER NOW can play it at once. */
+const gating = Boolean(offer && gateEl && !gateEl.hidden && !gateEl.dataset.entered);
+let hintTimer = 0;
+/** iPhone and iPad: only a tap on Spotify's own play starts its music, so nothing starts it by
+ *  itself there (the strip offers PLAY instead). */
+const apple = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+/** The radio may start by itself on a first click or a scroll: not put away, not gone in quietly. */
+const mayStart = () => Boolean(offer) && !on && !away && !hushed && !apple;
 /** Went in without sound: scrolling will not start the music (PLAY still does). */
 let hushed = gateEl?.dataset.entered === 'quiet';
 /** The print of this page's box for the loaded playlist, and whether it is on screen. */
@@ -117,15 +125,6 @@ function sync() {
   }
 }
 
-/** Lay the radio over the way in's slot, on the screen like the way in itself. */
-function placeGate() {
-  if (!radio || !gateSlot) return;
-  const r = gateSlot.getBoundingClientRect();
-  radio.style.width = `${r.width}px`;
-  radio.style.translate = `${r.left}px ${r.top}px`;
-  radio.style.setProperty('--frame-h', `${r.height}px`);
-}
-
 /** Lay the radio exactly over the box's print, in page coordinates. */
 function place() {
   if (!radio || !anchor) return;
@@ -138,15 +137,12 @@ function place() {
 function setMode() {
   if (!radio) return;
   const was = radio.dataset.mode as Mode;
-  const mode: Mode = gating ? 'gate' : on ? (anchor && anchorSeen ? 'box' : 'dock') : revealed && offer && !away ? 'ready' : 'off';
+  const mode: Mode = on ? (anchor && anchorSeen ? 'box' : 'dock') : revealed && offer && !away ? 'ready' : 'off';
   radio.dataset.mode = mode;
-  // in the way in, the slot's own "loading" line shows until Spotify's player is there
-  radio.hidden = mode === 'off' || (mode === 'gate' && !controller);
+  radio.hidden = mode === 'off';
   stopBtn?.setAttribute('aria-label', mode === 'ready' ? player.close : player.stop);
   if (mode === 'box') {
     place();
-  } else if (mode === 'gate') {
-    placeGate();
   } else {
     radio.style.removeProperty('width');
     radio.style.removeProperty('translate');
@@ -154,8 +150,7 @@ function setMode() {
   }
   // the strip along the bottom: the page keeps that much room at its end, so nothing stays hidden
   document.documentElement.style.setProperty('--radio-b', strip(mode) ? `${radio.offsetHeight}px` : '0px');
-  // (out of the way in, the player flies down instead: see lo:gate-lift)
-  if (strip(mode) && !strip(was) && was !== 'gate' && !reduceMotion()) {
+  if (strip(mode) && !strip(was) && !reduceMotion()) {
     radio.animate(
       [{ transform: 'translateY(100%)' }, { transform: 'none' }],
       { duration: 160, easing: 'cubic-bezier(.2, .7, .2, 1)' },
@@ -193,11 +188,7 @@ function make(url: string): Promise<Controller> {
     api.createController(mount, { url: dark(url), width: '100%', height: DOCK_H }, (c) => {
       c.addListener('playback_update', (e) => {
         paused = e.data.isPaused;
-        // play pressed in the way in: that is the visitor going in, with sound
-        if (gating && !paused && !on) {
-          on = true;
-          document.dispatchEvent(new CustomEvent('lo:granted'));
-        }
+        if (!paused) showHint(false);
         sync();
       });
       resolve(c);
@@ -205,6 +196,12 @@ function make(url: string): Promise<Controller> {
   }));
   making.catch(() => { making = null; });
   return making;
+}
+
+/** The "tap play" note above Spotify's button: on an iPhone the music waits for that tap. */
+function showHint(show: boolean) {
+  window.clearTimeout(hintTimer);
+  if (hint) hint.hidden = !show;
 }
 
 /** What the radio has loaded, and where Open in Spotify goes. */
@@ -233,10 +230,13 @@ async function start(url: string, name: string, box: HTMLElement | null) {
       tuneTo(url, name);
       c.play();
     } else {
-      // the same one, stopped earlier: carry on where it stopped
+      // the same one, loaded ahead or stopped earlier: carry on (or start) where it is
       c.resume();
     }
     sync();
+    // asked to play and still quiet a moment later: this browser wants a tap on Spotify's own play
+    window.clearTimeout(hintTimer);
+    hintTimer = window.setTimeout(() => { if (on && paused) showHint(true); }, 1800);
   } catch {
     on = false;
     setMode();
@@ -249,6 +249,7 @@ async function start(url: string, name: string, box: HTMLElement | null) {
 /** The ✕: the music stops and the radio goes away for the rest of the visit (a box's PLAY still works). */
 function stop() {
   controller?.pause();
+  showHint(false);
   on = false;
   away = true;
   try { sessionStorage.setItem(AWAY, '1'); } catch { /* storage blocked: away for this page's life */ }
@@ -279,7 +280,7 @@ if (radio && frame) {
       if (on || away) { removeEventListener('scroll', onScroll); return; }
       if (scrollY < 12) return;
       if (!revealed) { revealed = true; setMode(); }
-      if (hushed) { removeEventListener('scroll', onScroll); return; }
+      if (hushed || apple) { removeEventListener('scroll', onScroll); return; }
       if (navigator.userActivation?.hasBeenActive) {
         removeEventListener('scroll', onScroll);
         start(offer.url, offer.name, boxFor(offer.url));
@@ -287,61 +288,43 @@ if (radio && frame) {
     };
     addEventListener('scroll', onScroll, { passive: true });
   }
+  // computers and Android: the first click anywhere starts the radio when nothing plays yet (a
+  // visit that skipped the way in, after a reload). It listens last, so a click that stops the
+  // radio, plays a box or goes in through the way in has already had its say.
+  const onClick = () => {
+    if (document.documentElement.classList.contains('gate-on')) return;
+    if (!mayStart()) { if (on || away || hushed || apple) removeEventListener('click', onClick); return; }
+    removeEventListener('click', onClick);
+    start(offer!.url, offer!.name, boxFor(offer!.url));
+  };
+  addEventListener('click', onClick);
   // the box moved (a picture above it loaded, the window changed): follow it
   const follow = () => {
     if (radio.dataset.mode === 'box') place();
-    else if (radio.dataset.mode === 'gate') placeGate();
     else if (strip(radio.dataset.mode)) setMode();
   };
   addEventListener('resize', follow, { passive: true });
   new ResizeObserver(follow).observe(document.body);
 }
 
-// the way in (layout/Gate.astro): Spotify's player comes into the pass's slot at once, so the
-// visitor's tap on its play starts the music on any phone
+// the way in (layout/Gate.astro): the player loads while the pass is up, out of sight
 if (radio && gating && offer) {
   make(offer.url).then((c) => {
     controller = c;
-    tuneTo(offer.url, offer.name);
-    setMode();
-  }).catch(() => {
-    gating = false;
-    setMode();
-    document.dispatchEvent(new CustomEvent('lo:gate-fallback'));
-  });
-  // not there after 8 seconds: the plain way in shows too (the player may still arrive)
-  window.setTimeout(() => { if (gating && !controller) document.dispatchEvent(new CustomEvent('lo:gate-fallback')); }, 8000);
+    if (!current) tuneTo(offer.url, offer.name);
+  }).catch(() => { /* ENTER NOW still goes in; the strip's PLAY tries again */ });
 }
-// ENTER NOW was pressed before this script ran (the radio could not load in time): play now
+// ENTER NOW: play inside the tap itself
+document.addEventListener('lo:enter', () => {
+  if (offer && !on) start(offer.url, offer.name, boxFor(offer.url));
+});
+// ENTER NOW was pressed before this script ran (a slow connection): play now
 if (offer && gateEl?.dataset.entered === 'sound') start(offer.url, offer.name, boxFor(offer.url));
+// Escape went in quietly: scrolling will not start the music either
 document.addEventListener('lo:gate-lift', (e) => {
-  if (!radio) return;
-  const sound = (e as CustomEvent<{ sound: boolean }>).detail?.sound;
-  const from = radio.dataset.mode === 'gate' && !radio.hidden ? radio.getBoundingClientRect() : null;
-  gating = false;
-  if (!sound) {
-    hushed = true;
-    on = false;
-    controller?.pause();
-    setMode();
-    return;
-  }
-  // ENTER NOW without the player (it could not load in time): try it now, the tap allows it
-  if (!on) {
-    if (offer) start(offer.url, offer.name, boxFor(offer.url));
-    else setMode();
-    return;
-  }
-  attach(current ? boxFor(current.url) : null);
-  // the player drops from the pass into its strip, still playing
-  if (from && radio.dataset.mode === 'dock' && !reduceMotion()) {
-    const to = radio.getBoundingClientRect();
-    radio.classList.add('is-flying');
-    radio.animate(
-      [{ transform: `translate(${from.left - to.left}px, ${from.top - to.top}px)` }, { transform: 'none' }],
-      { duration: 420, easing: 'cubic-bezier(.2, .7, .2, 1)' },
-    ).finished.catch(() => {}).then(() => radio.classList.remove('is-flying'));
-  }
+  if ((e as CustomEvent<{ sound: boolean }>).detail?.sound) return;
+  hushed = true;
+  setMode();
 });
 
 /** Each page: its boxes play, pause and switch; a box of the playing playlist takes the radio. */

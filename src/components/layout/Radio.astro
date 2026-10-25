@@ -33,7 +33,13 @@ const name = player.name(title);
       </button>
     </div>
   )}
-  <div class="radio-frame"><div data-radio-mount></div></div>
+  <div class="radio-frame">
+    <div data-radio-mount></div>
+    <p class="radio-hint" data-radio-hint aria-live="polite" hidden>
+      {player.tap}
+      <svg viewBox="0 0 40 34" aria-hidden="true"><path d="M3 6c16-2 27 6 30 22M25 22l8 7 4-10"></path></svg>
+    </p>
+  </div>
   <div class="radio-ctl">
     <a class="radio-open" href={url ?? 'https://open.spotify.com/'} rel="noopener" data-radio-open>
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4H4v12h12v-4M11 3h6v6M17 3l-8 8"></path></svg>
@@ -57,11 +63,24 @@ const name = player.name(title);
   .radio[data-mode="box"] { position: absolute; z-index: 20; top: 0; left: 0; }
   .radio[data-mode="box"] .radio-ctl { display: none; }
 
-  /* in the way in (Gate.astro): over the pass's slot, above that screen, until the visitor goes in;
-     still above it while it drops into the strip */
-  .radio[data-mode="gate"] { position: fixed; z-index: 95; top: 0; left: 0; }
-  .radio[data-mode="gate"] .radio-ctl { display: none; }
-  .radio.is-flying { z-index: 95; }
+  /* iPhone: the music waits for a tap on Spotify's own play. A note above its button, never on it */
+  .radio-hint {
+    position: absolute;
+    right: 6px;
+    bottom: calc(100% + 6px);
+    display: flex;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 2px 10px 6px 12px;
+    background: var(--ink);
+    color: var(--pink);
+    font: 400 26px/1 var(--script);
+    rotate: -3deg;
+    clip-path: polygon(0 8%, 4% 0, 30% 5%, 62% 0, 96% 4%, 100% 0, 98% 52%, 100% 100%, 70% 95%, 38% 100%, 3% 94%, 0 100%, 2% 50%);
+    pointer-events: none;
+  }
+  .radio-hint svg { width: 26px; height: 24px; margin-top: 8px; fill: none; stroke: var(--pink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  .radio:not([data-mode="dock"]) .radio-hint { display: none; }
 
   /* the strip along the bottom, waiting (ready) or playing (dock); on a phone's product page it
      rides above the buy bar (--sb-up, StickyBuy.astro), moving with it */

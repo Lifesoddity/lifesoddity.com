@@ -53,7 +53,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
-h1, h2, h3, h4, p, figure, blockquote, ul, ol, dl, dd { margin: 0; padding: 0; }
+h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl, dd { margin: 0; padding: 0; }
 ul, ol { list-style: none; }
 img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-underline-offset: .22em; text-decoration-thickness: 2px; }
@@ -371,54 +371,156 @@ html { scrollbar-color: var(--ink) var(--paper); }
   .foot-links a:hover { text-decoration-color: var(--pink); }
 }
 
-/* ---------- parallax drift: layers slide at their own speed as the page scrolls ----------
-   On the browser's own scroll timeline: no script and no work on the page's thread while
-   scrolling, and only the translate property moves (a layer keeps its own tilt). --drift is how
-   far a layer travels either side of where it is laid out while it crosses the screen: positive
-   is slower than the page, negative faster. The speeds are set so neighbours part as the page
-   scrolls instead of meeting: nothing slides over text, and the text you read, the buy box and
-   the shop never move. A first-screen layer (drift-top) starts where it is laid out and moves
-   only as the page leaves the top.
-   Browsers without scroll timelines, and reduced motion, show the page still. */
+/* ---------- parallax drift: layers move at their own speed as the page scrolls ----------
+   On the browser's own scroll timelines: no script and no work on the page's thread while
+   scrolling, transform only (the translate property, plus transform: rotate for a turn, so a
+   layer keeps its own tilt). Per layer:
+   --drift  how far it travels up and down either side of where it is laid out while it crosses
+            the screen: positive is slower than the page, negative faster;
+   --x0/--x1  where it sits sideways as it comes in / goes out (big titles run like a ticker);
+   --r0/--r1  its turn as it comes in / goes out;
+   --ix/--io  where a row slides in from, and how faint it starts (the lists).
+   --k scales the moves with the screen: on a desktop everything is bigger and further apart, so
+   the same move would barely show. Nothing slides over text you read. The rule that keeps it so:
+   each layer moves on its own timeline, so blocks stacked one above the other part as they pass
+   when they share a speed, and can meet when they do not. Stacked blocks share a speed (or one of
+   them moves sideways); different speeds are for things side by side. The variables inherit: a
+   moving layer inside another sets its own (or 0px), or it moves twice. The shop, the buy box and the product page's top
+   never move; the product page keeps its gentle drift (no --k). First-screen layers (drift-top)
+   start where they are laid out and move only as the page leaves the top. The About timeline's
+   rules draw themselves in (Timeline.astro). Without scroll timelines, or with reduced motion,
+   the page stands still. */
+:root { --k: 1; }
+@media (min-width: 700px) { :root { --k: 1.6; } }
+@media (min-width: 1000px) { :root { --k: 2.4; } }
+
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
-    /* drop: the live issue and the back issues */
-    .is-head { --drift: 22px; }
-    .is-piece:nth-child(odd) { --drift: -30px; }
-    .is-piece:nth-child(even) { --drift: -54px; }
-    /* lookbook: each act's giant title runs ahead, its photos follow at two speeds */
-    .lb-word { --drift: -40px; }
-    .lb-shot:nth-child(odd) { --drift: -22px; }
-    .lb-shot:nth-child(even) { --drift: -52px; }
-    /* about: the timeline's radio cover and the big question mark (the price tag stays put) */
-    .tl-vis:has(.tl-print) { --drift: -24px; }
-    .tl-q { --drift: -40px; }
+    /* longhands only: the build folds a shorthand and its timeline into one that browsers drop */
+
+    /* --- while a layer crosses the screen --- */
+    /* drop: each issue's title runs off to the left; its pieces rise at two speeds, turning */
+    .is-title { --x1: -14vw; }
+    .is-piece:nth-child(odd) { --drift: calc(-80px * var(--k)); --r0: 2deg; --r1: -2deg; }
+    .is-piece:nth-child(even) { --drift: calc(-140px * var(--k)); --r0: -2deg; --r1: 3deg; }
+    /* lookbook: the act's giant title runs left and rises; its photos at two speeds, turning */
+    .lb-word { --x1: -16vw; --drift: calc(-30px * var(--k)); }
+    .lb-shot:nth-child(odd) { --drift: calc(-60px * var(--k)); --r0: 3deg; --r1: -3deg; }
+    .lb-shot:nth-child(even) { --drift: calc(-120px * var(--k)); --r0: -3deg; --r1: 3deg; }
+    /* about: the two lines part sideways (a phone) or up and down (wider), the signature turns;
+       the timeline rises as one while its title runs left, its acts slide in from the right one
+       after another (in global.css below) and its rails draw themselves (Timeline.astro); the
+       radio cover and the question mark spin, the price tag swings; THE CREW runs left (a phone)
+       or stays put while its list passes (wider, Crew.astro); GOT A TIP? runs left */
+    .ln-line { --x1: -10vw; }
+    .ln-bio { --x1: 10vw; }
+    .ln-sign { --r0: -6deg; --r1: 6deg; }
+    .tl-head, .tl-item { --drift: calc(-50px * var(--k)); }
+    .tl-title { --drift: 0px; --x1: -16vw; }
+    .tl-vis:has(.tl-print) { --r0: -5deg; --r1: 5deg; }
+    .tl-q { --drift: 0px; --r0: -10deg; --r1: 30deg; }
+    .tl-tag { --r0: -5deg; --r1: 5deg; }
+    .cr-title { --x1: -12vw; }
+    .rc-title { --x1: -14vw; }
     /* product page: the love letter's title runs ahead, its two photos at two speeds */
     .lt-title { --drift: -30px; }
     .lt-prints > :nth-child(odd) { --drift: -30px; }
     .lt-prints > :nth-child(even) { --drift: -56px; }
-    /* longhands only: the build folds a shorthand and its timeline into one that browsers drop */
-    .is-head, .is-piece, .lb-word, .lb-shot, .tl-vis:has(.tl-print), .tl-q, .lt-title, .lt-prints > * {
+    .is-title, .lb-word, .ln-line, .ln-bio, .tl-head, .tl-title, .tl-item, .cr-title, .rc-title, .lt-title, .lt-prints > * {
       animation-name: drift;
       animation-timing-function: linear;
       animation-fill-mode: both;
       animation-timeline: view();
       animation-range: cover;
     }
-    /* first screens: the drop's blank next cover and the About page's letter rise ahead of the page */
-    .nx-cover { --drift: -72px; }
-    .pf-print { --drift: -84px; }
-    .nx-cover, .pf-print {
+    .is-piece, .lb-shot, .ln-sign, .tl-q {
+      animation-name: drift, turn;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view(), view();
+      animation-range: cover, cover;
+    }
+    .tl-tag {
+      animation-name: turn;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+    /* the radio cover slides in with its act and turns as it passes */
+    .tl-item > .tl-vis:has(.tl-print) {
+      animation-name: slide-in, turn;
+      animation-timing-function: cubic-bezier(.2, .7, .2, 1), linear;
+      animation-fill-mode: both;
+      animation-timeline: view(), view();
+      animation-range: entry 0% entry 100%, cover;
+    }
+
+    /* --- rows slide in as they arrive, then rest where they are laid out --- */
+    .cr-role, .rc-list li { --ix: 10vw; --io: .2; }
+    .cr-act-name { --ix: 16vw; --io: 0; }
+    /* the timeline's acts, one after another (side by side on a desktop: each starts further
+       right than the one before, so they part) */
+    .tl-item > * { --ix: 10vw; --io: .15; }
+    .cr-role, .rc-list li, .cr-act-name, .tl-item > :not(.tl-q, .tl-vis:has(.tl-print)) {
+      animation-name: slide-in;
+      animation-timing-function: cubic-bezier(.2, .7, .2, 1);
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+    }
+
+    /* --- first screens: from where they are laid out, as the page leaves the top --- */
+    .nx-cover { --drift: calc(-170px * var(--k)); --r1: -14deg; }
+    h1.nx-title { --x1: -20vw; }
+    .pf-print { --drift: calc(-150px * var(--k)); --r1: 8deg; }
+    .pf-bar:first-child .pf-ink { --x1: -22vw; }
+    .pf-bar:last-child .pf-ink { --x1: 18vw; }
+    .lb .phead-ink { --x1: -14vw; }
+    .lb .phead-script { --drift: calc(-100px * var(--k)); --r1: -8deg; }
+    h1.nx-title, .pf-bar .pf-ink, .lb .phead-ink {
       animation-name: drift-top;
       animation-timing-function: linear;
       animation-fill-mode: both;
       animation-timeline: scroll(root);
       animation-range: 0 90vh;
     }
+    .nx-cover, .pf-print, .lb .phead-script {
+      animation-name: drift-top, turn;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root), scroll(root);
+      animation-range: 0 90vh, 0 90vh;
+    }
+
+    /* wider: the two lines go up and down past each other, side by side; the signature, under
+       the first line, keeps its speed */
+    @media (min-width: 700px) {
+      .ln-line { --x1: 0px; --drift: calc(-60px * var(--k)); }
+      .ln-bio { --x1: 0px; --drift: calc(50px * var(--k)); }
+      .ln-sign { --drift: calc(-60px * var(--k)); }
+      .cr-title { --x1: 0px; }
+      /* the question mark spins out ahead of its act (on a phone the act above is too close) */
+      .tl-q { --drift: calc(-110px * var(--k)); }
+    }
+    /* desktop: the timeline's acts sit side by side and slide in staggered */
+    @media (min-width: 1000px) {
+      .tl-item:nth-child(1) > * { --ix: 0px; }
+      .tl-item:nth-child(2) > * { --ix: 7vw; }
+      .tl-item:nth-child(3) > * { --ix: 14vw; }
+    }
+    @media (min-width: 1000px) and (max-width: 1279px) {
+      /* the next drop wraps under the first two: it slides in on its own */
+      .tl-item:nth-child(3) > * { --ix: 10vw; }
+    }
   }
 }
-@keyframes drift { from { translate: 0 calc(-1 * var(--drift, 0px)); } to { translate: 0 var(--drift, 0px); } }
-@keyframes drift-top { to { translate: 0 var(--drift, 0px); } }
+@keyframes drift { from { translate: var(--x0, 0px) calc(-1 * var(--drift, 0px)); } to { translate: var(--x1, 0px) var(--drift, 0px); } }
+@keyframes drift-top { to { translate: var(--x1, 0px) var(--drift, 0px); } }
+@keyframes turn { from { transform: rotate(var(--r0, 0deg)); } to { transform: rotate(var(--r1, 0deg)); } }
+@keyframes slide-in { from { translate: var(--ix, 0px) 0; opacity: var(--io, 1); } }
+@keyframes draw-x { from { transform: scaleX(0); } }
+@keyframes draw-y { from { transform: scaleY(0); } }
 
 /* ---------- reduced motion: no flash, nothing slides ---------- */
 @media (prefers-reduced-motion: reduce) {

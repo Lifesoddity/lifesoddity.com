@@ -99,4 +99,10 @@ const credited = [...acts]
     .cr-names a { text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 3px; text-underline-offset: .12em; transition: text-decoration-color var(--fast) ease-out; }
     .cr-names a:hover { text-decoration-color: var(--pink); }
   }
+
+  /* wide: THE CREW stays put beside its list while the list passes (a scroll effect that needs no
+     motion; global.css has the rows sliding in) */
+  @media (min-width: 1000px) {
+    .cr-head { position: sticky; top: calc(var(--header-h) + 3vw); align-self: start; }
+  }
 </style>
