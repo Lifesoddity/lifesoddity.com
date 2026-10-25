@@ -63,6 +63,10 @@ newer Node than the owner's machine has.
   layer next to text: check that the two part as the page scrolls, never meet, at 375, 768, 1024,
   1280 and 1440. The pen marks (`.mark`) draw with the scroll too: `src/scripts/ink.ts` measures each
   line's length on screen, global.css (and Story.astro for the story) slides the ink along it.
+- Everything pink draws itself (the pink block in `global.css`): lettering writes on, tapes unroll,
+  question marks are drawn, pink words sweep in, quote marks slap on. Pink on a page's first screen
+  has no scroll left, so `inkIntro` in `ink.ts` plays it once on load (after the entry pass lifts),
+  top to bottom. New pink goes in both lists.
 - The buy button is never greyed out unless the piece is sold out: PICK A SIZE, then ADD TO BAG,
   then CHECKOUT · BAG (n).
 
