@@ -528,6 +528,26 @@ html { scrollbar-color: var(--ink) var(--paper); }
       /* the question mark spins out ahead of its act (on a phone the act above is too close) */
       .tl-q { --drift: calc(-110px * var(--dk)); }
     }
+    /* --- the pen marks: drawn by hand as their photo comes up the screen ---
+       Each print is one timeline (named, so its circle and its arrow share it); every mark is one
+       pen line, drawn from its start to its end, the arrow's head last: a dash as long as the line
+       slides along it (its length on screen, --len, is measured by scripts/ink.ts). The
+       archive's arrow comes down from its "spotted" caption first, then the circle closes round
+       the piece. Scrolling back up takes the ink off again. The marks in the home story draw
+       during each scene's hold instead (Story.astro), since its stage stands still. */
+    .ph:not(.ss .ph), .lb-shot { view-timeline-name: --ink; view-timeline-inset: var(--seen-top) var(--seen-end); }
+    /* :where keeps this light, so the archive's arrow-then-circle timing below can win */
+    :where(.ph:not(.ss .ph), .lb-shot) .mark path[data-inked] {
+      stroke-dasharray: var(--len);
+      animation-name: ink;
+      animation-timing-function: cubic-bezier(.45, .05, .3, 1);
+      animation-fill-mode: both;
+      animation-timeline: --ink;
+      animation-range: entry 45% cover 48%;
+    }
+    .ap-arrow path[data-inked] { animation-range: entry 25% cover 34%; }
+    .ap-print .mark:not(.ap-arrow) path[data-inked] { animation-range: cover 30% cover 50%; }
+
     /* desktop: the timeline's acts sit side by side and slide in staggered */
     @media (min-width: 1000px) {
       .tl-item:nth-child(1) > * { --ix: 0px; }
@@ -543,6 +563,7 @@ html { scrollbar-color: var(--ink) var(--paper); }
 @keyframes drift { from { translate: var(--x0, 0px) calc(-1 * var(--drift, 0px)); } to { translate: var(--x1, 0px) var(--drift, 0px); } }
 @keyframes drift-top { to { translate: var(--x1, 0px) var(--drift, 0px); } }
 @keyframes ticker { to { transform: translateX(var(--tx, 0px)); } }
+@keyframes ink { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0px; } }
 @keyframes turn { from { transform: rotate(var(--r0, 0deg)); } to { transform: rotate(var(--r1, 0deg)); } }
 @keyframes slide-in { from { translate: var(--ix, 0px) 0; opacity: var(--io, 1); } }
 @keyframes draw-x { from { transform: scaleX(0); } }

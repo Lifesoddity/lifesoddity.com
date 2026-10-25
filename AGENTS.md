@@ -61,7 +61,8 @@ newer Node than the owner's machine has.
 - The parallax drift (what moves on scroll, and how fast) is one block in `global.css`, scaled by
   `--dk` on wider screens; the About timeline's self-drawing rails are in `Timeline.astro`. Moving a
   layer next to text: check that the two part as the page scrolls, never meet, at 375, 768, 1024,
-  1280 and 1440.
+  1280 and 1440. The pen marks (`.mark`) draw with the scroll too: `src/scripts/ink.ts` measures each
+  line's length on screen, global.css (and Story.astro for the story) slides the ink along it.
 - The buy button is never greyed out unless the piece is sold out: PICK A SIZE, then ADD TO BAG,
   then CHECKOUT · BAG (n).
 
