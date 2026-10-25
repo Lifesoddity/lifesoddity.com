@@ -218,6 +218,9 @@ const cutGround = (i: number) => (shots.slice(0, i).filter((x) => x.kind === 'cu
   .lb-pic { position: relative; display: block; }
   .lb-pic :global(img) { width: 100%; }
   .lb-print:focus-visible { outline-offset: 5px; }
+  /* the prints drift at their own speeds (global.css): one that carries a "spotted" tape lies on top
+     of the ones that do not, so a passing print never covers the words on a tape */
+  .lb-shot:has(.lb-tape) { z-index: 2; }
   .lb-shot:focus-within { z-index: 6; }
 
   /* the credit printed along the print's own edge, read bottom to top */
