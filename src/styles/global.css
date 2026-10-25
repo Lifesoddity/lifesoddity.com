@@ -378,7 +378,7 @@ html { scrollbar-color: var(--ink) var(--paper); }
    --drift  how far it travels up and down either side of where it is laid out while it crosses
             the screen: positive is slower than the page, negative faster;
    --x0/--x1  where it sits sideways as it comes in / goes out (first screens);
-   --tx     a big title's run off to the side: it holds still until it reaches the middle of the
+   --tx     a big title's run off to the side: it holds still until it is past the middle of the
             screen, then runs (ticker), so it is read before it goes;
    --r0/--r1  its turn as it comes in / goes out;
    --ix/--io  where a row slides in from, and how faint it starts (the lists).
@@ -455,7 +455,7 @@ html { scrollbar-color: var(--ink) var(--paper); }
       animation-timing-function: linear;
       animation-fill-mode: both;
       animation-timeline: view(block var(--seen-top) var(--seen-end)), view(block var(--seen-top) var(--seen-end));
-      animation-range: cover, cover 50% cover 100%;
+      animation-range: cover, cover 58% cover 100%;
     }
     .is-piece, .lb-shot, .ln-sign, .tl-q {
       animation-name: drift, turn;

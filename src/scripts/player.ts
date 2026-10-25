@@ -332,6 +332,12 @@ if (radio && frame) {
 
 // the way in (layout/Gate.astro): the player loads while the pass is up and becomes the disc
 if (radio && gating && offer) {
+  // ENTER NOW's words move the disc when their font arrives (often after Spotify on a desktop):
+  // set the button back over it then, and whenever the words change size
+  const label = gateEl?.querySelector<HTMLElement>('.gate-go-l');
+  const replace = () => { if (radio.dataset.mode === 'gate') placeOnDisc(); };
+  document.fonts?.ready.then(replace);
+  if (label) new ResizeObserver(replace).observe(label);
   make(offer.url).then((c) => {
     controller = c;
     if (!current) tuneTo(offer.url, offer.name);
