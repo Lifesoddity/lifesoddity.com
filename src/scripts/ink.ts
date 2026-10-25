@@ -49,20 +49,21 @@ export function inkMarks(signal: AbortSignal) {
 
 // The pink on a page's first screen: everything pink draws itself as it comes up the screen
 // (global.css), but what is already on screen when a page opens has nothing left to scroll
-// through, so it does it once here as the page loads, top to bottom. It stays drawn after.
+// through, so it does it once here as the page loads, top to bottom. It stays drawn after. Not on
+// the home page: its cover and story keep their own motion.
 type Intro = { sel: string; name: string; frames: Keyframe[] | ((el: Element) => Keyframe[]); duration?: number; easing?: string; pseudo?: string };
 const INTRO: Intro[] = [
-  { sel: '.cv-tape, .pc-tape, .nx-tag, .gl-tape, .is-tape, .lb-tape, .lp-tape, .cr-act-name', name: 'unroll', frames: [
+  { sel: '.pc-tape, .nx-tag, .gl-tape, .is-tape, .lb-tape, .lp-tape, .cr-act-name', name: 'unroll', frames: [
     { clipPath: 'polygon(0 8%, 0 0, 0 5%, 0 0, 0 4%, 0 0, 0 52%, 0 100%, 0 95%, 0 100%, 0 94%, 0 100%, 0 50%)' },
     { clipPath: 'polygon(0 8%, 4% 0, 30% 5%, 62% 0, 96% 4%, 100% 0, 98% 52%, 100% 100%, 70% 95%, 38% 100%, 3% 94%, 0 100%, 2% 50%)' },
   ] },
   { sel: '.phead.tone-pink.t-slab .phead-ink, .phead-script, .act-vice, .ap-cap, .st-printed, .pl-here, .act-line, .lb-jump a', name: 'write', frames: [
     { clipPath: 'inset(-60% 100% -60% -25%)' }, { clipPath: 'inset(-60% -25% -60% -25%)' },
   ] },
-  { sel: '.nx-q, .wn-q, .tl-q', name: 'draw-down', frames: [
+  { sel: '.nx-q, .tl-q', name: 'draw-down', frames: [
     { clipPath: 'inset(-30% -60% 100% -60%)' }, { clipPath: 'inset(-30% -60% -30% -60%)' },
   ] },
-  { sel: '.ln-q em, .cl-quote em', name: 'sweep', frames: [{ backgroundPosition: '100% 0' }, { backgroundPosition: '0 0' }] },
+  { sel: '.ln-q em', name: 'sweep', frames: [{ backgroundPosition: '100% 0' }, { backgroundPosition: '0 0' }] },
   { sel: '.buy-help a', name: 'underline', frames: [{ backgroundSize: '0% 2px' }, { backgroundSize: '100% 2px' }] },
   { sel: '.cr-at', name: 'spin-on', frames: [
     { rotate: '-320deg', scale: '.2', opacity: 0 }, { opacity: 1, offset: 0.3 }, { rotate: '0deg', scale: '1', opacity: 1 },
@@ -82,13 +83,13 @@ const INTRO: Intro[] = [
     return [{ strokeDashoffset: len }, { strokeDashoffset: '0px' }];
   } },
   // the pink quote marks slap on
-  { sel: '.ln-q, .cl-quote, .lb-quote', name: 'slap-on', pseudo: '::before', duration: 420, easing: 'ease-out', frames: [
+  { sel: '.ln-q, .lb-quote', name: 'slap-on', pseudo: '::before', duration: 420, easing: 'ease-out', frames: [
     { transform: 'scale(2.4) rotate(-24deg)', opacity: 0 }, { transform: 'scale(.92) rotate(4deg)', opacity: 1, offset: 0.6 }, { transform: 'none', opacity: 1 },
   ] },
 ];
 
 export function inkIntro(signal: AbortSignal) {
-  if (reduceMotion() || typeof Element.prototype.animate !== 'function') return;
+  if (reduceMotion() || typeof Element.prototype.animate !== 'function' || document.querySelector('.ss')) return;
   const run = () => {
     if (signal.aborted) return;
     const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 60;

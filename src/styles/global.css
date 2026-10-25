@@ -547,14 +547,15 @@ html { scrollbar-color: var(--ink) var(--paper); }
     }
     .ap-arrow path[data-inked] { animation-range: entry 25% cover 34%; }
     .ap-print .mark:not(.ap-arrow) path[data-inked] { animation-range: cover 30% cover 50%; }
-    /* the playlist's print sits just above the footer: its marks finish before the page does */
-    .pl-print .mark path[data-inked] { animation-range: entry 35% cover 40%; }
+    /* the drop's playlist print sits just above the footer: its marks finish before the page does */
+    .pl-print:not(.sound *) .mark path[data-inked] { animation-range: entry 35% cover 40%; }
 
     /* --- the pink: lettering writes itself on, tapes unroll, question marks are drawn, pink words
        sweep in, quote marks slap on, the pink underline is drawn. Pink already on screen when a
-       page opens does this once as it loads (scripts/ink.ts), the rest as it comes up the screen. */
+       page opens does this once as it loads (scripts/ink.ts), the rest as it comes up the screen.
+       Not on the home page (its cover, story and playlist): it keeps its own motion. */
     /* handwriting, left to right (the margins leave room for the script's swashes) */
-    .act-vice, .ap-cap, .st-printed, .pl-here, .act-line, .lb-jump a {
+    .act-vice, .ap-cap, .st-printed, .pl-here:not(.sound *), .act-line, .lb-jump a {
       animation-name: write;
       animation-timing-function: cubic-bezier(.45, .05, .35, 1);
       animation-fill-mode: both;
@@ -562,7 +563,7 @@ html { scrollbar-color: var(--ink) var(--paper); }
       animation-range: entry 35% cover 38%;
     }
     /* tapes unroll from their left end, torn edges and all */
-    .cv-tape, .pc-tape, .nx-tag, .gl-tape, .is-tape, .lb-tape, .lp-tape {
+    .pc-tape, .nx-tag, .gl-tape, .is-tape, .lb-tape, .lp-tape {
       animation-name: unroll;
       animation-timing-function: cubic-bezier(.3, .7, .3, 1);
       animation-fill-mode: both;
@@ -577,7 +578,7 @@ html { scrollbar-color: var(--ink) var(--paper); }
       animation-range: var(--in-from) var(--in-to), entry 40% cover 38%;
     }
     /* the big question marks are drawn from the top of the hook down to the dot */
-    .nx-q, .wn-q {
+    .nx-q {
       animation-name: draw-down;
       animation-timing-function: cubic-bezier(.45, .05, .35, 1);
       animation-fill-mode: both;
@@ -593,8 +594,8 @@ html { scrollbar-color: var(--ink) var(--paper); }
     }
     /* a pink word starts in its line's own colour and the pink sweeps across it */
     .ln-q.ln-line em { --from: var(--yellow); }
-    .ln-q.ln-bio em, .cl-quote em { --from: var(--white); }
-    .ln-q em, .cl-quote em {
+    .ln-q.ln-bio em { --from: var(--white); }
+    .ln-q em {
       background: linear-gradient(90deg, var(--pink) 0 50%, var(--from, var(--pink)) 50% 100%) 100% 0 / 200% 100% no-repeat;
       -webkit-background-clip: text;
       background-clip: text;
@@ -606,8 +607,8 @@ html { scrollbar-color: var(--ink) var(--paper); }
       animation-range: entry 70% cover 48%;
     }
     /* the pink quote marks slap on as their quote arrives */
-    .ln-q, .cl-quote, .lb-quote { view-timeline-name: --quote; view-timeline-inset: var(--seen-top) var(--seen-end); }
-    .ln-q::before, .cl-quote::before, .lb-quote::before {
+    .ln-q, .lb-quote { view-timeline-name: --quote; view-timeline-inset: var(--seen-top) var(--seen-end); }
+    .ln-q::before, .lb-quote::before {
       transform-origin: 30% 70%;
       animation-name: slap-on;
       animation-timing-function: linear;
@@ -626,7 +627,7 @@ html { scrollbar-color: var(--ink) var(--paper); }
       animation-range: entry 40% cover 36%;
     }
     /* the pink underline of "DM @lifesoddity" is drawn under it */
-    .buy-help a {
+    .buy-help a:not(:is(.cover, .ss) *) {
       text-decoration: none;
       background: linear-gradient(var(--pink), var(--pink)) 0 100% / 100% 2px no-repeat;
       background-origin: content-box;

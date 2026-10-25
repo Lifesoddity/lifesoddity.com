@@ -486,11 +486,9 @@ let k = 0;
     .ss.is-pinned .ss-cut:has(:global(.ss-back)) :global(.ss-front) { transform: perspective(1400px) rotateY(calc(var(--tr) * 180deg)); }
     .ss.is-pinned .ss-cut :global(.ss-back) { transform: perspective(1400px) rotateY(calc(var(--tr) * 180deg - 180deg)); }
     .ss.is-pinned .ss-cut:has(:global(.ss-back)) .ss-sh { transform: scaleX(cos(calc(var(--tr) * 180deg))); will-change: transform; }
-    /* the pen marks draw themselves during the scene's hold: the opening card's "spotted"
-       captions write on first, then their arrows and circles; each piece's circle once it lands */
-    .ss.is-pinned .mark path[data-inked] { stroke-dasharray: var(--len); stroke-dashoffset: calc(var(--len) * (1 - clamp(0, (var(--h) - .2) * 1.7, 1))); }
-    /* ...after their "spotted" captions have written themselves on */
-    .ss.is-pinned .ss-snap-cap { clip-path: inset(-60% calc(100% - clamp(0, var(--h) * 2.5, 1) * 125%) -60% -25%); }
+    /* the pen marks draw themselves during the scene's hold: the opening card's arrows and circles
+       as the story starts, each piece's circle once it has landed */
+    .ss.is-pinned .mark path[data-inked] { stroke-dasharray: var(--len); stroke-dashoffset: calc(var(--len) * (1 - clamp(0, var(--h) * 1.6, 1))); }
     /* a scene not started (0) or finished and covered (1) draws nothing */
     @container style(--p: 0) { .ss.is-pinned .ss-scene > * { visibility: hidden; } }
     @container style(--p: 1) { .ss.is-pinned .ss-scene > * { visibility: hidden; } }
