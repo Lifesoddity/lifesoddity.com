@@ -161,7 +161,7 @@ Motion is short, physical and never loops: a flash pop on a photo, a sticker sla
 Five saturated print inks on white, each used as a whole field, plus one pressed red for hover and a newsprint grey for disabled states.
 
 ### Primary
-- **Banner Red** (red): the buy colour. ADD TO BAG, PICK A SIZE, the bag chip, the waitlist button, a chosen size stamp, the EXCLUSIVE banner, rubber stamps and the issue banner page head. The buy button is full red in every state but sold out.
+- **Banner Red** (red): the buy colour. ADD TO BAG, PICK A SIZE, the bag chip, the waitlist button, a chosen size stamp, the EXCLUSIVE banner, rubber stamps. The buy button is full red in every state but sold out.
 - **Pressed Red** (red-press): hover and press state of every red control. Never a resting fill.
 
 ### Secondary
@@ -282,7 +282,7 @@ Red uppercase label caps in a 2px red border with an inner white and red keyline
 Red League Gothic caps with a doubled white keyline and sticker lift, tilted -5 degrees across a live piece's corner. Live pieces only.
 
 ### Page Head
-A colour field with halftone, the page title in display caps and one deck line. The title treatment varies so neighbours in the nav never match: plain, slab (reversed out of a black block), bar (yellow caps on a full-width black bar), outline (stroked caps over a Riso pass), banner (white caps on a notched red banner, tilted -2 degrees).
+A colour field with halftone, the page title in display caps and one deck line. The title treatment varies so the two pages that open with it never match: slab (reversed out of a black block, the shop on pink), outline (stroked caps over a Riso pass, the lookbook on yellow).
 
 ### Scroll Story (signature)
 The home's pinned stage: one composition for every scene. The ground floods up, the giant word's letters roll in, the piece flies in tilted and lands centred with the flash, the tape, badge and line arrive last and leave first. Native scrolling with one passive listener per story; transform and opacity only. Under reduced motion it becomes still stacked panels.

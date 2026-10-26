@@ -1,9 +1,9 @@
 // The pen marks (the circles and arrows drawn on photos, .mark) draw themselves: CSS slides a dash
 // along each line with the scroll (global.css). The home page is left out (the owner's call): its
-// marks simply show, drawn, and nothing pink moves there. The marks keep one pen width at any size (vector-effect: non-scaling-stroke), so the browser lays
-// that dash out on screen, not along the drawing: each line's length as drawn is measured here,
-// in px, and handed over as --len (data-inked says it is there). Without this the marks simply
-// show, fully drawn.
+// marks simply show, drawn, and nothing pink moves there. The marks keep one pen width at any
+// size (vector-effect: non-scaling-stroke), so the browser lays that dash out on screen, not along
+// the drawing: each line's length as drawn is measured here, in px, and handed over as --len
+// (data-inked says it is there). Without this the marks simply show, fully drawn.
 
 import { reduceMotion } from './motion';
 
@@ -99,7 +99,7 @@ export function inkIntro(signal: AbortSignal) {
     const due: { el: Element; top: number; it: Intro }[] = [];
     for (const it of INTRO) {
       document.querySelectorAll(it.sel).forEach((el) => {
-        if (el.closest('.ss, [data-gate]')) return;
+        if (el.closest('[data-gate]')) return;
         const r = el.getBoundingClientRect();
         if (r.bottom <= head || r.top >= innerHeight || !r.width) return;
         // only what the scroll has already drawn in full: pink lower down still draws as it comes up

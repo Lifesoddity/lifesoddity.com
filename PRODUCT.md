@@ -85,7 +85,7 @@ Odd". The line: "Highlighting the oddities of everyday life".
 
 ## Evidence on Hand
 
-- Logo, black on transparent, 564x212: `.bunshin/harvest/img/logo-black.png`.
+- Logo, black on transparent, 564x212: `src/assets/brand/logo-black.png`.
 - She Devil tee product photo, 2300x2300, a flat mockup on a pink-to-red gradient (Shopify).
 - His Instagram campaign photos (Showtime hoodie, Spotlight tee, She Devil letter), the Party
   Animal radio cover and three reel covers: `.bunshin/harvest/img/`, sources in
