@@ -1,0 +1,129 @@
+---
+// The live piece, one tap away, set as a coverline card on its own ground (the tee's pink-to-red
+// for She Devil, from pieces.ts): its giant word printed in ink with an offset second-colour
+// pass, its line in the brand's words, and a price tag with the price box's bars, the price
+// refreshing from Shopify (data-live). No photo of the piece: its photo and cut-out live on the
+// cover, the story, the shop and its own page (D2). The killed story and the joined page both end
+// on it. If it sells out after the build, the tape comes off and the SOLD OUT stamp shows.
+import type { Piece } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { status } from '../../content/copy/common';
+
+interface Props {
+  piece: Piece;
+  tape: string;
+  cta: string;
+  class?: string;
+}
+
+const { piece, tape, cta, class: cls } = Astro.props;
+const product = piece.product;
+const live = piece.status === 'live';
+const art = piece.art;
+const word = piece.word.lines.map((l) => l.join(''));
+const line = art.line ?? piece.act.definition;
+const colon = line ? line.indexOf(':') : -1;
+const style = `--g:${art.ground};--dot:${art.dot};--wl:${piece.word.wl}`;
+---
+
+{piece.href && (
+  <a class:list={['lp', cls]} href={piece.href} data-live={product?.handle} data-soldout={live ? undefined : ''}>
+    <span class:list={['lp-card', 'halftone', art.ink === 'white' && 'is-white']} style={style}>
+      <span class="lp-word" aria-hidden="true">{word.map((l) => <span>{l}</span>)}</span>
+      {line && (
+        <span class="lp-line" aria-hidden="true">{colon > 0 ? <><b>{line.slice(0, colon)}:</b>{line.slice(colon + 1)}</> : line}</span>
+      )}
+    </span>
+    <span class="tape lp-tape" aria-hidden="true">{tape}</span>
+    <span class="stamp lp-sold">{status.soldout}</span>
+    <span class="lp-tag">
+      <span class="lp-name">{piece.title}</span>
+      {product && <span class="lp-price num" data-live-price>{formatPrice(product.price)}</span>}
+      <span class="lp-go">{cta}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></span>
+      <svg class="lp-bars" viewBox="0 0 64 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h2v40H0zM3 0h1v40H3zM5 0h1v40H5zM8 0h3v40H8zM12 0h1v40h-1zM14 0h2v40h-2zM17 0h1v40h-1zM19 0h1v40h-1zM22 0h3v40h-3zM26 0h2v40h-2zM29 0h1v40h-1zM31 0h1v40h-1zM34 0h2v40h-2zM37 0h3v40h-3zM41 0h1v40h-1zM43 0h1v40h-1zM46 0h2v40h-2zM49 0h1v40h-1zM51 0h3v40h-3zM55 0h1v40h-1zM57 0h2v40h-2zM60 0h1v40h-1zM62 0h2v40h-2z"></path></svg>
+    </span>
+  </a>
+)}
+
+<style>
+  .lp { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 22px 0 0; color: var(--ink); text-decoration: none; }
+
+  /* the card: the piece's own ground and halftone, tilted, with the hard flash shadow */
+  .lp-card {
+    --pass: var(--yellow);
+    --fade: radial-gradient(85% 60% at 100% 100%, #000, transparent 75%), radial-gradient(60% 45% at 0% 0%, #000, transparent 70%);
+    display: grid;
+    align-content: space-between;
+    gap: 18px;
+    width: min(84%, 500px);
+    aspect-ratio: 4 / 5;
+    padding: calc(9% + 34px) 8% 11%;
+    background: var(--g);
+    color: var(--ink);
+    rotate: 3deg;
+    box-shadow: 11px 13px 5px 2px var(--shadow);
+    container-type: inline-size;
+  }
+  .lp-card.is-white { --pass: var(--ink); color: var(--white); }
+  /* the giant word sized to the card from its own measured width, printed solid with the
+     misregistered second ink */
+  .lp-word {
+    display: grid;
+    font: 400 calc(94cqi / var(--wl)) / .82 var(--gothic);
+    letter-spacing: .005em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-shadow: .035em .035em 0 var(--pass);
+  }
+  .lp-line { max-width: 30ch; padding-bottom: 14px; font: 600 13px/1.38 var(--sans); }
+  .lp-line b { font-weight: 800; font-style: italic; }
+
+  .lp-tape { left: 4%; top: 6px; font-size: clamp(30px, 8.6vw, 44px); }
+  .lp-sold { display: none; position: absolute; z-index: 4; left: 8%; top: 18px; background: var(--white); font-size: 14px; rotate: -6deg; }
+  .lp[data-soldout] .lp-tape { display: none; }
+  .lp[data-soldout] .lp-sold { display: inline-block; }
+
+  /* the price tag, stuck over the card's foot: name and price, the way in, the bars */
+  .lp-tag {
+    position: relative;
+    z-index: 3;
+    justify-self: end;
+    display: grid;
+    grid-template-columns: minmax(0, auto) auto;
+    align-items: end;
+    column-gap: 16px;
+    row-gap: 8px;
+    margin: -30px 2% 0 0;
+    padding: 12px 16px;
+    background: var(--white);
+    border: 3px solid var(--ink);
+    rotate: -3deg;
+    box-shadow: 0 10px 18px -6px rgb(11 11 11 / .5);
+  }
+  .lp-name { grid-column: 1; align-self: center; max-width: 16ch; font: 800 13px/1.15 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+  .lp-price { grid-column: 2; grid-row: 1; font: 400 54px/.8 var(--gothic); }
+  .lp-go { grid-column: 1; grid-row: 2; display: inline-flex; align-items: center; gap: 8px; min-height: 24px; font: 800 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .3em; }
+  .lp-go svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) ease-out; }
+  .lp-bars { grid-column: 2; grid-row: 2; justify-self: end; width: 46px; height: 24px; fill: var(--ink); }
+  .lp:focus-visible { outline-offset: 6px; }
+
+  @media (min-width: 700px) {
+    .lp-tape { font-size: 34px; }
+  }
+
+  @media (min-width: 1000px) {
+    .lp { padding-top: 1.6vw; }
+    .lp-card { width: 84%; }
+    .lp-line { font-size: 14px; }
+    .lp-tape { left: 0; top: 0; font-size: min(3.2vw, 48px); }
+    .lp-tag { margin: -2.6vw 0 0 0; padding: 14px 18px; }
+    .lp-price { font-size: min(4.6vw, 70px); }
+    .lp-name { font-size: 14px; }
+    .lp-bars { width: 56px; height: 28px; }
+  }
+
+  @media (hover: hover) {
+    .lp:hover .lp-go svg { translate: 4px 0; }
+    .lp:hover .lp-go { text-decoration-color: var(--pink); }
+  }
+</style>

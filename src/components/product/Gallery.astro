@@ -1,0 +1,259 @@
+---
+// The left page of the cover story: every Shopify photo of the piece, on the piece's own ground.
+// A piece whose ground was sampled from its own product shot (content/pieces.ts) runs its first
+// photo full bleed, so the shot and the page are one colour field; any other Shopify photo, and
+// every photo of a piece with no art yet, stands straight on the ground with its flash shadow (a
+// product shot, D4: the tilted white-bordered print is for campaign photos only). Several photos
+// sit in one swipeable row, each with its number taped on. The first loads at once and flashes;
+// the rest load lazily. The round sticker carries the real state, and flips to SOLD OUT when the
+// live stock check finds none left.
+import PieceImage from '../ui/PieceImage.astro';
+import Print from '../ui/Print.astro';
+import type { Piece } from '../../lib/pieces';
+import { status } from '../../content/copy/common';
+import { product as copy } from '../../content/copy/product';
+
+interface Props {
+  piece: Piece;
+  /** The ground was sampled from the first photo: run that photo full bleed. */
+  bleed: boolean;
+}
+
+const { piece, bleed } = Astro.props;
+const title = piece.title;
+const photos = piece.photos;
+const n = photos.length;
+const many = n > 1;
+const art = piece.art;
+
+const altFor = (i: number) => {
+  const own = photos[i].kind === 'shopify' ? photos[i].image.alt : photos[i].alt;
+  return own || (i === 0 && art.cutout ? art.cutout.alt : '') || copy.gallery.alt(title, i + 1, n);
+};
+// a print keeps its photo's own shape, within reason
+const ratioOf = (i: number) => {
+  const { width, height } = photos[i].image;
+  const r = width / height;
+  return Math.min(1.25, Math.max(0.8, Math.round(r * 1000) / 1000));
+};
+const word = piece.word.lines.map((l) => l.join(''));
+---
+
+<div
+  class:list={['gl', 'halftone', many && 'is-many', art.ink === 'white' && 'on-dark']}
+  style={`--g:${art.ground};--dot:${art.dot};--wl:${piece.word.wl}`}
+  data-gallery
+>
+  {n === 0 ? (
+    <p class="gl-word" aria-hidden="true">{word.map((l) => <span>{l}</span>)}</p>
+  ) : (
+    <div
+      class="gl-reel"
+      role={many ? 'region' : undefined}
+      aria-label={many ? copy.gallery.label(title) : undefined}
+      tabindex={many ? 0 : undefined}
+      data-reel
+    >
+      {photos.map((photo, i) => (
+        <div class:list={['gl-shot', i === 0 && bleed ? 'is-bleed' : 'is-print']}>
+          {i === 0 && bleed ? (
+            <figure class="ph gl-bleed" data-flash data-flash-first>
+              <span class="ph-sh" aria-hidden="true"></span>
+              <PieceImage photo={photo} sizes={many ? '(min-width: 1000px) 50vw, 86vw' : '(min-width: 1000px) 50vw, 100vw'} alt={altFor(i)} eager />
+              <span class="ph-flash" aria-hidden="true"></span>
+            </figure>
+          ) : (
+            <Print
+              class="gl-print"
+              photo={photo}
+              sizes="(min-width: 1000px) 32vw, 72vw"
+              alt={altFor(i)}
+              ratio={ratioOf(i)}
+              tilt={i % 2 === 0 ? -3 : 2.5}
+              eager={i === 0}
+              first={i === 0}
+            />
+          )}
+          {many && <span class="gl-no num" aria-hidden="true">{i + 1}<i>/{n}</i></span>}
+        </div>
+      ))}
+    </div>
+  )}
+
+  {many && (
+    <div class="gl-nav">
+      <button class="gl-step" type="button" data-step="-1" aria-label={copy.gallery.prev} disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"></path></svg>
+      </button>
+      <button class="gl-step" type="button" data-step="1" aria-label={copy.gallery.next}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg>
+      </button>
+    </div>
+  )}
+
+  <p class="tape gl-tape" aria-hidden="true">{status.exclusive}</p>
+  <p class="gl-state sticker">
+    <span class="gl-live">{status.live}</span>
+    <span class="gl-sold">{status.soldout}</span>
+  </p>
+</div>
+
+<script>
+  import { reduceMotion } from '../../scripts/motion';
+  import { onPage } from '../../scripts/page';
+
+  onPage('gallery', () => {
+    // several photos: the arrows step the row one photo at a time and rest at either end
+    document.querySelectorAll<HTMLElement>('[data-gallery].is-many').forEach((root) => {
+      const reel = root.querySelector<HTMLElement>('[data-reel]');
+      const steps = [...root.querySelectorAll<HTMLButtonElement>('[data-step]')];
+      if (!reel || !steps.length) return;
+      let queued = false;
+      const sync = () => {
+        queued = false;
+        const max = reel.scrollWidth - reel.clientWidth - 4;
+        steps[0].disabled = reel.scrollLeft <= 4;
+        steps[1].disabled = reel.scrollLeft >= max;
+      };
+      reel.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(sync); } }, { passive: true });
+      steps.forEach((btn) => btn.addEventListener('click', () => {
+        const shot = reel.firstElementChild as HTMLElement | null;
+        const by = shot ? shot.getBoundingClientRect().width : reel.clientWidth;
+        reel.scrollBy({ left: Number(btn.dataset.step) * by, behavior: reduceMotion() ? 'auto' : 'smooth' });
+      }));
+      sync();
+    });
+  });
+</script>
+
+<style>
+  .gl {
+    --fade: radial-gradient(80% 60% at 0% 100%, #000, transparent 72%), radial-gradient(60% 45% at 100% 0%, #000, transparent 70%);
+    position: relative;
+    display: grid;
+    align-content: center;
+    min-width: 0;
+    background: var(--g);
+    overflow: clip;
+  }
+  .gl-reel { display: grid; grid-auto-flow: column; grid-auto-columns: 100%; }
+  .is-many .gl-reel {
+    grid-auto-columns: 86%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .is-many .gl-reel::-webkit-scrollbar { display: none; }
+  .gl-reel:focus-visible { outline-offset: -6px; }
+  .gl-shot { position: relative; display: grid; place-items: center; min-width: 0; scroll-snap-align: start; }
+
+  /* the first shot, full bleed: its own pink-to-red ground is the page's */
+  .gl-bleed { width: 100%; }
+  .gl-bleed :global(img) { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .gl-bleed .ph-sh { display: none; }
+
+  /* any other shot: straight, with its flash shadow (Print's .shot) */
+  .is-print { padding: 34px 0 46px; }
+  .gl-shot :global(.gl-print) { width: min(72%, 360px); }
+  .is-many .gl-shot :global(.gl-print) { width: min(80%, 360px); }
+
+  /* the photo's number, taped on */
+  .gl-no {
+    position: absolute;
+    z-index: 3;
+    left: 12px;
+    bottom: 12px;
+    padding: 4px 10px 2px 8px;
+    background: var(--ink);
+    color: var(--white);
+    font: 400 24px/1 var(--gothic);
+    letter-spacing: .02em;
+    rotate: -4deg;
+    clip-path: polygon(0 6%, 50% 0, 100% 5%, 97% 50%, 100% 96%, 50% 100%, 2% 95%, 4% 50%);
+  }
+  .gl-no i { color: var(--pink); font-style: normal; }
+
+  /* a piece with no photo yet: its giant word on its ground, never an empty page */
+  .gl-word { display: grid; justify-items: center; padding: 40px var(--pad) 56px; color: var(--ink); font: 400 min(30vw, calc(84vw / var(--wl))) / .84 var(--gothic); text-transform: uppercase; white-space: nowrap; }
+  .on-dark .gl-word { color: var(--white); }
+
+  .gl-tape { left: 12px; top: 14px; font-size: 36px; }
+
+  /* the round sticker: the real state of the piece */
+  .gl-state {
+    position: absolute;
+    z-index: 4;
+    right: 8px;
+    bottom: 8px;
+    display: grid;
+    place-content: center;
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    background: var(--yellow);
+    color: var(--ink);
+    font: 400 25px/.84 var(--gothic);
+    letter-spacing: .02em;
+    text-align: center;
+    text-transform: uppercase;
+    rotate: -8deg;
+    box-shadow: inset 0 0 0 4px var(--yellow), inset 0 0 0 6px var(--ink), 0 7px 12px rgb(60 0 18 / .38);
+  }
+  .gl-state span { max-width: 2.6em; }
+  .gl-state .gl-sold { display: none; }
+  /* the live stock check marks the page [data-soldout] when nothing is left */
+  :global([data-soldout]) .gl-state { background: var(--white); color: var(--red); box-shadow: inset 0 0 0 4px var(--white), inset 0 0 0 6px var(--red), 0 7px 12px rgb(60 0 18 / .38); }
+  :global([data-soldout]) .gl-state .gl-live { display: none; }
+  :global([data-soldout]) .gl-state .gl-sold { display: block; }
+  :global([data-soldout]) .gl-tape { display: none; }
+  .is-many .gl-state { bottom: auto; top: 12px; }
+
+  /* the arrows, for a mouse: round yellow stickers */
+  .gl-nav { display: none; }
+
+  @media (min-width: 700px) {
+    .gl-tape { left: 22px; top: 22px; font-size: 46px; }
+    .gl-state { right: 22px; bottom: 22px; width: 104px; height: 104px; font-size: 34px; }
+    .is-many .gl-reel { grid-auto-columns: 100%; }
+    .is-many .gl-state { top: 22px; }
+    .gl-nav { position: absolute; z-index: 4; right: 22px; bottom: 22px; display: flex; gap: 10px; }
+    .gl-step {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--yellow);
+      color: var(--ink);
+      box-shadow: inset 0 0 0 3px var(--yellow), inset 0 0 0 5px var(--ink), 0 5px 10px rgb(11 11 11 / .3);
+      transition: scale var(--fast) ease-out;
+    }
+    .gl-step svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .gl-step:disabled { opacity: .45; cursor: default; }
+    .gl-step:not(:disabled):active { translate: 0 1px; }
+    .gl-no { left: 22px; bottom: 22px; font-size: 30px; }
+  }
+
+  @media (min-width: 1000px) {
+    /* the left page of the spread: the ground runs above and below the shot */
+    .gl-bleed :global(img) { aspect-ratio: 1; }
+    .gl-bleed {
+      -webkit-mask: linear-gradient(transparent, #000 9%, #000 91%, transparent);
+      mask: linear-gradient(transparent, #000 9%, #000 91%, transparent);
+    }
+    .gl-shot { aspect-ratio: 1; }
+    .is-print { padding: 4vw 0; }
+    .gl-shot :global(.gl-print), .is-many .gl-shot :global(.gl-print) { width: 64%; max-width: 620px; }
+    .gl-tape { left: 3vw; top: 3vw; font-size: 4vw; }
+    .gl-state { right: 2.6vw; bottom: 2.6vw; width: 9vw; height: 9vw; max-width: 150px; max-height: 150px; font-size: min(2.9vw, 48px); }
+    .is-many .gl-state { top: 2.6vw; }
+    .gl-nav { right: 2.6vw; bottom: 2.6vw; }
+    .gl-no { left: 2.6vw; bottom: 2.6vw; }
+    .gl-word { font-size: min(13vw, calc(40vw / var(--wl))); }
+  }
+
+  @media (hover: hover) {
+    .gl-step:not(:disabled):hover { scale: 1.08; }
+  }
+</style>

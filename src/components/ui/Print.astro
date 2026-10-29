@@ -1,0 +1,83 @@
+---
+// A photo with its hard flash shadow; it flashes on hover or tap. Optionally a link and a pink
+// marker circle drawn on it. Three ways to print (D4):
+// - Campaign photos (people, places, the letter): the white-bordered print, tilted if asked.
+// - A product shot: straight and unbordered, on whatever contrasting ground the page gives it
+//   (yellow, black or white). Every Shopify photo is a product shot unless `shot={false}`; pass
+//   `shot` for a local one (the jacket's studio shots). `tilt` does not apply to it.
+// - A piece's cut-out (`cutout`, from content/pieces.ts): fitted to its own edge, its shadow its
+//   own silhouette blurred once into an image, the flash masked to it. Use it wherever a product
+//   shot on its own studio gradient would land outside the cover and the story (D2).
+import { Image, getImage } from 'astro:assets';
+import PieceImage from './PieceImage.astro';
+import type { Piece } from '../../lib/pieces';
+import type { PieceArt } from '../../content/pieces';
+
+interface Props {
+  photo?: Piece['photo'];
+  /** The piece's cut-out: printed instead of the photo. */
+  cutout?: PieceArt['cutout'];
+  /** Which side of the cut-out, when it has a back (the jacket). */
+  side?: 'front' | 'back';
+  /** A product shot: straight, no white border. Default: true for Shopify photos. */
+  shot?: boolean;
+  sizes: string;
+  alt?: string;
+  href?: string | null;
+  label?: string;
+  tilt?: number;
+  ratio?: number;
+  mark?: { x: number; y: number; rx: number; ry: number };
+  class?: string;
+  eager?: boolean;
+  /** Flash once when the page first renders. */
+  first?: boolean;
+}
+
+const { photo, cutout, side = 'front', shot, sizes, alt, href, label, tilt = 0, ratio = 3 / 4, mark, class: cls, eager, first = false } = Astro.props;
+const Tag = href ? 'a' : 'figure';
+
+const cutImg = cutout ? (side === 'back' && cutout.back ? cutout.back : cutout.front) : null;
+const cutAlt = cutout ? (side === 'back' && cutout.back ? (cutout.backAlt ?? cutout.alt) : cutout.alt) : '';
+// the flash is masked by the cut-out's own edge: the same file the image loads at its 1000w
+// variant, so the mask does not download a second copy
+const cutMask = cutImg ? (await getImage({ src: cutImg, width: 1000, format: 'webp' })).src : null;
+
+const isShot = !cutImg && (shot ?? photo?.kind === 'shopify');
+const kind = cutImg ? 'cut' : isShot ? 'shot' : 'print';
+const turn = kind === 'shot' || !tilt ? null : `rotate:${tilt}deg`;
+const cutVars = cutout && cutImg ? `--overhang:${cutout.overhang};--shadow-img:url(${cutout.shadow.src})` : null;
+const style = [cutVars, turn].filter(Boolean).join(';') || undefined;
+---
+
+{(cutImg || photo) && (
+  <Tag
+    class:list={['ph', kind, cls]}
+    href={href ?? undefined}
+    aria-label={href ? label : undefined}
+    data-flash
+    data-flash-first={first ? '' : undefined}
+    style={style}
+  >
+    <span class="ph-sh" aria-hidden="true"></span>
+    {cutImg ? (
+      <Image
+        src={cutImg}
+        widths={[600, 1000]}
+        sizes={sizes}
+        alt={alt ?? cutAlt}
+        loading={eager ? 'eager' : 'lazy'}
+        fetchpriority={eager ? 'high' : undefined}
+      />
+    ) : (
+      photo && <PieceImage photo={photo} sizes={sizes} alt={alt} ratio={ratio} eager={eager} />
+    )}
+    <span class="ph-flash" aria-hidden="true" style={cutMask ? `--cut:url(${cutMask})` : undefined}></span>
+    {mark && (
+      <svg class="mark" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
+        <path transform={`translate(${mark.x} ${mark.y}) scale(${mark.rx} ${mark.ry})`} d="M-.95-.25C-.9-.85.35-1.08.85-.55 1.2-.15 1.05.7.3.98-.45 1.15-1.05.6-1.02.02-1-.5-.55-.95.1-1.05"></path>
+      </svg>
+    )}
+    <slot />
+  </Tag>
+)}

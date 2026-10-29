@@ -1,0 +1,108 @@
+---
+// THE CREW: everyone the acts' captions credit, act by act, as the Instagram handles they tag.
+// Each handle links to that profile. The roster grows by itself when an act in acts.ts gains
+// credits.
+import { acts } from '../../content/acts';
+import { about } from '../../content/copy/about';
+
+const c = about.crew;
+const credited = [...acts]
+  .filter((a) => a.credits.length > 0)
+  .sort((a, b) => Date.parse(a.opened) - Date.parse(b.opened));
+---
+
+<section class="cr halftone" aria-labelledby="cr-title">
+  <div class="cr-head">
+    <h2 class="cr-title" id="cr-title">{c.title}</h2>
+    <p class="cr-deck">{c.deck}</p>
+  </div>
+
+  <div class="cr-acts">
+    {credited.map((act) => (
+      <section class="cr-act" aria-labelledby={`cr-${act.slug}`}>
+        <h3 class="cr-act-name tape" id={`cr-${act.slug}`}>{act.number ? `Act ${act.number}: ${act.title}` : act.title}</h3>
+        <dl class="cr-roles">
+          {act.credits.map((cr) => (
+            <div class="cr-role">
+              <dt>{cr.role}</dt>
+              <dd>
+                <ul class="cr-names">
+                  {cr.names.map((n) => (
+                    <li><a href={`https://www.instagram.com/${n}/`} rel="noopener" aria-label={`@${n} ${c.on}`}><span class="cr-at">@</span>{n}</a></li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    ))}
+  </div>
+</section>
+
+<style>
+  .cr {
+    --dot: rgb(255 46 110 / .35);
+    --fade: radial-gradient(60% 50% at 100% 100%, #000, transparent 75%), radial-gradient(45% 40% at 0% 0%, #000, transparent 75%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+    padding: 44px var(--pad) 50px;
+    background: var(--white);
+    color: var(--ink);
+    border-top: 3px solid var(--ink);
+    overflow: clip;
+  }
+  .cr-head { display: grid; gap: 12px; align-content: start; }
+  .cr-title { font: 400 min(34vw, 300px)/.8 var(--gothic); text-transform: uppercase; }
+  .cr-deck { max-width: 28ch; font: 700 16px/1.4 var(--sans); }
+
+  .cr-acts { display: grid; gap: 40px; }
+  .cr-act { display: grid; gap: 18px; }
+  .cr-act-name { position: relative; justify-self: start; margin-left: 4px; font-size: 32px; rotate: -3deg; }
+  .cr-role { display: grid; gap: 6px; padding-top: 12px; border-top: 2px solid var(--ink); }
+  .cr-role dt { font: 800 11.5px/1.25 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+  .cr-names { display: flex; flex-wrap: wrap; gap: 0 20px; }
+  .cr-names a {
+    display: inline-block;
+    padding: 6px 0 4px;
+    font: 400 clamp(34px, 9.6vw, 46px)/1 var(--gothic);
+    letter-spacing: .01em;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .cr-at { color: var(--pink); }
+
+  @media (min-width: 700px) {
+    .cr { padding: 6vw var(--pad); }
+    .cr-head { grid-template-columns: auto minmax(0, 1fr); align-items: end; column-gap: 4vw; }
+    .cr-title { font-size: min(24vw, 300px); }
+    .cr-deck { padding-bottom: 8px; font-size: 17px; }
+    .cr-role { grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); column-gap: 20px; align-items: baseline; padding: 10px 0 4px; }
+    .cr-role dt { padding-top: 6px; }
+  }
+
+  @media (min-width: 1000px) {
+    .cr { grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr); column-gap: 5vw; padding: 4.6vw var(--pad) 5vw; }
+    .cr-head { grid-template-columns: minmax(0, 1fr); align-items: start; }
+    .cr-title { font-size: min(15vw, 300px); }
+    .cr-deck { font-size: max(16px, 1.25vw); }
+    .cr-acts { gap: 3.4vw; }
+    .cr-act-name { font-size: min(3vw, 44px); }
+    .cr-role { grid-template-columns: minmax(0, clamp(12rem, 19vw, 17.5rem)) minmax(0, 1fr); }
+    .cr-names { column-gap: 1.8vw; }
+    .cr-names a { font-size: min(3.6vw, 58px); }
+  }
+
+  @media (hover: hover) {
+    .cr-names a { text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 3px; text-underline-offset: .12em; transition: text-decoration-color var(--fast) ease-out; }
+    .cr-names a:hover { text-decoration-color: var(--pink); }
+  }
+
+  /* wide: THE CREW stays put beside its list while the list passes (a scroll effect that needs no
+     motion; global.css has the rows sliding in) */
+  @media (min-width: 1000px) {
+    .cr-head { position: sticky; top: calc(var(--header-h) + 3vw); align-self: start; }
+  }
+</style>

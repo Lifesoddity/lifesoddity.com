@@ -1,0 +1,65 @@
+---
+// The soundtrack page: LIFE'S ODDITY RADIO set large on black beside the act's playlist (the
+// Player: a coverline strip with the Party Animal radio cover until the Spotify link is in, the
+// full box with PLAY once it is). The radio cover is this page's one picture (D2): no garment
+// here, the story just showed them all.
+// The headline is the act's own call, PRESS PLAY. SHOWTIME STARTS NOW., only once something
+// plays; until then it is the radio's own line, THE SOUND BEHIND THE COLLECTION. PRESS PLAY on
+// the cover jumps here once the playlist link is in.
+import Player from '../ui/Player.astro';
+import type { Act } from '../../content/acts';
+import { home } from '../../content/copy/home';
+
+interface Props { act: Act }
+const { act } = Astro.props;
+const s = home.soundtrack;
+const playable = Boolean(act.playlist.spotify);
+const lead = playable ? s.lead : s.quietLead;
+const follow = playable ? s.follow : s.quietFollow;
+const deck = playable ? s.deck : s.quietDeck(act.number, act.title);
+---
+
+<section class="sound on-dark halftone" id="soundtrack" aria-labelledby="sound-title">
+  <div class="sound-head">
+    <h2 class="sound-line" id="sound-title"><span>{lead}</span> <span>{follow}</span></h2>
+    <p class="sound-deck">{deck}</p>
+  </div>
+  <Player act={act} class="sound-box" />
+</section>
+
+<style>
+  .sound {
+    --dot: rgb(225 6 0 / .42);
+    --fade: radial-gradient(60% 45% at 0% 0%, #000, transparent 75%), radial-gradient(55% 40% at 100% 100%, #000, transparent 75%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+    padding: 30px var(--pad) 48px;
+    background: var(--ink);
+    color: var(--white);
+    overflow: clip;
+    scroll-margin-top: var(--header-h);
+  }
+  .sound-head { display: grid; gap: 12px; align-content: start; }
+  .sound-line { font: 400 min(24vw, 140px)/.84 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .sound-line span { display: block; }
+  .sound-line span:first-child { color: var(--yellow); }
+  .sound-line span:last-child { margin-top: 4px; font-size: .5em; line-height: .95; }
+  .sound-deck { max-width: 32ch; font: 600 16px/1.4 var(--sans); }
+  @media (min-width: 700px) {
+    .sound-line { font-size: 12vw; }
+    .sound-line span:first-child { font-size: 1.25em; }
+    .sound-line span:last-child { margin-top: .08em; font-size: 1em; line-height: .84; }
+    .sound-deck { font-size: 18px; }
+  }
+  @media (min-width: 1000px) {
+    .sound { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 1.7vw; row-gap: 2.6vw; padding: 4.4vw var(--pad) 5.4vw; }
+    .sound-head { grid-column: 1 / 6; grid-row: 1 / span 2; align-self: center; gap: 1.4vw; }
+    .sound-line { font-size: 8vw; }
+    .sound-line span:first-child { font-size: 1em; }
+    .sound-deck { font-size: max(16px, 1.3vw); }
+    /* the playlist keeps its own height beside the headline: the black halftone ground carries
+       the space, never a stretched, empty box */
+    .sound :global(.sound-box) { grid-column: 6 / 13; grid-row: 1 / span 2; align-self: center; }
+  }
+</style>

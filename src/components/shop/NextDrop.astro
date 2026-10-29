@@ -1,0 +1,152 @@
+---
+// The last card of the spread: the next drop. No name or date yet, so no countdown: the next
+// issue's small blank cover, as on home and /drop (the logo for a masthead, a silhouette for a
+// cover star, UNCONFIRMED stamped across it: the page's one stamp), WHO'S NEXT? and the way to
+// the drop page and its waitlist. The whole card is one link. When content/acts.ts gives the
+// drop a name and a date, the cover prints them and the stamp comes off.
+import { Image } from 'astro:assets';
+import { brand, cutouts } from '../../assets';
+import { nextDrop } from '../../content/acts';
+import { site } from '../../content/site';
+import { shop } from '../../content/copy/shop';
+import { pending } from '../../content/copy/common';
+
+const n = shop.next;
+const name = nextDrop.name?.trim() || null;
+const when = nextDrop.opensLabel?.trim() || null;
+const line = name ? n.named(name, when) : n.line;
+// a fact not given is left out of the issue line (D1): the stamp says it once
+const coverLine = [name ? n.coverNamed(name) : n.coverIssue, when, site.tagline].filter(Boolean).join(' · ');
+const stamped = !name || !when;
+---
+
+<section class="nx on-dark halftone" id="next" aria-labelledby="nx-title">
+  <div class="nx-cover" aria-hidden="true">
+    <span class="nx-sh"></span>
+    <div class="nx-sheet halftone">
+      <Image class="nx-logo" src={brand.logo} alt="" widths={[240, 480]} sizes="(min-width: 1000px) 20vw, (min-width: 700px) 28vw, 44vw" />
+      <p class="nx-issue">{coverLine}</p>
+      <div class="nx-fig" style={`--bust:url(${cutouts.bustShadow.src})`}>
+        <span class="nx-fig-sh"></span>
+        <svg viewBox="0 0 300 340"><path d="M150 30c42 0 64 34 64 78 0 38-16 62-32 74l2 22c42 10 78 28 92 58 12 26 16 56 18 78H6c2-22 6-52 18-78 14-30 50-48 92-58l2-22c-16-12-32-36-32-74 0-44 22-78 64-78z"></path></svg>
+      </div>
+      <span class="nx-q">?</span>
+      {stamped && <span class="stamp nx-stamp">{pending.stamp}</span>}
+    </div>
+  </div>
+  <div class="nx-copy">
+    <h2 class="nx-title" id="nx-title">{n.title}</h2>
+    <p class="nx-line">{line}</p>
+    <a class="nx-go" href="/drop">
+      <span class="nx-go-in">
+        <span>{n.go}</span>
+        <svg viewBox="0 0 24 12" aria-hidden="true"><path d="M1 6h21M17 1.5 22 6l-5 4.5"></path></svg>
+      </span>
+    </a>
+  </div>
+</section>
+
+<style>
+  .nx {
+    --dot: rgb(0 0 0 / .22);
+    --fade: radial-gradient(70% 60% at 100% 0%, #000, transparent 72%), radial-gradient(55% 50% at 0% 100%, #000, transparent 75%);
+    position: relative;
+    display: grid;
+    gap: 34px;
+    padding: 44px var(--pad) 52px;
+    background: var(--red);
+    color: var(--white);
+    overflow: clip;
+    scroll-margin-top: var(--header-h);
+  }
+
+  /* the next issue's cover, printed blank and small (the same print as home's WHO'S NEXT? and /drop's) */
+  .nx-cover { position: relative; justify-self: center; width: 58%; max-width: 300px; rotate: 3deg; }
+  .nx-sh { position: absolute; inset: 0; background: var(--shadow); box-shadow: 0 0 5px 2px var(--shadow); translate: 11px 13px; }
+  .nx-sheet {
+    --dot: rgb(255 46 110 / .42);
+    --fade: radial-gradient(75% 55% at 50% 40%, #000, transparent 72%);
+    container-type: inline-size;
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: clip;
+    border: 6px solid var(--white);
+    background: var(--white);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px rgb(11 11 11 / .12);
+  }
+  .nx-sheet :global(.nx-logo) { position: relative; z-index: 2; width: 74%; margin: 6% 0 0 5%; }
+  /* the issue line prints over the cover star, as a masthead does */
+  .nx-issue {
+    position: relative;
+    z-index: 4;
+    margin: 3% 5% 0;
+    padding: 1.2% 0 1%;
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    font: 800 max(9px, 3.6cqw)/1.25 var(--sans);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  .nx-fig { position: absolute; z-index: 1; left: 12%; right: 12%; bottom: -2%; aspect-ratio: 300 / 340; }
+  .nx-fig svg, .nx-fig-sh { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .nx-fig svg { fill: var(--ink); }
+  .nx-fig-sh { background: var(--bust) center / 100% 100% no-repeat; translate: 4% 3%; }
+  .nx-q { position: absolute; z-index: 3; left: 50%; top: 24%; translate: -50% 0; rotate: 9deg; color: var(--pink); font: 400 84cqw/1 var(--script); pointer-events: none; }
+  .nx-stamp {
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    top: 70%;
+    translate: -50% 0;
+    padding: .5em .6em .42em;
+    border-width: 3px;
+    background: var(--white);
+    font-size: 10cqw;
+    letter-spacing: .1em;
+    white-space: nowrap;
+    rotate: -11deg;
+    box-shadow: inset 0 0 0 2px var(--white), inset 0 0 0 3.5px var(--red), 0 4px 8px rgb(11 11 11 / .25);
+  }
+
+  .nx-copy { display: grid; gap: 14px; justify-items: start; }
+  .nx-title { font: 400 clamp(92px, 27vw, 200px)/.8 var(--gothic); text-transform: uppercase; }
+  .nx-line { max-width: 34ch; font: 700 17px/1.4 var(--sans); text-wrap: pretty; }
+
+  /* the way in: a yellow strip with notched ends; the link's ::after covers the whole card */
+  .nx-go { display: inline-block; margin-top: 6px; color: var(--ink); text-decoration: none; }
+  .nx-go::after { content: ""; position: absolute; inset: 0; z-index: 5; }
+  .nx-go-in {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 4px 28px 0;
+    background: var(--yellow);
+    font: 400 32px/1 var(--gothic);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    clip-path: polygon(0 0, 100% 0, 96.5% 50%, 100% 100%, 0 100%, 3.5% 50%);
+  }
+  .nx-go svg { width: 26px; height: 13px; margin-top: -4px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--base) var(--ease-out); }
+  .nx-go:active .nx-go-in { translate: 0 1px; }
+
+  @media (min-width: 700px) {
+    .nx { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); align-items: center; column-gap: 5vw; padding: 56px var(--pad) 64px; }
+    .nx-cover { width: 80%; max-width: 320px; }
+    .nx-title { font-size: 15vw; }
+    .nx-line { font-size: 18px; }
+  }
+  @media (min-width: 1000px) {
+    .nx { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); padding: 4.4vw var(--pad); }
+    .nx-cover { width: 64%; max-width: 380px; }
+    .nx-title { font-size: min(12.5vw, 220px); }
+    .nx-line { font-size: max(18px, 1.35vw); }
+    .nx-go-in { min-height: 64px; font-size: 38px; }
+  }
+  @media (hover: hover) {
+    .nx:hover .nx-go svg { translate: 5px 0; }
+  }
+</style>

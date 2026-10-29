@@ -1,0 +1,21 @@
+---
+// The drop page: the magazine's issues. WHO'S NEXT? (the next issue, the waitlist and, once he
+// sets a date, the countdown), then the issue on sale now, then the back issues. Acts come from
+// content/acts.ts and pieces from Shopify and content/pieces.ts, so a new act or a new product
+// appears here with no change to this file.
+import NextIssue from './NextIssue.astro';
+import Issue from './Issue.astro';
+import BackIssues from './BackIssues.astro';
+import { getPieces } from '../../lib/pieces';
+import { acts } from '../../content/acts';
+
+const pieces = await getPieces();
+const newestFirst = (a: { opened: string }, b: { opened: string }) => Date.parse(b.opened) - Date.parse(a.opened);
+const current = acts.filter((a) => a.status === 'live').sort(newestFirst);
+const back = acts.filter((a) => a.status === 'archive').sort(newestFirst);
+const piecesOf = (slug: string) => pieces.filter((p) => p.act.slug === slug);
+---
+
+<NextIssue />
+{current.map((act) => <Issue act={act} pieces={piecesOf(act.slug)} live />)}
+{back.length > 0 && <BackIssues acts={back} pieces={pieces} />}

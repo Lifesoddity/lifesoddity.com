@@ -1,0 +1,292 @@
+---
+// One piece from the Shopify store beside its coverline: the name, the drop it belongs to, its
+// line, and a price box whose size stamps add to the bag at once (BuyBox "quick"). The picture
+// is the piece's cut-out, tilted, with its flash shadow on the yellow (D2: never its studio
+// gradient on a gradient field), or, for a piece with no cut-out yet, its Shopify photo printed
+// straight (D4). A piece with no photo shows its name and drop only (D1: no empty frame).
+// Live pieces wear the red EXCLUSIVE banner; sold-out ones a SOLD OUT stamp.
+// The status is the attribute data-soldout, set at build time and refreshed from Shopify after
+// load (live.ts toggles it on any [data-live] element), so CSS swaps the treatment by itself.
+//
+// layout "lead": the first piece, a full-width spread. "pair": two to a row from 700px.
+// "wide": the odd last piece, a spread mirrored from the lead, so the grid never has a hole.
+import Print from '../ui/Print.astro';
+import BuyBox from '../ui/BuyBox.astro';
+import type { Piece } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { productArt } from '../../content/pieces';
+import { shop } from '../../content/copy/shop';
+import { header, status } from '../../content/copy/common';
+
+interface Props {
+  piece: Piece;
+  layout: 'lead' | 'pair' | 'wide';
+  index: number;
+}
+
+const { piece, layout, index } = Astro.props;
+const product = piece.product!;
+const s = shop.out;
+const sold = piece.status === 'soldout';
+
+// The drop line only when the product is really in an act (its art or its Shopify act: tag),
+// never the live act it falls back to.
+const inAct = Boolean(productArt[product.handle]?.act) || product.tags.some((t) => t.toLowerCase().startsWith('act:'));
+const act = piece.act;
+
+// His line for the piece, else the first sentence of its Shopify description, else nothing.
+const firstSentence = (t: string | null) => (t ? t.split(/(?<=[.!?])\s/)[0] : null);
+const line = piece.art.line ?? firstSentence(piece.description);
+const colon = line ? line.indexOf(':') : -1;
+const term = line && colon > 0 && colon < 30 ? line.slice(0, colon) : null;
+
+const varies = new Set(product.variants.map((v) => v.price)).size > 1;
+const cutout = piece.art.cutout ?? null;
+const hasPic = Boolean(cutout || piece.photo);
+const img = piece.photo?.kind === 'shopify' ? piece.photo.image : null;
+const ratio = img ? Math.min(Math.max(img.width / img.height, 0.75), 1) : 1;
+const tilt = [-3, 2.5, -2, 3][index % 4];
+const sizes =
+  layout === 'pair'
+    ? '(min-width: 1000px) 40vw, (min-width: 700px) 42vw, 86vw'
+    : '(min-width: 1000px) 46vw, (min-width: 700px) 48vw, 86vw';
+const id = `pc-${piece.key}`;
+---
+
+<article
+  class:list={['pc', `pc-${layout}`, !hasPic && 'pc-bare', cutout && 'pc-cut']}
+  data-shop-piece
+  data-live={product.handle}
+  data-soldout={sold ? '' : undefined}
+  aria-labelledby={id}
+>
+  {hasPic && (
+    <div class="pc-pic">
+      <Print
+        class="pc-print"
+        cutout={cutout ?? undefined}
+        photo={piece.photo}
+        sizes={sizes}
+        href={piece.href}
+        label={s.see(piece.title)}
+        tilt={tilt}
+        ratio={ratio}
+        eager={index === 0}
+        first={index === 0}
+      />
+      <p class="pc-excl" aria-hidden="true">{s.exclusive}</p>
+      <p class="pc-sold">{status.soldout}</p>
+      <p class="tape pc-tape" aria-hidden="true">{piece.art.tag}</p>
+    </div>
+  )}
+
+  <div class="pc-copy">
+    <h3 class="pc-name" id={id}>{piece.title}</h3>
+    {inAct && (
+      <p class="pc-issue">
+        {shop.dropName(act.number, act.title)} · <time datetime={act.opened}>{act.openedLabel}</time>
+      </p>
+    )}
+    {line && <p class="pc-line">{term ? <><b>{term}:</b>{line.slice(colon + 1)}</> : line}</p>}
+
+    <div class="pc-box">
+      <div class="pc-top">
+        <p class="pc-price num">
+          {varies && <span class="pc-from">{s.from}</span>}
+          <span data-live-price>{formatPrice(product.price, product.currency)}</span>
+        </p>
+        <p class="pc-hint">{s.hint}</p>
+        <p class="pc-soldline">{s.soldLine}</p>
+        <svg class="pc-bars" viewBox="0 0 64 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h2v40H0zM3 0h1v40H3zM5 0h1v40H5zM8 0h3v40H8zM12 0h1v40h-1zM14 0h2v40h-2zM17 0h1v40h-1zM19 0h1v40h-1zM22 0h3v40h-3zM26 0h2v40h-2zM29 0h1v40h-1zM31 0h1v40h-1zM34 0h2v40h-2zM37 0h3v40h-3zM41 0h1v40h-1zM43 0h1v40h-1zM46 0h2v40h-2zM49 0h1v40h-1zM51 0h3v40h-3zM55 0h1v40h-1zM57 0h2v40h-2zM60 0h1v40h-1zM62 0h2v40h-2z"></path></svg>
+      </div>
+      <div class="pc-quick">
+        <BuyBox product={product} mode="quick" sizeLabel={s.sizes(piece.title)} />
+      </div>
+      <p class="sticker pc-added" aria-hidden="true" hidden>{header.added}</p>
+    </div>
+
+    <a class="pc-more" href={piece.href}>
+      <span>{s.more}<span class="vh">: {piece.title}</span></span>
+      <svg viewBox="0 0 24 12" aria-hidden="true"><path d="M1 6h21M17 1.5 22 6l-5 4.5"></path></svg>
+    </a>
+  </div>
+</article>
+
+<script>
+  // ADDED! slaps onto the price box when a size goes in the bag (the note under the sizes says
+  // which one, for screen readers too).
+  import { slap } from '../../scripts/motion';
+  import { onPage } from '../../scripts/page';
+
+  onPage('shop-piece', () => {
+    document.querySelectorAll<HTMLElement>('[data-shop-piece]').forEach((pc) => {
+      const sticker = pc.querySelector<HTMLElement>('.pc-added');
+      pc.addEventListener('lo:added', () => {
+        if (!sticker) return;
+        sticker.hidden = false;
+        slap(sticker);
+      });
+    });
+  });
+</script>
+
+<style>
+  .pc { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 22px; align-content: start; }
+
+  /* the print, with room around it for the tilt, the banner and the tape */
+  .pc-pic { position: relative; padding: 14px 3% 12px; }
+  .pc-pic :global(.pc-print) { width: 100%; }
+  .pc-pic :global(.pc-print > img) { width: 100%; }
+
+  /* the red EXCLUSIVE banner, stuck across the print's corner */
+  .pc-excl {
+    position: absolute;
+    z-index: 4;
+    left: -1%;
+    top: 4%;
+    padding: 7px 16px 4px;
+    background: var(--red);
+    color: var(--white);
+    font: 400 clamp(30px, 8.6vw, 40px)/1 var(--gothic);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    rotate: -5deg;
+    box-shadow: inset 0 0 0 3px var(--red), inset 0 0 0 4.5px rgb(255 255 255 / .9), 0 5px 9px rgb(11 11 11 / .35);
+    pointer-events: none;
+  }
+
+  /* SOLD OUT, rubber-stamped across the print on a scrap of paper */
+  .pc-sold {
+    display: none;
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    top: 46%;
+    translate: -50% -50%;
+    padding: 10px 18px 6px;
+    border: 4px solid var(--red);
+    background: var(--white);
+    color: var(--red);
+    font: 400 clamp(52px, 15vw, 104px)/.9 var(--gothic);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    rotate: -12deg;
+    box-shadow: inset 0 0 0 3px var(--white), inset 0 0 0 5px var(--red), 0 8px 14px rgb(11 11 11 / .3);
+    pointer-events: none;
+  }
+
+  /* his script on black tape, over the print's lower edge */
+  .pc-tape { right: 1%; bottom: 0; max-width: 92%; font-size: clamp(26px, 7.4vw, 34px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .pc-copy { display: grid; gap: 14px; align-content: start; }
+  .pc-name { font: 400 clamp(56px, 15.5vw, 92px)/.84 var(--gothic); letter-spacing: .005em; text-transform: uppercase; text-wrap: balance; overflow-wrap: anywhere; }
+  .pc-issue {
+    padding: 6px 0 5px;
+    border-top: 3px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    font: 800 10.5px/1.25 var(--sans);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .pc-line { max-width: 44ch; font: 600 15px/1.42 var(--sans); text-wrap: pretty; }
+  .pc-line b { font-weight: 800; font-style: italic; }
+
+  /* the price box: price, the hint, the barcode-like bars, the size stamps */
+  .pc-box {
+    position: relative;
+    display: grid;
+    gap: 10px;
+    padding: 12px 12px 10px;
+    border: 3px solid var(--ink);
+    background: var(--white);
+    box-shadow: 0 12px 20px -8px rgb(60 0 18 / .45);
+  }
+  .pc-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+  .pc-price { font: 400 62px/.78 var(--gothic); letter-spacing: -.01em; white-space: nowrap; }
+  .pc-from { display: block; margin-bottom: 6px; font: 800 10.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+  .pc-hint, .pc-soldline { font: 700 12.5px/1.3 var(--sans); }
+  .pc-soldline { display: none; }
+  .pc-bars { width: 46px; height: 36px; fill: var(--ink); }
+  .pc-box :global(.buybox) { display: grid; gap: 8px; }
+  .pc-box :global(.buy-note:empty) { display: none; }
+
+  /* ADDED!, a sticker on the price box once a size is in the bag */
+  .pc-added {
+    position: absolute;
+    z-index: 3;
+    right: -10px;
+    top: -24px;
+    padding: 6px 14px 4px;
+    background: var(--pink);
+    color: var(--ink);
+    font: 400 30px/1 var(--gothic);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    box-shadow: 0 6px 10px rgb(11 11 11 / .3);
+    pointer-events: none;
+  }
+
+  .pc-more {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    font: 800 13px/1 var(--sans);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: .4em;
+    transition: text-decoration-color var(--fast) ease-out;
+  }
+  .pc-more svg { width: 24px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--base) var(--ease-out); }
+
+  /* sold out: the stamp and its line replace the banner and the stamps */
+  .pc[data-soldout] .pc-sold, .pc[data-soldout] .pc-soldline { display: block; }
+  .pc[data-soldout] .pc-excl, .pc[data-soldout] .pc-hint, .pc[data-soldout] .pc-quick { display: none; }
+  .pc[data-soldout] .pc-price { color: rgb(11 11 11 / .55); }
+
+  @media (min-width: 700px) {
+    .pc-lead, .pc-wide { grid-column: 1 / -1; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); column-gap: 5vw; align-items: center; }
+    .pc-wide .pc-pic { order: 2; }
+    .pc-lead .pc-name, .pc-wide .pc-name { font-size: clamp(64px, 9vw, 92px); }
+    .pc-pair .pc-name { font-size: clamp(48px, 6.6vw, 72px); }
+    .pc-pair .pc-excl { font-size: 30px; }
+    .pc-pair .pc-sold { font-size: 60px; }
+    .pc-tape { font-size: clamp(26px, 3.6vw, 34px); }
+    .pc-line { font-size: 16px; }
+  }
+
+  @media (min-width: 1000px) {
+    .pc-lead { grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); column-gap: 4.4vw; }
+    .pc-lead .pc-pic { padding: 1.6vw 2.4% 1.4vw; }
+    .pc-lead .pc-name { font-size: min(7.4vw, 132px); }
+    .pc-lead .pc-excl { font-size: min(3.2vw, 52px); padding: .3vw 1.3vw .2vw; }
+    .pc-lead .pc-tape { font-size: min(3vw, 46px); }
+    .pc-lead .pc-sold { font-size: min(7.6vw, 130px); }
+    .pc-lead .pc-line { font-size: max(16px, 1.25vw); max-width: 40ch; }
+    .pc-lead .pc-price { font-size: min(5.4vw, 88px); }
+    .pc-lead .pc-issue { font-size: 11.5px; }
+    .pc-lead .pc-copy { gap: 18px; }
+    .pc-wide .pc-name { font-size: min(6vw, 108px); }
+    .pc-pair .pc-name { font-size: min(4.8vw, 84px); }
+    .pc-pair .pc-excl { font-size: min(2.6vw, 40px); }
+    .pc-pair .pc-sold { font-size: min(6vw, 100px); }
+    .pc-pair .pc-tape, .pc-wide .pc-tape { font-size: min(2.5vw, 38px); }
+    .pc-price { font-size: min(4.4vw, 72px); }
+    .pc-hint, .pc-soldline { font-size: 13px; }
+    .pc-bars { width: 52px; height: 40px; }
+  }
+
+  /* a piece with no photo: its name and drop only, in one column (D1: no empty frame) */
+  @media (min-width: 700px) {
+    .pc-bare.pc-lead, .pc-bare.pc-wide { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (hover: hover) {
+    .pc-more:hover { text-decoration-color: var(--red); }
+    .pc-more:hover svg { translate: 4px 0; }
+  }
+</style>

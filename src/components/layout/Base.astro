@@ -1,0 +1,140 @@
+---
+// Every page: the head (title, description, link previews, structured data, fonts), the skip
+// link, the masthead, the page, the footer, the bag and the radio. Pages pass their own title
+// and image.
+// Pages change without a reload (ClientRouter) so the radio keeps playing: the new page's head
+// and body replace the old ones, except what is marked data-keep (the bag, the radio, the
+// polite announcer, the way in), which stays as it is. No animation between pages: a hard cut, as before.
+import { Font } from 'astro:assets';
+import '../../styles/global.css';
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+import CartDrawer from './CartDrawer.astro';
+import Radio from './Radio.astro';
+import Gate from './Gate.astro';
+import { ClientRouter } from 'astro:transitions';
+import { site } from '../../content/site';
+import { header } from '../../content/copy/common';
+import { launchCheck } from '../../lib/launch';
+
+interface Props {
+  /** The page's own name, e.g. "She Devil Tee [Black]". The home page passes its full title. */
+  title: string;
+  description?: string;
+  /** Absolute URL of a 1200x630 preview image. */
+  image?: string;
+  imageAlt?: string;
+  type?: 'website' | 'product';
+  /** Structured data objects, written as JSON-LD. */
+  ld?: object[];
+  /** Product price for link previews. */
+  price?: { amount: string; currency: string };
+  noindex?: boolean;
+  /** The whole title, without " | Life's Oddity" appended (the home page). */
+  bare?: boolean;
+}
+
+const { title, description = site.description, image, imageAlt, type = 'website', ld = [], price, noindex = false, bare = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const fullTitle = bare ? title : `${title} | ${site.name}`;
+const previewImage = image ?? new URL('/og.jpg', Astro.site).href;
+// the default preview card is the logo over the tagline
+const previewAlt = imageAlt ?? (image ? undefined : `${site.name}: ${site.tagline}`);
+/** JSON-LD inside a script tag: a "<" typed into a Shopify title cannot close the tag. */
+const jsonLd = (obj: object) => JSON.stringify(obj).replace(/</g, '\\u003c');
+// once per build: lists in the log what the site still waits on (src/lib/launch.ts)
+await launchCheck();
+---
+
+<!doctype html>
+<html lang="en" data-store={site.checkoutDomain} transition:animate="none">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {!noindex && <link rel="canonical" href={canonical} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
+    <meta name="theme-color" content="#FFE500" />
+
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {!noindex && <meta property="og:url" content={canonical} />}
+    <meta property="og:image" content={previewImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    {previewAlt && <meta property="og:image:alt" content={previewAlt} />}
+    {price && <meta property="og:price:amount" content={price.amount} />}
+    {price && <meta property="og:price:currency" content={price.currency} />}
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <Font cssVariable="--font-gothic" preload />
+    <Font cssVariable="--font-sans" />
+    <Font cssVariable="--font-script" />
+
+    {ld.map((obj) => <script type="application/ld+json" set:html={jsonLd(obj)} />)}
+    <ClientRouter fallback="swap" />
+  </head>
+  <body>
+    <Gate />
+    <a class="skip" href="#page">{header.skip}</a>
+    <Header />
+    <main id="page" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+    <p class="vh" aria-live="polite" data-announce data-keep></p>
+    <CartDrawer />
+    <Radio />
+    <script>
+      import { swapFunctions, type TransitionBeforeSwapEvent } from 'astro:transitions/client';
+      import { initBag, syncBag } from '../../scripts/bag';
+      import { initBuy } from '../../scripts/buy';
+      import { initLive } from '../../scripts/live';
+      import { bindFlash } from '../../scripts/motion';
+      import { inkIntro, inkMarks } from '../../scripts/ink';
+      import { initStory } from '../../scripts/story';
+      import { initPlayers } from '../../scripts/player';
+      import { initWaitlists } from '../../scripts/waitlist';
+      import { onPage } from '../../scripts/page';
+
+      // a page change swaps everything but the data-keep parts, which never leave the page
+      const kept = (n: Node) => n instanceof Element && n.hasAttribute('data-keep');
+      document.addEventListener('astro:before-swap', (e) => {
+        const ev = e as TransitionBeforeSwapEvent;
+        ev.swap = () => {
+          const doc = ev.newDocument;
+          swapFunctions.deselectScripts(doc);
+          // the radio's room (--radio-b) lives on the root and stays
+          const rootStyle = document.documentElement.getAttribute('style');
+          swapFunctions.swapRootAttributes(doc);
+          if (rootStyle) document.documentElement.setAttribute('style', rootStyle);
+          swapFunctions.swapHeadElements(doc);
+          const body = document.body;
+          for (const n of [...body.childNodes]) if (!kept(n)) n.remove();
+          body.prepend(...[...doc.body.childNodes].filter((n) => !kept(n)));
+        };
+      });
+      // like a fresh page: the next Tab starts in the new page, not where the old link was
+      document.addEventListener('astro:after-swap', () => {
+        if (!location.hash) document.getElementById('page')?.focus({ preventScroll: true });
+      });
+
+      const domain = document.documentElement.dataset.store || 'lifesoddity.myshopify.com';
+      initBag();
+      // each one on its own (one failure cannot stop the others), on every page
+      onPage('bag', () => syncBag());
+      onPage('buy', (signal) => initBuy(signal));
+      onPage('live', () => initLive(domain));
+      onPage('flash', (signal) => bindFlash(signal));
+      onPage('ink', (signal) => { inkMarks(signal); inkIntro(signal); });
+      onPage('story', (signal) => initStory(signal));
+      onPage('players', (signal) => initPlayers(signal));
+      onPage('waitlists', () => initWaitlists());
+    </script>
+  </body>
+</html>

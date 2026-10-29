@@ -1,0 +1,51 @@
+---
+// BACK ISSUES: every act that is over, newest first, each printed as its own issue under one
+// giant title on black. Whether any of it comes back has not been said, so the page says nothing
+// about it (D1): no restock line, no stamp.
+import Issue from './Issue.astro';
+import type { Act } from '../../content/acts';
+import type { Piece } from '../../lib/pieces';
+import { drop } from '../../content/copy/drop';
+
+interface Props {
+  acts: Act[];
+  pieces: Piece[];
+}
+
+const { acts, pieces } = Astro.props;
+const b = drop.back;
+---
+
+<section class="bk" aria-labelledby="bk-title">
+  <div class="bk-band on-dark halftone">
+    <h2 class="bk-title" id="bk-title">{b.title}</h2>
+    <p class="bk-deck">{b.deck}</p>
+  </div>
+  {acts.map((act) => <Issue act={act} pieces={pieces.filter((p) => p.act.slug === act.slug)} />)}
+</section>
+
+<style>
+  .bk-band {
+    --dot: rgb(255 46 110 / .22);
+    --fade: linear-gradient(170deg, #000, transparent 60%);
+    display: grid;
+    gap: 16px;
+    padding: 30px var(--pad) 34px;
+    background: var(--ink);
+    color: var(--white);
+    overflow: clip;
+  }
+  /* the title fills the width on one line: "BACK ISSUES" is about 3.7em wide in League Gothic */
+  .bk-title { font: 400 calc((100vw - 2 * var(--pad)) / 3.9)/.8 var(--gothic); letter-spacing: .005em; text-transform: uppercase; white-space: nowrap; }
+  .bk-deck { max-width: 36ch; font: 700 17px/1.4 var(--sans); }
+
+  @media (min-width: 700px) {
+    .bk-band { padding: 40px var(--pad) 44px; gap: 22px; }
+    .bk-deck { font-size: 19px; }
+  }
+  @media (min-width: 1000px) {
+    .bk-band { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; align-items: end; padding: 3.4vw var(--pad) 3.2vw; }
+    .bk-title { grid-column: 1 / 9; font-size: 15.5vw; }
+    .bk-deck { grid-column: 9 / 13; padding-bottom: .6vw; font-size: max(19px, 1.45vw); }
+  }
+</style>

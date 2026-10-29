@@ -1,0 +1,107 @@
+---
+// GOT A TIP? The way in is a DM on Instagram, the label's main channel (D5: "DM @lifesoddity"),
+// then the profiles to follow. The links come from site.ts, so a new profile there shows up here
+// by itself.
+import { contact, social } from '../../content/site';
+import { about } from '../../content/copy/about';
+
+const r = about.reach;
+---
+
+<section class="rc on-dark halftone" aria-labelledby="rc-title">
+  <div class="rc-head">
+    <h2 class="rc-title" id="rc-title">{r.title}</h2>
+    <a class="rc-dm" href={contact.href} rel="noopener">
+      <span>{contact.label}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+    </a>
+  </div>
+
+  <div class="rc-where">
+    <h3 class="rc-h">{r.profiles}</h3>
+    <ul class="rc-list">
+      {social.map((s) => (
+        <li>
+          <a href={s.href} rel="me noopener">
+            <span class="rc-net">{s.label}</span>
+            {r.handles[s.label] && <span class="rc-handle">{r.handles[s.label]}</span>}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"></path></svg>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .rc {
+    --dot: rgb(0 0 0 / .22);
+    --fade: radial-gradient(70% 50% at 100% 0%, #000, transparent 75%), radial-gradient(60% 50% at 0% 100%, #000, transparent 75%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
+    padding: 44px var(--pad) 52px;
+    background: var(--red);
+    color: var(--white);
+    border-top: 3px solid var(--ink);
+    overflow: clip;
+  }
+  .rc-head { display: grid; gap: 16px; justify-items: start; align-content: start; }
+  .rc-title { font: 400 min(36vw, 300px)/.8 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .rc-dm {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 60px;
+    margin-top: 6px;
+    padding: 6px 18px 2px;
+    background: var(--yellow);
+    color: var(--ink);
+    font: 400 clamp(28px, 8vw, 38px)/1 var(--gothic);
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    text-decoration: none;
+    rotate: -2deg;
+    box-shadow: 0 8px 14px rgb(60 0 0 / .4);
+  }
+  .rc-dm svg { flex: none; width: 26px; height: 26px; margin-top: -4px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) ease-out; }
+  .rc-dm:active { translate: 0 1px; }
+  .rc :focus-visible { outline-color: var(--yellow); }
+
+  .rc-where { display: grid; align-content: start; }
+  .rc-h { padding-bottom: 12px; border-bottom: 3px solid var(--white); font: 800 12px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
+  .rc-list a {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 14px;
+    padding: 14px 0 10px;
+    border-bottom: 2px solid var(--white);
+    text-decoration: none;
+  }
+  .rc-net { font: 400 clamp(48px, 14vw, 64px)/.88 var(--gothic); text-transform: uppercase; }
+  .rc-handle { grid-row: 2; font: 700 14px/1.3 var(--sans); }
+  .rc-list svg { grid-column: 2; grid-row: 1 / 3; width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) ease-out; }
+
+  @media (min-width: 700px) {
+    .rc { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 5vw; padding: 6vw var(--pad); }
+    .rc-title { font-size: min(17vw, 300px); }
+    .rc-dm { font-size: 30px; }
+    .rc-where { align-self: end; }
+  }
+
+  @media (min-width: 1000px) {
+    .rc { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); padding: 4.6vw var(--pad) 5vw; }
+    .rc-title { font-size: min(16vw, 300px); }
+    .rc-dm { font-size: min(3vw, 44px); padding: 8px 22px 2px; }
+    .rc-net { font-size: min(5.4vw, 84px); }
+    .rc-handle { font-size: 15px; }
+  }
+
+  @media (hover: hover) {
+    .rc-dm:hover { background: var(--white); }
+    .rc-dm:hover svg { translate: 4px 0; }
+    .rc-list a:hover svg { translate: 3px -3px; }
+    .rc-list a:hover .rc-net { color: var(--yellow); }
+  }
+</style>

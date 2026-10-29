@@ -1,0 +1,22 @@
+---
+import Base from '../components/layout/Base.astro';
+import Cover from '../components/home/Cover.astro';
+import Story from '../components/home/Story.astro';
+import Soundtrack from '../components/home/Soundtrack.astro';
+import WhosNext from '../components/home/WhosNext.astro';
+import { getCoverPiece, getPieces } from '../lib/pieces';
+import { actBySlug, liveAct } from '../content/acts';
+import { home } from '../content/copy/home';
+import { organizationLd } from '../lib/seo';
+
+const [cover, pieces] = await Promise.all([getCoverPiece(), getPieces()]);
+// the soundtrack shown on home: Act 1's Showtime (the She Devil playlist's name waits on his OK)
+const soundtrackAct = actBySlug('party-animal') ?? liveAct();
+---
+
+<Base title={home.title} description={home.description} ld={[organizationLd()]} bare>
+  {cover && cover.product && <Cover piece={cover} />}
+  <Story pieces={pieces} />
+  <Soundtrack act={soundtrackAct} />
+  <WhosNext />
+</Base>

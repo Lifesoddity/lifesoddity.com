@@ -1,0 +1,677 @@
+/* Life's Oddity: the gossip weekly on the night of the scandal.
+   Reference: DESIGN.md. Colour owns whole regions, League Gothic coverlines, Mr Dafoe
+   script on tape, Libre Franklin for reading. Motion: transform and opacity only, nothing loops,
+   every effect has a still version under prefers-reduced-motion. */
+
+:root {
+  /* inks and grounds */
+  --white: #FFFFFF;
+  --yellow: #FFE500;
+  --pink: #FF2E6E;
+  --ink: #0B0B0B;
+  --red: #E10600;
+  --red-press: #C10500;
+  --paper: #EEEDE6;
+  --muted: rgb(11 11 11 / .68);
+  --cover: linear-gradient(100deg, #D74570 0%, #E3416F 26%, #FC2E5F 50%, #FD1A3E 74%, #FD0522 100%);
+  --shadow: rgb(11 11 11 / .58);
+
+  /* type (the faces are self-hosted by Astro's font pipeline; these are their stacks) */
+  --gothic: var(--font-gothic), 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --sans: var(--font-sans), 'Franklin Gothic Medium', 'Helvetica Neue', Arial, sans-serif;
+  --script: var(--font-script), 'Brush Script MT', cursive;
+
+  /* space */
+  --pad: clamp(16px, 4vw, 56px);
+  --header-h: 60px;
+
+  /* motion */
+  --fast: 120ms;
+  --base: 160ms;
+  --slap: 220ms;
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+  --snap: cubic-bezier(.3, 1.6, .5, 1);
+
+  color-scheme: light;
+}
+@media (min-width: 700px) { :root { --header-h: 72px; } }
+
+/* ---------- reset and browser surfaces ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* focus moving up never lands under the sticky masthead, moving down never under the docked radio */
+html { scroll-padding-top: calc(var(--header-h) + 12px); scroll-padding-bottom: calc(var(--radio-b, 0px) + 12px); }
+body {
+  margin: 0;
+  /* room for the radio docked along the bottom (scripts/player.ts) */
+  padding-bottom: var(--radio-b, 0px);
+  overflow-x: clip;
+  background: var(--white);
+  color: var(--ink);
+  font: 400 16px/1.45 var(--sans);
+  caret-color: var(--red);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl, dd { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-underline-offset: .22em; text-decoration-thickness: 2px; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; }
+input, select, textarea { font: inherit; }
+[hidden] { display: none !important; }
+::selection { background: var(--pink); color: var(--ink); }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.on-dark :focus-visible { outline-color: var(--yellow); }
+html { scrollbar-color: var(--ink) var(--paper); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.skip { position: absolute; left: var(--pad); top: 8px; z-index: 100; padding: 10px 14px; background: var(--yellow); font: 800 13px/1 var(--sans); text-transform: uppercase; letter-spacing: .1em; transform: translateY(-200%); }
+.skip:focus { transform: none; }
+.num { font-variant-numeric: tabular-nums lining-nums; }
+
+/* ---------- shared: the halftone of cheap print, one static layer per colour field ---------- */
+.halftone { position: relative; isolation: isolate; }
+.halftone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, var(--dot, rgb(11 11 11 / .1)) 1.15px, transparent 1.7px) 0 0 / 7px 7px,
+    radial-gradient(circle, var(--dot, rgb(11 11 11 / .1)) 1.15px, transparent 1.7px) 3.5px 3.5px / 7px 7px;
+  -webkit-mask: var(--fade, linear-gradient(#000, #000));
+  mask: var(--fade, linear-gradient(#000, #000));
+}
+
+/* ---------- shared: a photo with its flash shadow and its flash ---------- */
+.ph { position: relative; display: block; }
+.ph > img { position: relative; width: 100%; }
+.ph-sh { position: absolute; inset: 0; background: var(--shadow); box-shadow: 0 0 5px 2px var(--shadow); translate: 11px 13px; }
+.ph-flash { position: absolute; inset: 0; background: var(--white); opacity: 0; pointer-events: none; }
+.print > img { padding: 6px; background: var(--white); }
+/* a product shot (.shot) is the bare .ph: straight, no white border, on a contrasting ground.
+   A cut-out (.cut) sits on its own edge: its shadow is its own silhouette, blurred once into an
+   image (--shadow-img, --overhang), and the flash is masked to it (--cut). */
+.cut > .ph-sh { inset: var(--overhang, 0); background: var(--shadow-img) center / 100% 100% no-repeat; box-shadow: none; translate: 13px 15px; }
+.cut > .ph-flash { -webkit-mask: var(--cut) center / 100% 100% no-repeat; mask: var(--cut) center / 100% 100% no-repeat; }
+
+/* ---------- shared: the black tape strip that carries a pink script ---------- */
+.tape {
+  position: absolute;
+  z-index: 4;
+  padding: 2px 18px 8px 14px;
+  background: var(--ink);
+  color: var(--pink);
+  font: 400 36px/1 var(--script);
+  rotate: -7deg;
+  clip-path: polygon(0 8%, 4% 0, 30% 5%, 62% 0, 96% 4%, 100% 0, 98% 52%, 100% 100%, 70% 95%, 38% 100%, 3% 94%, 0 100%, 2% 50%);
+  pointer-events: none;
+}
+
+/* ---------- shared: stickers rest at -4deg; the script slaps them on from -10deg ---------- */
+.sticker { rotate: -4deg; }
+
+/* ---------- shared: rubber stamps for real states (UNCONFIRMED, ARCHIVE, SOLD OUT) ---------- */
+.stamp {
+  display: inline-block;
+  padding: 5px 8px 4px;
+  border: 2px solid var(--red);
+  color: var(--red);
+  font: 800 12px/1 var(--sans);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  rotate: -3deg;
+  box-shadow: inset 0 0 0 1.5px var(--white), inset 0 0 0 2.5px var(--red);
+}
+
+/* ---------- shared: marker circles and arrows drawn on photos ---------- */
+.mark { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; fill: none; stroke: var(--pink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.mark path { vector-effect: non-scaling-stroke; }
+
+/* ---------- shared: the size stamps and the buy button (PICK A SIZE, ADD TO BAG, CHECKOUT) ----------
+   The button is full red in every state but one: a sold-out piece (disabled). */
+.sizes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.sz {
+  height: 46px;
+  min-width: 0;
+  border: 2px solid var(--ink);
+  background: var(--white);
+  color: var(--ink);
+  font: 800 14px/1 var(--sans);
+  letter-spacing: .04em;
+  box-shadow: inset 0 0 0 2px var(--white), inset 0 0 0 3px var(--ink);
+  transition: background-color var(--fast) ease-out, color var(--fast) ease-out, rotate var(--base) ease-out;
+}
+.sz:active { translate: 0 1px; }
+.sz[aria-pressed="true"] {
+  border-color: var(--red);
+  background: var(--red);
+  color: var(--white);
+  box-shadow: inset 0 0 0 2px var(--red), inset 0 0 0 3px var(--white);
+  rotate: -4deg;
+}
+.sz:disabled, .sz[aria-disabled="true"] {
+  color: rgb(11 11 11 / .45);
+  background: repeating-linear-gradient(-45deg, rgb(11 11 11 / .08) 0 4px, transparent 4px 8px), var(--white);
+  text-decoration: line-through 2px;
+  cursor: not-allowed;
+}
+.addbag {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 54px;
+  color: var(--white);
+  font: 400 30px/1 var(--gothic);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.addbag::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--red);
+  clip-path: polygon(0 0, 100% 0, 97.5% 50%, 100% 100%, 0 100%, 2.5% 50%);
+  transition: background-color var(--fast) ease-out;
+}
+.addbag span { position: relative; top: 1px; }
+.addbag:not(:disabled):active { translate: 0 1px; }
+.addbag:disabled { color: rgb(11 11 11 / .5); cursor: not-allowed; }
+.addbag:disabled::before { background: repeating-linear-gradient(-45deg, rgb(11 11 11 / .07) 0 5px, transparent 5px 10px), var(--paper); }
+.buy-note { font: 600 12.5px/1.3 var(--sans); }
+/* a box's note keeps its line, so choosing or adding a size never moves the page */
+.buybox:not([data-quick]) .buy-note { min-height: 1.3em; }
+/* the one fit line under the stamps; the link's tap area is 44px tall without growing the line */
+.buy-help { font: 600 13px/1.3 var(--sans); }
+.buy-help a { display: inline-block; padding: 14px 0; margin: -14px 0; font-weight: 800; text-decoration-color: var(--pink); }
+/* without script: the price box sends the visitor to the piece on Shopify */
+.buy-fallback { display: inline-flex; align-items: center; min-height: 44px; font: 800 13px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+
+/* ---------- header: the masthead strip ---------- */
+.mast {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 12px;
+  padding: 9px var(--pad) 13px;
+  padding-left: max(var(--pad), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--pad), env(safe-area-inset-right, 0px));
+  background: var(--white);
+  border-bottom: 3px solid var(--ink);
+}
+.mast::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 1px; background: var(--ink); }
+.mast-logo { display: block; }
+.mast-logo img { height: 34px; width: auto; }
+.mast-nav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 3px);
+  display: grid;
+  padding: 10px var(--pad) 34px;
+  background: var(--yellow);
+  clip-path: polygon(0 0, 100% 0, 100% 94%, 92% 99%, 84% 93%, 75% 100%, 66% 94%, 57% 99%, 48% 93%, 39% 100%, 30% 94%, 21% 99%, 12% 93%, 4% 99%, 0 95%);
+  visibility: hidden;
+  opacity: 0;
+  translate: 0 -8px;
+  transition: opacity var(--base) ease-out, translate var(--base) ease-out, visibility 0s linear var(--base);
+}
+.mast.is-open .mast-nav { visibility: visible; opacity: 1; translate: 0 0; transition: opacity var(--base) ease-out, translate var(--base) ease-out; }
+.mast-nav a { padding: 8px 0 4px; border-bottom: 2px solid var(--ink); font: 400 46px/1 var(--gothic); text-transform: uppercase; text-decoration: none; }
+.mast-nav a[aria-current="page"] { color: var(--red); }
+.mast-menu {
+  position: relative;
+  isolation: isolate;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 44px;
+  padding: 0 13px 5px;
+  font: 800 12px/1 var(--sans);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  /* a hard printed shadow under the notched tab (no blur, per the contract) */
+  filter: drop-shadow(0 2px 0 rgb(11 11 11 / .28));
+}
+.mast-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--yellow);
+  rotate: 2deg;
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 93% 94%, 86% 82%, 79% 97%, 71% 83%, 64% 95%, 57% 81%, 50% 98%, 43% 84%, 36% 96%, 29% 81%, 21% 95%, 14% 82%, 7% 97%, 0 85%);
+}
+.mast-menu svg { width: 12px; height: 8px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: rotate var(--base) ease-out; }
+.mast.is-open .mast-menu svg { rotate: 180deg; }
+.mast-menu:active { translate: 0 1px; }
+.bag {
+  position: relative;
+  z-index: 1;
+  min-height: 44px;
+  padding: 10px 12px 9px;
+  background: var(--red);
+  color: var(--white);
+  font: 800 12.5px/1 var(--sans);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+  rotate: -3deg;
+  box-shadow: inset 0 0 0 2px var(--red), inset 0 0 0 3.5px var(--white), 0 2px 5px rgb(11 11 11 / .3);
+  transition: background-color var(--fast) ease-out, rotate var(--fast) ease-out;
+}
+.bag:active { translate: 0 1px; }
+.bag-added {
+  position: absolute;
+  left: -30px;
+  top: calc(100% - 4px);
+  padding: 4px 9px 3px;
+  background: var(--yellow);
+  color: var(--ink);
+  font: 400 21px/1 var(--gothic);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  rotate: -4deg;
+  box-shadow: 0 3px 6px rgb(11 11 11 / .35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+.bag-added.is-on { opacity: 1; }
+
+@media (min-width: 700px) {
+  .mast { grid-template-columns: auto minmax(0, 1fr) auto; padding-top: 11px; padding-bottom: 15px; }
+  .mast-logo img { height: 42px; }
+  .mast-menu { display: none; }
+  .mast-nav {
+    position: static;
+    display: flex;
+    justify-content: center;
+    gap: clamp(18px, 3.4vw, 44px);
+    padding: 0;
+    background: none;
+    clip-path: none;
+    visibility: visible;
+    opacity: 1;
+    translate: 0 0;
+    transition: none;
+  }
+  .mast-nav a { position: relative; padding: 8px 2px; border: 0; font: 800 12.5px/1 var(--sans); letter-spacing: .14em; }
+  .mast-nav a::before {
+    content: "";
+    position: absolute;
+    left: -6px;
+    right: -6px;
+    top: 50%;
+    height: 14px;
+    z-index: -1;
+    background: var(--yellow);
+    rotate: -2deg;
+    scale: 0 1;
+    transform-origin: left;
+    transition: scale var(--base) ease-out;
+  }
+  .mast-nav a:focus-visible::before, .mast-nav a[aria-current="page"]::before { scale: 1 1; }
+  .mast-nav a[aria-current="page"] { color: inherit; }
+  .bag { padding: 11px 14px 10px; font-size: 13px; }
+}
+
+/* ---------- footer ---------- */
+.foot {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 26px var(--pad) calc(30px + env(safe-area-inset-bottom, 0px));
+  border-top: 6px solid var(--yellow);
+  background: var(--ink);
+  color: var(--white);
+}
+/* LIFE IS ODD, sized from its measured width (lib/words.ts) to run the full content width */
+.foot-word {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  color: var(--yellow);
+  font: 400 calc((100vw - 2 * var(--pad)) / var(--w) * .98)/.82 var(--gothic);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+/* the black logo, turned white for the black page */
+.foot-logo { display: block; width: 132px; height: auto; filter: invert(1); }
+.foot-line { font: 700 13px/1.35 var(--sans); }
+.foot-links { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.foot-links a { display: inline-block; padding: 6px 0; font: 800 11.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+.foot-legal { font: 600 12px/1.4 var(--sans); color: rgb(255 255 255 / .72); }
+.foot-nav { display: inline-flex; flex-wrap: wrap; gap: 0 18px; margin-left: 8px; }
+.foot-nav a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (min-width: 700px) {
+  .foot { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 28px; }
+  .foot-links, .foot-legal { grid-column: 1 / -1; }
+}
+@media (min-width: 1000px) {
+  .foot { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .foot-links { grid-column: auto; }
+}
+
+/* ---------- pointer devices ---------- */
+@media (hover: hover) {
+  .sz:not([aria-pressed="true"]):not(:disabled):not([aria-disabled="true"]):hover { background: var(--yellow); }
+  /* a quick stamp adds at once: it hovers like ADD TO BAG, not like a selector */
+  [data-quick] .sz:not(:disabled):not([aria-disabled="true"]):hover { background: var(--red); color: var(--white); }
+  .bag:hover { background: var(--red-press); box-shadow: inset 0 0 0 2px var(--red-press), inset 0 0 0 3.5px var(--white), 0 2px 5px rgb(11 11 11 / .3); rotate: -1deg; }
+  .mast-nav a:hover::before { scale: 1 1; }
+  .addbag:not(:disabled):hover::before { background: var(--red-press); }
+  .foot-links a:hover { text-decoration-color: var(--pink); }
+}
+
+/* ---------- parallax drift: layers move at their own speed as the page scrolls ----------
+   On the browser's own scroll timelines: no script and no work on the page's thread while
+   scrolling, transform only (the translate property, plus transform: rotate for a turn, so a
+   layer keeps its own tilt). Per layer:
+   --drift  how far it travels up and down either side of where it is laid out while it crosses
+            the screen: positive is slower than the page, negative faster;
+   --x1     where it sits sideways as it goes out (first screens);
+   --tx     a big title's run off to the side: it holds still until it is past the middle of the
+            screen, then runs (ticker), so it is read before it goes;
+   --r0/--r1  its turn as it comes in / goes out;
+   --ix/--io  where a row slides in from, and how faint it starts (the lists).
+   --dk scales the moves with the screen: on a desktop everything is bigger and further apart, so
+   the same move would barely show. Nothing slides over text you read. The rule that keeps it so:
+   each layer moves on its own timeline, so blocks stacked one above the other part as they pass
+   when they share a speed, and can meet when they do not. Stacked blocks share a speed (or one of
+   them moves sideways); different speeds are for things side by side. The variables inherit: a
+   moving layer inside another sets its own (or 0px), or it moves twice. The shop, the buy box and the product page's top
+   never move; the product page keeps its gentle drift (no --dk). Class names repeat across pages
+   (the shop's WHO'S NEXT? is .nx too): scope every selector to its own page's section. First-screen layers (drift-top)
+   start where they are laid out and move only as the page leaves the top. Every timeline counts
+   the screen between the masthead and the radio strip (view(block <top> <bottom>)), so nothing
+   runs its course hidden under them. The About timeline's
+   rules draw themselves in (Timeline.astro). Without scroll timelines, or with reduced motion,
+   the page stands still. */
+:root { --dk: 1; }
+@media (min-width: 700px) { :root { --dk: 1.6; } }
+@media (min-width: 1000px) { :root { --dk: 2.4; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* the screen a reader sees: under the masthead, above the radio strip */
+    :root {
+      --seen-top: var(--header-h);
+      --seen-end: var(--radio-b, 0px);
+      /* rows slide in as they come into view (on a desktop, a little later, while they are read) */
+      --in-from: entry 0%;
+      --in-to: entry 100%;
+    }
+    @media (min-width: 1000px) {
+      :root { --in-from: entry 30%; --in-to: cover 38%; }
+    }
+    /* longhands only: the build folds a shorthand and its timeline into one that browsers drop */
+
+    /* --- while a layer crosses the screen --- */
+    /* drop: each issue's title runs off to the left; its pieces rise at two speeds, turning */
+    .is-title { --tx: -14vw; }
+    .is-piece:nth-child(odd) { --drift: calc(-80px * var(--dk)); --r0: 2deg; --r1: -2deg; }
+    .is-piece:nth-child(even) { --drift: calc(-140px * var(--dk)); --r0: -2deg; --r1: 3deg; }
+    /* lookbook: the act's giant title runs left and rises; its photos at two speeds, turning */
+    .lb-word { --tx: -16vw; --drift: calc(-30px * var(--dk)); }
+    .lb-shot:nth-child(odd) { --drift: calc(-60px * var(--dk)); --r0: 3deg; --r1: -3deg; }
+    .lb-shot:nth-child(even) { --drift: calc(-120px * var(--dk)); --r0: -3deg; --r1: 3deg; }
+    /* about: the two lines part sideways (a phone) or up and down (wider), the signature turns;
+       the timeline rises as one while its title runs left, its acts slide in from the right one
+       after another (in global.css below) and its rails draw themselves (Timeline.astro); the
+       radio cover and the question mark spin, the price tag swings; THE CREW runs left (a phone)
+       or stays put while its list passes (wider, Crew.astro); GOT A TIP? runs left */
+    .ln-q.ln-line { --tx: -10vw; }
+    .ln-q.ln-bio { --tx: 10vw; }
+    .ln-sign { --r0: -6deg; --r1: 6deg; }
+    .tl-head, .tl-item { --drift: calc(-50px * var(--dk)); }
+    .tl-title { --drift: 0px; --tx: -16vw; }
+    .tl-vis:has(.tl-print) { --r0: -5deg; --r1: 5deg; }
+    .tl-q { --drift: 0px; --r0: -10deg; --r1: 30deg; }
+    .tl-tag { --r0: -5deg; --r1: 5deg; }
+    .cr-title { --tx: -12vw; }
+    .rc-title { --tx: -14vw; }
+    /* product page: the love letter's title runs ahead, its two photos at two speeds */
+    .lt-title { --drift: -30px; }
+    .lt-prints > :nth-child(odd) { --drift: -30px; }
+    .lt-prints > :nth-child(even) { --drift: -56px; }
+    .tl-head, .tl-item, .lt-title, .lt-prints > * {
+      animation-name: drift;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end));
+      animation-range: cover;
+    }
+    /* the big titles: their drift, and their run off to the side from the middle of the screen */
+    .is-title, .lb-word, .ln-q.ln-line, .ln-q.ln-bio, .tl-title, .cr-title, .rc-title {
+      animation-name: drift, ticker;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end)), view(block var(--seen-top) var(--seen-end));
+      animation-range: cover, cover 58% cover 100%;
+    }
+    .is-piece, .lb-shot, .ln-sign {
+      animation-name: drift, turn;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end)), view(block var(--seen-top) var(--seen-end));
+      animation-range: cover, cover;
+    }
+    .tl-tag {
+      animation-name: turn;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end));
+      animation-range: cover;
+    }
+    /* the radio cover slides in with its act and turns as it passes */
+    .tl-item > .tl-vis:has(.tl-print) {
+      animation-name: slide-in, turn;
+      animation-timing-function: cubic-bezier(.2, .7, .2, 1), linear;
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end)), view(block var(--seen-top) var(--seen-end));
+      animation-range: var(--in-from) var(--in-to), cover;
+    }
+
+    /* --- rows slide in as they arrive, then rest where they are laid out --- */
+    .cr-role, .rc-list li { --ix: 10vw; --io: .2; }
+    .cr-act-name { --ix: 16vw; --io: 0; }
+    /* the timeline's acts, one after another (side by side on a desktop: each starts further
+       right than the one before, so they part) */
+    .tl-item > * { --ix: 10vw; --io: .15; }
+    .cr-role, .rc-list li, .tl-item > :not(.tl-q, .tl-vis:has(.tl-print)) {
+      animation-name: slide-in;
+      animation-timing-function: cubic-bezier(.2, .7, .2, 1);
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end));
+      animation-range: var(--in-from) var(--in-to);
+    }
+
+    /* --- first screens: from where they are laid out, as the page leaves the top --- */
+    /* the drop page's own next cover (the shop's WHO'S NEXT? shares the class and stays still) */
+    .nx:has(> h1.nx-title) .nx-cover { --drift: calc(-170px * var(--dk)); --r1: -14deg; }
+    h1.nx-title { --x1: -20vw; }
+    .pf-print { --drift: calc(-150px * var(--dk)); --r1: 8deg; }
+    .pf-bar:first-child .pf-ink { --x1: -22vw; }
+    .pf-bar:last-child .pf-ink { --x1: 18vw; }
+    .lb .phead-ink { --x1: -14vw; }
+    .lb .phead-script { --drift: calc(-100px * var(--dk)); --r1: -8deg; }
+    h1.nx-title, .pf-bar .pf-ink, .lb .phead-ink {
+      animation-name: drift-top;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root);
+      animation-range: 0 90vh;
+    }
+    .nx:has(> h1.nx-title) .nx-cover, .pf-print, .lb .phead-script {
+      animation-name: drift-top, turn;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root), scroll(root);
+      animation-range: 0 90vh, 0 90vh;
+    }
+
+    /* wider: the two lines go up and down past each other, side by side; the signature, under
+       the first line, keeps its speed */
+    @media (min-width: 700px) {
+      .ln-q.ln-line { --tx: 0px; --drift: calc(-60px * var(--dk)); }
+      .ln-q.ln-bio { --tx: 0px; --drift: calc(50px * var(--dk)); }
+      .ln-sign { --drift: calc(-60px * var(--dk)); }
+      .cr-title { --tx: 0px; }
+      /* the question mark spins out ahead of its act (on a phone the act above is too close) */
+      .tl-q { --drift: calc(-110px * var(--dk)); }
+    }
+    /* --- the pen marks: drawn by hand as their photo comes up the screen ---
+       Each print is one timeline (named, so its circle and its arrow share it); every mark is one
+       pen line, drawn from its start to its end, the arrow's head last: a dash as long as the line
+       slides along it (its length on screen, --len, is measured by scripts/ink.ts). The
+       archive's arrow comes down from its "spotted" caption first, then the circle closes round
+       the piece. Scrolling back up takes the ink off again. Not on the home page: scripts/ink.ts
+       leaves its marks unmeasured, so they simply show, drawn. */
+    .ph:not(.ss .ph), .lb-shot { view-timeline-name: --ink; view-timeline-inset: var(--seen-top) var(--seen-end); }
+    /* :where keeps this light, so the archive's arrow-then-circle timing below can win */
+    :where(.ph:not(.ss .ph), .lb-shot) .mark path[data-inked] {
+      stroke-dasharray: var(--len);
+      animation-name: ink;
+      animation-timing-function: cubic-bezier(.45, .05, .3, 1);
+      animation-fill-mode: both;
+      animation-timeline: --ink;
+      animation-range: entry 45% cover 48%;
+    }
+    .ap-arrow path[data-inked] { animation-range: entry 25% cover 34%; }
+    .ap-print .mark:not(.ap-arrow) path[data-inked] { animation-range: cover 30% cover 50%; }
+    /* the drop's playlist print sits just above the footer: its marks finish before the page does */
+    .pl-print .mark path[data-inked] { animation-range: entry 35% cover 40%; }
+
+    /* --- the pink: lettering writes itself on, tapes unroll, question marks are drawn, pink words
+       sweep in, quote marks slap on, the pink underline is drawn. Pink already on screen when a
+       page opens does this once as it loads (scripts/ink.ts), the rest as it comes up the screen.
+       Not on the home page (its cover, story and playlist): it keeps its own motion. */
+    /* handwriting, left to right (the margins leave room for the script's swashes) */
+    .act-vice, .ap-cap, .st-printed, .pl-here:not(.sound *), .act-line, .lb-jump a {
+      animation-name: write;
+      animation-timing-function: cubic-bezier(.45, .05, .35, 1);
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end));
+      animation-range: entry 35% cover 38%;
+    }
+    /* tapes unroll from their left end, torn edges and all */
+    .pc-tape, .nx-tag, .gl-tape, .is-tape, .lb-tape, .lp-tape {
+      animation-name: unroll;
+      animation-timing-function: cubic-bezier(.3, .7, .3, 1);
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end));
+      animation-range: entry 35% cover 36%;
+    }
+    .cr-act-name {
+      animation-name: slide-in, unroll;
+      animation-timing-function: cubic-bezier(.2, .7, .2, 1), cubic-bezier(.3, .7, .3, 1);
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end)), view(block var(--seen-top) var(--seen-end));
+      animation-range: var(--in-from) var(--in-to), entry 40% cover 38%;
+    }
+    /* the big question marks are drawn from the top of the hook down to the dot */
+    .nx-q {
+      animation-name: draw-down;
+      animation-timing-function: cubic-bezier(.45, .05, .35, 1);
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end));
+      animation-range: entry 30% cover 42%;
+    }
+    .tl-q {
+      animation-name: drift, turn, draw-down;
+      animation-timing-function: linear, linear, cubic-bezier(.45, .05, .35, 1);
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end)), view(block var(--seen-top) var(--seen-end)), view(block var(--seen-top) var(--seen-end));
+      animation-range: cover, cover, entry 30% cover 42%;
+    }
+    /* a pink word starts in its line's own colour and the pink sweeps across it */
+    .ln-q.ln-line em { --from: var(--yellow); }
+    .ln-q.ln-bio em { --from: var(--white); }
+    .ln-q em {
+      background: linear-gradient(90deg, var(--pink) 0 50%, var(--from, var(--pink)) 50% 100%) 100% 0 / 200% 100% no-repeat;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation-name: sweep;
+      animation-timing-function: cubic-bezier(.45, .05, .35, 1);
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end));
+      animation-range: entry 70% cover 48%;
+    }
+    /* the pink quote marks slap on as their quote arrives */
+    .ln-q, .lb-quote { view-timeline-name: --quote; view-timeline-inset: var(--seen-top) var(--seen-end); }
+    .ln-q::before, .lb-quote::before {
+      transform-origin: 30% 70%;
+      animation-name: slap-on;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: --quote;
+      /* while the quote's top rises from the bottom of the screen to about two thirds up */
+      animation-range: cover 8% cover 24%;
+    }
+    /* the crew's pink @ is drawn round, the way a pen draws one */
+    .cr-at {
+      display: inline-block;
+      animation-name: spin-on;
+      animation-timing-function: cubic-bezier(.3, .7, .3, 1);
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end));
+      animation-range: entry 40% cover 36%;
+    }
+    /* the pink underline of "DM @lifesoddity" is drawn under it */
+    .buy-help a:not(:is(.cover, .ss) *) {
+      text-decoration: none;
+      background: linear-gradient(var(--pink), var(--pink)) 0 100% / 100% 2px no-repeat;
+      background-origin: content-box;
+      background-clip: content-box;
+      animation-name: underline;
+      animation-timing-function: cubic-bezier(.45, .05, .35, 1);
+      animation-fill-mode: both;
+      animation-timeline: view(block var(--seen-top) var(--seen-end));
+      animation-range: entry 60% cover 40%;
+    }
+
+    /* desktop: the timeline's acts sit side by side and slide in staggered */
+    @media (min-width: 1000px) {
+      .tl-item:nth-child(1) > * { --ix: 0px; }
+      .tl-item:nth-child(2) > * { --ix: 7vw; }
+      .tl-item:nth-child(3) > * { --ix: 14vw; }
+    }
+    @media (min-width: 1000px) and (max-width: 1279px) {
+      /* the next drop wraps under the first two: it slides in on its own */
+      .tl-item:nth-child(3) > * { --ix: 10vw; }
+    }
+  }
+}
+@keyframes drift { from { translate: 0px calc(-1 * var(--drift, 0px)); } to { translate: var(--x1, 0px) var(--drift, 0px); } }
+@keyframes drift-top { to { translate: var(--x1, 0px) var(--drift, 0px); } }
+@keyframes ticker { to { transform: translateX(var(--tx, 0px)); } }
+@keyframes ink { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0px; } }
+@keyframes write { from { clip-path: inset(-60% 100% -60% -25%); } to { clip-path: inset(-60% -25% -60% -25%); } }
+@keyframes draw-down { from { clip-path: inset(-30% -60% 100% -60%); } to { clip-path: inset(-30% -60% -30% -60%); } }
+@keyframes unroll {
+  from { clip-path: polygon(0 8%, 0 0, 0 5%, 0 0, 0 4%, 0 0, 0 52%, 0 100%, 0 95%, 0 100%, 0 94%, 0 100%, 0 50%); }
+  to { clip-path: polygon(0 8%, 4% 0, 30% 5%, 62% 0, 96% 4%, 100% 0, 98% 52%, 100% 100%, 70% 95%, 38% 100%, 3% 94%, 0 100%, 2% 50%); }
+}
+@keyframes sweep { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@keyframes slap-on { from { transform: scale(2.4) rotate(-24deg); opacity: 0; } 60% { transform: scale(.92) rotate(4deg); opacity: 1; } to { transform: none; opacity: 1; } }
+@keyframes spin-on { from { rotate: -320deg; scale: .2; opacity: 0; } 30% { opacity: 1; } to { rotate: 0deg; scale: 1; opacity: 1; } }
+@keyframes underline { from { background-size: 0% 2px; } to { background-size: 100% 2px; } }
+@keyframes turn { from { transform: rotate(var(--r0, 0deg)); } to { transform: rotate(var(--r1, 0deg)); } }
+@keyframes slide-in { from { translate: var(--ix, 0px) 0; opacity: var(--io, 1); } }
+@keyframes draw-x { from { transform: scaleX(0); } }
+@keyframes draw-y { from { transform: scaleY(0); } }
+
+/* ---------- reduced motion: no flash, nothing slides ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ph-flash { display: none; }
+  *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
+}

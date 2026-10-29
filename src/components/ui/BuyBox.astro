@@ -1,0 +1,82 @@
+---
+// The buy control for one Shopify product: the size stamps (XS to 2XL, in that order) and, in a
+// box, its main button. The price and stock refresh from Shopify after the page loads
+// (data-live). Sold-out sizes are struck through and cannot be chosen.
+//
+// mode "box" (cover, product page): the stamps choose a size and the main button is never dead
+//   (D6). Before a size is chosen it is full red and reads PICK A SIZE: pressing it focuses the
+//   first size that is in stock and nudges the row. Once a size is chosen it reads ADD TO BAG;
+//   after an add, CHECKOUT · BAG (n), which opens the bag. Only a sold-out piece disables it.
+//   State lives on the button: data-state="pick" | "add" | "added" | "soldout" (scripts/buy.ts).
+// mode "quick" (the story's badge, shop cards, the phone's size sheet): each stamp adds its
+//   size at once; there is no main button.
+//
+// sizeHelp prints the one fit line under the stamps: "Between sizes? DM @lifesoddity." (D1).
+import type { Product } from '../../lib/shopify';
+import { formatPrice } from '../../lib/money';
+import { shopifyImage } from '../../lib/shopify';
+import { bag, buy, status } from '../../content/copy/common';
+import { contact, site } from '../../content/site';
+
+interface Props {
+  product: Product;
+  mode?: 'box' | 'quick';
+  class?: string;
+  /** Show the price inside the box (the cover's price box) or leave it to the page. */
+  showPrice?: boolean;
+  /** The main button once a size is chosen. Default: "Add to bag". */
+  addLabel?: string;
+  sizeLabel?: string;
+  /** The fit line under the stamps, with the contact link. */
+  sizeHelp?: boolean;
+}
+
+const { product, mode = 'box', class: cls, showPrice = false, addLabel = buy.add, sizeLabel = buy.size, sizeHelp = false } = Astro.props;
+const box = mode === 'box';
+const thumb = product.images[0] ? shopifyImage(product.images[0].src, 200) : '';
+---
+
+<div
+  class:list={['buybox', cls]}
+  data-buy
+  data-quick={box ? undefined : ''}
+  data-live={product.handle}
+  data-handle={product.handle}
+  data-title={product.title}
+  data-price={product.price}
+  data-image={thumb}
+>
+  {showPrice && <p class="buybox-price num" data-live-price>{formatPrice(product.price)}</p>}
+  <div class="sizes" role="group" aria-label={sizeLabel} data-sizes>
+    {product.variants.map((v) => (
+      <button
+        class="sz"
+        type="button"
+        aria-pressed={box ? 'false' : undefined}
+        aria-disabled={v.available ? undefined : 'true'}
+        data-variant={v.id}
+        data-size={v.size}
+        data-price={v.price}
+        title={v.available ? undefined : status.soldout}
+      >{v.size}<span class="vh">{v.available ? '' : `, ${status.soldout.toLowerCase()}`}</span></button>
+    ))}
+  </div>
+  {sizeHelp && (
+    <p class="buy-help">{buy.between} <a href={contact.href} rel="noopener">{contact.label}</a>.</p>
+  )}
+  {box && (
+    <button
+      class="addbag"
+      type="button"
+      data-add
+      data-state={product.available ? 'pick' : 'soldout'}
+      data-label-pick={buy.pick}
+      data-label-add={addLabel}
+      disabled={!product.available}
+    ><span>{product.available ? buy.pick : status.soldout}</span></button>
+  )}
+  {box && (
+    <noscript><a class="buy-fallback" href={`https://${site.checkoutDomain}/products/${product.handle}`}>{bag.noScript}</a></noscript>
+  )}
+  <p class="buy-note" data-note aria-live="polite"></p>
+</div>

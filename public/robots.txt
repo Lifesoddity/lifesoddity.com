@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://lifesoddity.com/sitemap.xml

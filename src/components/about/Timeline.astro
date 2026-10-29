@@ -1,0 +1,291 @@
+---
+// HOW IT WENT DOWN: every act on the day it dropped, oldest first, from acts.ts (real dates
+// only), then the next drop: its date stamped UNCONFIRMED until one is set (the page's one
+// stamp, D1). Each act shows its state as a rubber stamp, its definition and its pieces, and
+// beside them its radio cover when it has one, or its live piece's price tag (the price box's
+// bars, the price refreshed from Shopify, the way to the piece). The live piece's photo stays on
+// the cover, the story, the shop and its own page (D2).
+import Print from '../ui/Print.astro';
+import { campaign } from '../../assets';
+import { acts, nextDrop } from '../../content/acts';
+import { getPieces, statusLabel, type Piece, type Status } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { about } from '../../content/copy/about';
+import { pending } from '../../content/copy/common';
+
+const t = about.timeline;
+const pieces = await getPieces();
+const dated = [...acts].sort((a, b) => Date.parse(a.opened) - Date.parse(b.opened));
+
+/** The radio covers, by act: the one picture an act shows here. */
+const radio: Record<string, { image: typeof campaign.partyAnimalRadio; alt: string }> = {
+  'party-animal': { image: campaign.partyAnimalRadio, alt: t.radioAlt },
+};
+
+/** "Jan 30, 2026, 12pm EST" -> the day, and the hour when one was given. */
+function when(label: string) {
+  const m = label.match(/^([A-Za-z]+ \d{1,2}, \d{4})(?:,\s*(.+))?$/);
+  return m ? { day: m[1], hour: m[2] ?? null } : { day: label, hour: null };
+}
+
+function stateOf(own: Piece[]): Status {
+  if (own.some((p) => p.status === 'live')) return 'live';
+  if (own.some((p) => p.status === 'soldout')) return 'soldout';
+  return 'archive';
+}
+
+const entries = dated.map((act) => {
+  const own = pieces.filter((p) => p.act.slug === act.slug);
+  const shop = own.find((p) => p.product && p.status === 'live') ?? own.find((p) => p.product);
+  const buy = shop?.href && shop.product ? { href: shop.href, handle: shop.product.handle, title: shop.title, price: shop.product.price } : null;
+  const def = act.definition;
+  const colon = def ? def.indexOf(':') : -1;
+  return {
+    act,
+    when: when(act.openedLabel),
+    state: stateOf(own),
+    name: act.number ? `Act ${act.number}: ${act.title}` : act.title,
+    term: def && colon > 0 ? def.slice(0, colon) : null,
+    meaning: def && colon > 0 ? def.slice(colon + 1) : def,
+    names: own.map((p) => p.title),
+    buy,
+    radio: radio[act.slug] ?? null,
+  };
+});
+const next = { name: nextDrop.name, day: nextDrop.opensLabel ? when(nextDrop.opensLabel) : null };
+---
+
+<section class="tl halftone" aria-labelledby="tl-title">
+  <div class="tl-head">
+    <h2 class="tl-title" id="tl-title">{t.title}</h2>
+    <p class="tl-deck">{t.deck}</p>
+  </div>
+
+  <ol class="tl-list">
+    {entries.map((e, i) => (
+      <li class:list={['tl-item', !e.radio && !e.buy && 'no-vis', !e.radio && e.buy && 'has-tag']}>
+        <p class="tl-when">
+          <time datetime={e.act.opened}><span class="tl-day">{e.when.day}</span>{e.when.hour && <span class="tl-hour">{e.when.hour}</span>}</time>
+        </p>
+        <div class="tl-text">
+          <span class="stamp tl-stamp">{statusLabel[e.state]}</span>
+          <h3 class="tl-name">{e.name}</h3>
+          {e.meaning && <p class="tl-def">{e.term && <b>{e.term}:</b>}{e.meaning}</p>}
+          {e.names.length > 0 && <p class="tl-pieces"><b>{t.pieces}</b> {t.pieceList(e.names)}.</p>}
+          {e.act.line && <p class="tl-line">{e.act.line}</p>}
+          {!e.buy && e.state === 'archive' && (
+            <a class="tl-go" href={`/lookbook/#${e.act.slug}`}>{t.seePics}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a>
+          )}
+        </div>
+        {(e.radio || e.buy) && (
+          <div class="tl-vis">
+            {e.radio && (
+              <>
+                <Print class="tl-print" photo={{ kind: 'local', image: e.radio.image, alt: e.radio.alt }} sizes="(min-width: 1000px) 15vw, (min-width: 700px) 36vw, 52vw" ratio={1} tilt={i % 2 ? -3 : 3} />
+                <p class="tl-cap">{t.radio}</p>
+              </>
+            )}
+            {e.buy && (
+              <a class="tl-tag" href={e.buy.href} data-live={e.buy.handle}>
+                <span class="tl-tag-name">{e.buy.title}</span>
+                <span class="tl-price num" data-live-price>{formatPrice(e.buy.price)}</span>
+                <svg class="tl-bars" viewBox="0 0 64 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h2v40H0zM3 0h1v40H3zM5 0h1v40H5zM8 0h3v40H8zM12 0h1v40h-1zM14 0h2v40h-2zM17 0h1v40h-1zM19 0h1v40h-1zM22 0h3v40h-3zM26 0h2v40h-2zM29 0h1v40h-1zM31 0h1v40h-1zM34 0h2v40h-2zM37 0h3v40h-3zM41 0h1v40h-1zM43 0h1v40h-1zM46 0h2v40h-2zM49 0h1v40h-1zM51 0h3v40h-3zM55 0h1v40h-1zM57 0h2v40h-2zM60 0h1v40h-1zM62 0h2v40h-2z"></path></svg>
+                <span class="tl-go">{t.seePiece}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></span>
+              </a>
+            )}
+          </div>
+        )}
+      </li>
+    ))}
+
+    <li class="tl-item tl-next">
+      <p class="tl-when">
+        {next.day ? (
+          <time datetime={nextDrop.opens ?? undefined}><span class="tl-day">{next.day.day}</span>{next.day.hour && <span class="tl-hour">{next.day.hour}</span>}</time>
+        ) : (
+          <span class="stamp tl-stamp tl-stamp-big">{pending.stamp}</span>
+        )}
+      </p>
+      <div class="tl-text">
+        <h3 class="tl-name">{next.name ?? t.next.title}</h3>
+        <p class="tl-def">{t.next.line}</p>
+        <a class="tl-cta" href="/drop">{t.next.cta}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"></path></svg></a>
+      </div>
+      <span class="tl-q" aria-hidden="true">?</span>
+    </li>
+  </ol>
+</section>
+
+<style>
+  .tl {
+    --dot: rgb(11 11 11 / .1);
+    --fade: radial-gradient(70% 45% at 100% 0%, #000, transparent 75%), radial-gradient(60% 40% at 0% 100%, #000, transparent 75%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    padding: 44px var(--pad) 52px;
+    background: var(--yellow);
+    color: var(--ink);
+    overflow: clip;
+  }
+  .tl :focus-visible { outline-color: var(--ink); }
+  .tl-head { display: grid; gap: 12px; }
+  .tl-title { font: 400 min(23vw, 190px)/.82 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .tl-deck { max-width: 32ch; font: 700 16px/1.4 var(--sans); }
+
+  /* the rail: down the left on a phone, across the top from 1000 up */
+  .tl-list { display: grid; gap: 44px; padding-left: 20px; border-left: 4px solid var(--ink); }
+  .tl-item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; }
+  .tl-item::before { content: ""; position: absolute; left: -24px; top: 22px; width: 16px; height: 4px; background: var(--ink); }
+
+  .tl-when time { display: grid; gap: 6px; }
+  .tl-day { font: 400 clamp(58px, 16vw, 84px)/.84 var(--gothic); text-transform: uppercase; }
+  .tl-hour { font: 800 11.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+
+  .tl-text { display: grid; gap: 10px; justify-items: start; align-content: start; }
+  .tl-stamp { background: var(--white); }
+  .tl-stamp-big { padding: 8px 12px 6px; font-size: 15px; rotate: -5deg; }
+  .tl-name { font: 400 clamp(40px, 11vw, 56px)/.88 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .tl-def { max-width: 40ch; font: 600 15px/1.42 var(--sans); }
+  .tl-def b { font-weight: 800; font-style: italic; }
+  .tl-pieces { max-width: 40ch; font: 600 14px/1.4 var(--sans); }
+  .tl-pieces b { font-weight: 800; }
+  .tl-line { font: 400 30px/.92 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .tl-line::before { content: "\201C"; }
+  .tl-line::after { content: "\201D"; }
+
+  .tl-go, .tl-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 800 12.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .3em; }
+  .tl-go svg, .tl-cta svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--fast) ease-out; }
+  .tl-cta { margin-top: 4px; padding: 4px 16px 0; min-height: 52px; background: var(--ink); color: var(--yellow); font: 400 28px/1 var(--gothic); letter-spacing: .04em; text-decoration: none; }
+  .tl-cta svg { width: 22px; height: 22px; margin-top: -3px; }
+
+  .tl-vis { display: grid; gap: 12px; justify-items: end; padding: 4px 8px 0 0; }
+  .tl-vis :global(.tl-print) { width: min(64%, 300px); }
+  .tl-cap { max-width: 26ch; font: 800 11px/1.35 var(--sans); letter-spacing: .1em; text-align: right; text-transform: uppercase; }
+
+  /* the live piece: its price tag, the price box's bars and the way to it, where an act with a
+     radio cover shows the cover; the price refreshes from Shopify */
+  .tl-tag {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: end;
+    justify-content: start;
+    column-gap: 14px;
+    row-gap: 8px;
+    margin: 6px 6px 0 0;
+    padding: 12px 16px 12px;
+    background: var(--white);
+    border: 3px solid var(--ink);
+    color: var(--ink);
+    text-decoration: none;
+    rotate: -3deg;
+    box-shadow: 0 10px 18px -6px rgb(11 11 11 / .45);
+  }
+  .tl-tag-name { grid-column: 1 / -1; max-width: 18ch; font: 800 12px/1.15 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+  .tl-price { font: 400 72px/.8 var(--gothic); letter-spacing: -.01em; }
+  .tl-bars { width: 46px; height: 38px; margin-bottom: 4px; fill: var(--ink); }
+  .tl-tag .tl-go { grid-column: 1 / -1; min-height: 24px; white-space: nowrap; }
+
+  .tl-next { padding-bottom: 8px; }
+  /* the pink question mark sits in the gap the text leaves on its right */
+  .tl-q { position: absolute; right: 0; top: -34px; color: var(--pink); font: 400 clamp(130px, 36vw, 200px)/1 var(--script); rotate: 9deg; pointer-events: none; }
+  .tl-next .tl-text { position: relative; z-index: 1; padding-right: 34%; }
+
+  @media (min-width: 700px) {
+    .tl-head { grid-template-columns: auto minmax(0, 1fr); align-items: end; column-gap: 4vw; }
+    .tl-title { font-size: min(13vw, 190px); }
+    .tl-deck { padding-bottom: 6px; font-size: 17px; }
+    .tl-item:not(.tl-next, .no-vis) { grid-template-columns: minmax(0, 1fr) minmax(0, 44%); column-gap: 24px; }
+    /* a price tag takes its own width; the text takes the rest */
+    .tl-item.has-tag { grid-template-columns: minmax(0, 1fr) auto; }
+    .tl-when { grid-column: 1 / -1; }
+    .tl-vis { grid-column: 2; grid-row: 2; align-self: start; padding-top: 0; }
+    .tl-vis :global(.tl-print) { width: 92%; }
+    .tl-q { font-size: 200px; right: 6%; }
+    .tl-next .tl-text { padding-right: 40%; }
+  }
+
+  @media (min-width: 1000px) {
+    .tl { padding: 4.4vw var(--pad) 5vw; row-gap: 3.4vw; }
+    .tl-title { font-size: min(11vw, 190px); }
+    .tl-deck { font-size: max(17px, 1.3vw); }
+    .tl-list { display: flex; flex-wrap: wrap; row-gap: 4vw; padding-left: 0; border-left: 0; }
+    .tl-item { flex: 1 1 440px; padding: 22px 2vw 0 0; border-top: 6px solid var(--ink); }
+    .tl-item:not(.tl-next, .no-vis) { grid-template-columns: minmax(0, 1fr) minmax(0, 40%); column-gap: 1.6vw; }
+    .tl-item.has-tag { grid-template-columns: minmax(0, 1fr) auto; }
+    .tl-price { font-size: min(5vw, 72px); }
+    .tl-bars { width: 34px; height: 30px; }
+    /* the rail: a thick rule and a hairline under it, like the masthead's */
+    .tl-item::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 1px; background: var(--ink); }
+    .tl-item::before { display: none; }
+    .tl-next { flex: 1 1 250px; padding-right: 0; container-type: inline-size; }
+    .tl-next .tl-text { padding-right: 0; padding-top: 7vw; }
+    .tl-vis :global(.tl-print) { width: 96%; }
+    .tl-day { font-size: min(5.6vw, 92px); }
+    .tl-name { font-size: min(3.4vw, 54px); }
+    .tl-line { font-size: min(2.2vw, 34px); }
+    .tl-def { font-size: max(15px, 1.05vw); }
+    .tl-q { top: 2.4vw; right: 6%; font-size: min(11vw, 170px); }
+  }
+
+  /* the next drop alone on its own row (1000 to about 1280): one strip, the question mark at the end */
+  @container (min-width: 560px) {
+    .tl-next .tl-text { grid-template-columns: auto minmax(0, 30ch) auto; align-items: center; column-gap: 3vw; padding-top: 0; }
+    .tl-next .tl-cta { margin-top: 0; }
+    .tl-next .tl-name { font-size: min(6.4cqi, 64px); }
+    .tl-q { top: -3.4vw; right: 2%; }
+  }
+
+  @media (hover: hover) {
+    .tl-go:hover svg, .tl-cta:hover svg { translate: 4px 0; }
+    .tl-go:hover, .tl-tag:hover .tl-go { text-decoration-color: var(--pink); }
+    .tl-tag:hover .tl-go svg { translate: 4px 0; }
+  }
+
+  /* the rails draw themselves in as the acts pass (the parallax drift of the entries, the
+     dates and the question mark is in global.css). Still without scroll timelines or with reduced
+     motion: the rails are simply there. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      /* phone and tablet: the rail down the left grows with the reading */
+      .tl-list { position: relative; border-left-color: transparent; view-timeline-name: --rail; view-timeline-inset: var(--seen-top) var(--seen-end); }
+      .tl-list::before {
+        content: "";
+        position: absolute;
+        left: -4px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--ink);
+        transform-origin: top;
+        animation-name: draw-y;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: --rail;
+        animation-range: entry 40% cover 70%;
+      }
+      /* desktop: each act's thick rule draws left to right as it arrives, one after another */
+      @media (min-width: 1000px) {
+        .tl-list::before { display: none; }
+        .tl-item { border-top-color: transparent; view-timeline-name: --act; view-timeline-inset: var(--seen-top) var(--seen-end); }
+        .tl-item::before {
+          display: block;
+          left: 0;
+          right: 0;
+          top: -6px;
+          width: auto;
+          height: 6px;
+          background: var(--ink);
+          transform-origin: left;
+          animation-name: draw-x;
+          animation-timing-function: cubic-bezier(.2, .7, .2, 1);
+          animation-fill-mode: both;
+          animation-timeline: --act;
+          animation-range: entry 10% cover 30%;
+        }
+        .tl-item:nth-child(2)::before { animation-range: entry 40% cover 38%; }
+        .tl-item:nth-child(3)::before { animation-range: entry 70% cover 46%; }
+      }
+    }
+  }
+</style>

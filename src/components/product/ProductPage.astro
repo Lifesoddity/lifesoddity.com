@@ -1,0 +1,204 @@
+---
+// THE COVER STORY. One page per Shopify product, at Shopify's own /products/<handle> path. The
+// spread: the left page is the piece's photos on its own ground; the right page sets the title
+// huge, printed with an offset pink pass, the garment word on a black slab beside it (D4: no
+// script on this head), prints the price with the cover's bars, and is the buy control (size
+// stamps XS to 2XL; the button reads PICK A SIZE, then ADD TO BAG, then CHECKOUT, D6). Under the
+// stamps, one true fit line: "Between sizes? DM @lifesoddity." Then the deck in the brand's
+// words, the drop it belongs to, the description from Shopify when there is one, and the one
+// thing known about delivery (shipping and taxes at checkout). Nothing not given is stamped or
+// promised (D1). After the spread, the act's campaign shoot as an inset, and at the end more
+// from the act or the list for the next drop. On a phone a buy bar rises once the price box has
+// scrolled away.
+//
+// Everything comes from Shopify and the content files, so a new product gets a sensible page with
+// no code change: its own photos, a ground from the magazine's rotation, its title split the same
+// way, and nothing invented where a fact is missing.
+import Gallery from './Gallery.astro';
+import Inset from './Inset.astro';
+import Finale from './Finale.astro';
+import StickyBuy from './StickyBuy.astro';
+import BuyBox from '../ui/BuyBox.astro';
+import { getPieces, type Piece } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { layoutWord } from '../../lib/words';
+import { garmentWords, productArt } from '../../content/pieces';
+import { bag } from '../../content/copy/common';
+import { product as copy } from '../../content/copy/product';
+
+interface Props { piece: Piece }
+const { piece } = Astro.props;
+const product = piece.product!;
+const act = piece.act;
+const art = piece.art;
+
+// a ground sampled from the product shot itself lets the first photo run full bleed
+const bleed = Boolean(productArt[product.handle]?.ground) && piece.photos.length > 0;
+
+// the title: the garment word ("tee", "hoodie") comes off and goes into pink script
+const words = product.title.trim().split(/\s+/);
+const last = words[words.length - 1];
+const garment = words.length > 1 && garmentWords.includes(last.toLowerCase()) ? last : null;
+const big = garment ? words.slice(0, -1).join(' ') : words.join(' ');
+// the widest word, in em: the title never sets a word wider than its column
+const tw = Math.max(...big.split(' ').map((w) => layoutWord(w).w), 1);
+
+const prices = product.variants.map((v) => v.price);
+const ranged = prices.length > 1 && Math.max(...prices) > Math.min(...prices);
+const sizes = product.variants.map((v) => v.size);
+const range = sizes.length > 1 ? copy.sizeRange(sizes[0], sizes[sizes.length - 1]) : (sizes[0] ?? '');
+
+// the deck: the piece's own line, else the act's dictionary entry
+const deck = art.line ?? act.definition ?? null;
+const cut = deck ? deck.indexOf(':') : -1;
+const printed = copy.printedOn[product.handle];
+
+const actName = act.number ? copy.actName(act.number, act.title) : act.title;
+// "She Devil. Feb 14, 2026." (an act with no date yet prints its name only)
+const drop = [actName, act.openedLabel, act.subtitle && act.subtitleConfirmed ? act.subtitle : '']
+  .filter(Boolean)
+  .map((part) => `${part}.`)
+  .join(' ');
+
+// the description from Shopify, when there is one; without it there is no Details row (D1)
+const details = product.description ? product.description.split(/\n+/).map((p) => p.trim()).filter(Boolean) : [];
+
+const more = (await getPieces()).filter((p) => p.act.slug === act.slug && p.key !== piece.key && p.photo);
+---
+
+<section class="st" data-st data-live={product.handle} data-soldout={product.available ? undefined : ''} aria-labelledby="st-title">
+  <Gallery piece={piece} bleed={bleed} />
+
+  <div class="st-copy">
+    <h1 class="st-title" id="st-title" style={`--tw:${tw}`}>
+      <span class="st-big">{big}</span>{garment && <>{' '}<span class="st-gar">{garment}</span></>}
+    </h1>
+
+    <div class="st-pricerow">
+      <p class="st-price num">{ranged && <span class="st-from">{copy.from} </span>}<span data-live-price>{formatPrice(product.price)}</span></p>
+      <svg class="st-bars" viewBox="0 0 64 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h2v40H0zM3 0h1v40H3zM5 0h1v40H5zM8 0h3v40H8zM12 0h1v40h-1zM14 0h2v40h-2zM17 0h1v40h-1zM19 0h1v40h-1zM22 0h3v40h-3zM26 0h2v40h-2zM29 0h1v40h-1zM31 0h1v40h-1zM34 0h2v40h-2zM37 0h3v40h-3zM41 0h1v40h-1zM43 0h1v40h-1zM46 0h2v40h-2zM49 0h1v40h-1zM51 0h3v40h-3zM55 0h1v40h-1zM57 0h2v40h-2zM60 0h1v40h-1zM62 0h2v40h-2z"></path></svg>
+    </div>
+
+    <div class="st-buy" data-sb-buy>
+      <p class="st-sizehead"><span>{copy.sizeLabel}</span>{range && <span class="st-range">{range}</span>}</p>
+      <BuyBox product={product} addLabel={copy.addToBag} sizeLabel={copy.sizeLabel} sizeHelp />
+    </div>
+
+    {deck && (
+      <p class="st-deck">
+        {cut > 0 ? <><b>{deck.slice(0, cut + 1)}</b>{deck.slice(cut + 1)}</> : deck}
+        {printed && <>{' '}<span class="st-printed">{printed}</span></>}
+      </p>
+    )}
+
+    <p class="st-drop"><b>{copy.dropLead}</b> {drop}</p>
+
+    <div class="st-facts">
+      {details.length > 0 && (
+        <dl class="st-details">
+          <dt>{copy.details}</dt>
+          <dd>{details.map((line) => <p>{line}</p>)}</dd>
+        </dl>
+      )}
+      <p class="st-ship">{bag.shipping}</p>
+    </div>
+  </div>
+</section>
+
+<Inset act={act} />
+<Finale more={more} />
+{product.available && <StickyBuy product={product} title={product.title} />}
+
+<style>
+  .st { display: grid; grid-template-columns: minmax(0, 1fr); background: var(--white); }
+  .st-copy { display: grid; gap: 12px; align-content: start; min-width: 0; padding: 14px var(--pad) 44px; }
+
+  /* the title, set huge and printed twice: solid ink over an offset pink pass (a static
+     text-shadow, no blur). The garment word ("tee") sits beside it on a black slab, stuck on. */
+  .st-title { display: flex; flex-wrap: wrap; align-items: flex-end; column-gap: 12px; }
+  .st-big {
+    min-width: 0;
+    font: 400 80px/.8 var(--gothic);
+    font-size: min(clamp(76px, 20.5vw, 210px), calc((100vw - 2 * var(--pad) - 4px) / var(--tw)));
+    letter-spacing: .005em;
+    text-transform: uppercase;
+    text-shadow: .035em .035em 0 var(--pink);
+  }
+  .st-gar {
+    margin: 0 0 .2em;
+    padding: .14em .22em .04em;
+    background: var(--ink);
+    color: var(--white);
+    font: 400 30px/.9 var(--gothic);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    rotate: -4deg;
+  }
+
+  .st-pricerow { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-top: 2px; }
+  .st-price { font: 400 58px/.8 var(--gothic); letter-spacing: -.01em; }
+  .st-from { font: 800 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; vertical-align: .9em; }
+  .st-bars { flex: none; width: 52px; height: 36px; fill: var(--ink); }
+
+  .st-buy { display: grid; gap: 10px; }
+  .st-sizehead { display: none; }
+  .st-buy :global(.buybox) { display: grid; gap: 10px; }
+  .st-buy :global(.sz) { height: 48px; font-size: 15px; }
+  .st-buy :global(.addbag) { height: 56px; font-size: 32px; }
+
+  .st-deck { max-width: 46ch; font: 600 17px/1.45 var(--sans); }
+  .st-deck b { font-weight: 800; font-style: italic; }
+  /* the tee's own print, signed after the definition's last word: pink on white is 3.58:1,
+     large text at 26px */
+  .st-printed { display: inline-block; margin-left: 8px; color: var(--pink); font: 400 26px/1 var(--script); text-transform: none; letter-spacing: 0; rotate: -4deg; }
+
+  .st-drop { justify-self: start; margin-top: 10px; padding: 10px 14px 8px; background: var(--ink); color: var(--yellow); font: 400 26px/1.05 var(--gothic); letter-spacing: .02em; text-transform: uppercase; }
+  .st-drop b { color: var(--white); font-weight: 400; }
+
+  /* what is known: the description from Shopify when there is one, and the checkout line */
+  .st-facts { display: grid; gap: 14px; align-content: start; padding-top: 12px; border-top: 3px solid var(--ink); }
+  .st-details { display: grid; gap: 8px; }
+  .st-details dt { font: 400 30px/.95 var(--gothic); text-transform: uppercase; }
+  .st-details dd { display: grid; gap: 8px; max-width: 60ch; font: 600 14.5px/1.45 var(--sans); }
+  .st-ship { font: 600 13.5px/1.4 var(--sans); }
+
+  @media (min-width: 700px) {
+    .st-copy {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-areas: "title title" "price price" "buy buy" "deck facts" "drop facts";
+      column-gap: 36px;
+      row-gap: 18px;
+      padding: 26px var(--pad) 48px;
+    }
+    .st-title { grid-area: title; }
+    .st-big { font-size: min(17vw, calc((100vw - 2 * var(--pad) - 4px) / var(--tw))); }
+    .st-gar { font-size: 4.6vw; }
+    .st-pricerow { grid-area: price; max-width: 560px; }
+    .st-price { font-size: 72px; }
+    .st-bars { width: 56px; height: 40px; }
+    .st-buy :global(.sz) { height: 52px; }
+    .st-buy :global(.addbag) { height: 62px; font-size: 36px; }
+    .st-buy { grid-area: buy; max-width: 560px; }
+    .st-sizehead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font: 800 11.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+    .st-range { color: var(--muted); font-weight: 700; letter-spacing: .06em; }
+    .st-deck { grid-area: deck; }
+    .st-drop { grid-area: drop; align-self: start; margin-top: 0; }
+    .st-facts { grid-area: facts; }
+  }
+
+  @media (min-width: 1000px) {
+    .st { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+    .st-copy { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; gap: 1.5vw; padding: 3vw 4vw 3.4vw 3.4vw; }
+    .st-title, .st-pricerow, .st-buy, .st-deck, .st-drop, .st-facts { grid-area: auto; }
+    .st-big { font-size: min(11.5vw, 240px, calc(42.4vw / var(--tw))); }
+    .st-gar { font-size: min(3.3vw, 64px); }
+    .st-pricerow { max-width: none; }
+    .st-price { font-size: min(5vw, 96px); }
+    .st-bars { width: min(4.4vw, 76px); height: min(3vw, 52px); }
+    .st-buy { max-width: none; }
+    .st-deck { font-size: max(16px, 1.2vw); }
+    .st-drop { font-size: min(1.9vw, 34px); }
+    .st-details dt { font-size: min(2.1vw, 38px); }
+    .st-ship { font-size: max(13.5px, .95vw); }
+  }
+</style>

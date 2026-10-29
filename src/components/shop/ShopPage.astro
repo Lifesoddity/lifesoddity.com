@@ -1,0 +1,196 @@
+---
+// ALL THE PIECES. The shop as an inside spread of the magazine: the title card on the cover's
+// pink, its title reversed out of a black slab (D4: the shop's own treatment, no script), with
+// its coverlines (on black, the cover's right third), what is in the Shopify store on yellow
+// (out now or sold out, newest first), the archive act by act on black, and the next drop on
+// red. Built from getPieces(): a product added in Shopify appears here by itself,
+// and the grids are laid out from the count, so one piece or ten never leave a hole.
+import PageHead from '../ui/PageHead.astro';
+import ShopPiece from './ShopPiece.astro';
+import ArchiveAct from './ArchiveAct.astro';
+import NextDrop from './NextDrop.astro';
+import { getPieces } from '../../lib/pieces';
+import { formatPrice } from '../../lib/money';
+import { acts, nextDrop } from '../../content/acts';
+import { shop } from '../../content/copy/shop';
+
+const pieces = await getPieces();
+const store = pieces.filter((p) => p.product);
+const live = store.filter((p) => p.status === 'live');
+const sold = store.filter((p) => p.status === 'soldout');
+const archived = pieces.filter((p) => p.status === 'archive');
+const groups = acts
+  .map((act) => ({ act, pieces: archived.filter((p) => p.act.slug === act.slug) }))
+  .filter((g) => g.pieces.length > 0);
+// The archive coverline names an act "Act 1: Party Animal"; the deck, a sentence that already
+// has a colon, names it "Party Animal (Act 1)".
+const actNames = groups.map((g) => shop.actName(g.act.number, g.act.title));
+const deckActs = groups.map((g) => shop.deckActName(g.act.number, g.act.title));
+
+const deck = shop.deck({ out: live.map((p) => p.title), sold: sold.map((p) => p.title), acts: deckActs });
+const layoutOf = (i: number) => (i === 0 ? 'lead' : (store.length - 1) % 2 === 1 && i === store.length - 1 ? 'wide' : 'pair') as 'lead' | 'pair' | 'wide';
+
+// The first coverline: the one piece's price and sizes (refreshed from Shopify), or a count.
+const only = store.length === 1 ? store[0].product! : null;
+const c = shop.contents;
+---
+
+<div class="shop">
+  <PageHead title={shop.title} deck={deck} tone="pink" treatment="slab">
+    <nav class="lines" aria-label={c.label}>
+      <ul role="list">
+        {store.length > 0 && (
+          <li>
+            <a href="#out-now">
+              <span class="ln-title">{live.length ? c.out : c.sold}</span>
+              {only ? (
+                <span class="ln-line" data-live={only.handle}>
+                  <span class="num" data-live-price>{formatPrice(only.price, only.currency)}</span>{c.sizes(only.variants[0]?.size ?? '', only.variants[only.variants.length - 1]?.size ?? '')}
+                </span>
+              ) : (
+                <span class="ln-line">{c.many(store.length)}</span>
+              )}
+            </a>
+          </li>
+        )}
+        {groups.length > 0 && (
+          <li>
+            <a href="#archive">
+              <span class="ln-title">{c.archive}</span>
+              <span class="ln-line">{c.archiveLine(archived.length, actNames)}</span>
+            </a>
+          </li>
+        )}
+        <li>
+          <a href="#next">
+            <span class="ln-title">{c.next}</span>
+            <span class="ln-line">{nextDrop.name ?? c.nextLine}</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </PageHead>
+
+  {store.length > 0 && (
+    <section class="out halftone" id="out-now" aria-labelledby="out-title">
+      <h2 class="vh" id="out-title">{shop.out.title(live.length > 0)}</h2>
+      <div class="out-grid">
+        {store.map((p, i) => <ShopPiece piece={p} layout={layoutOf(i)} index={i} />)}
+      </div>
+    </section>
+  )}
+
+  {groups.length > 0 && (
+    <section class="arc on-dark halftone" id="archive" aria-labelledby="arc-title">
+      <div class="arc-head">
+        <h2 class="arc-title" id="arc-title">{shop.archive.title}</h2>
+        <p class="arc-deck">{shop.archive.deck}</p>
+      </div>
+      {groups.map((g) => <ArchiveAct act={g.act} pieces={g.pieces} />)}
+    </section>
+  )}
+
+  <NextDrop />
+</div>
+
+<style>
+  /* ---------- the title card, and its coverlines ---------- */
+  .shop :global(.phead) { padding-bottom: 0; }
+  .lines { margin: 4px calc(-1 * var(--pad)) 0; padding: 0 var(--pad); border-top: 3px solid var(--ink); }
+  .lines ul { display: flex; flex-wrap: wrap; align-items: center; }
+  .lines li { display: flex; align-items: center; }
+  .lines li + li::before { content: "·"; padding: 0 9px; font: 800 13px/1 var(--sans); }
+  .lines a { display: flex; align-items: center; min-height: 44px; text-decoration: none; }
+  .ln-title { font: 800 11.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+  .ln-line { display: none; }
+  /* on phones the first coverline carries its price inline, so $20 and the sizes are in the first screen */
+  .lines li:first-child .ln-line { display: inline; margin-left: 6px; font: 700 11.5px/1 var(--sans); letter-spacing: .06em; }
+  /* and takes its own row there, so the next row never opens on a middle dot */
+  .lines li:first-child { flex-basis: 100%; }
+  .lines li:first-child + li::before { content: none; }
+  .lines a:focus-visible { outline-color: var(--ink); }
+
+  @media (hover: hover) {
+    .lines a:hover .ln-title { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .3em; }
+  }
+
+  @media (min-width: 700px) {
+    /* wide enough for the three coverlines on one row */
+    .lines li:first-child { flex-basis: auto; }
+    .lines li:first-child + li::before { content: "·"; }
+  }
+
+  @media (min-width: 1000px) {
+    /* the right third of the title card: coverlines on black, as on the cover */
+    .shop :global(.phead) { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); column-gap: 3vw; align-items: start; padding-right: 0; padding-bottom: 3vw; }
+    .shop :global(.phead-title) { grid-column: 1; }
+    .shop :global(.phead-deck) { grid-column: 1; align-self: end; }
+    .lines {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: stretch;
+      display: grid;
+      align-content: center;
+      margin: -3.4vw 0 -3vw;
+      padding: 2.6vw 2.6vw;
+      border: 0;
+      background:
+        radial-gradient(circle, rgb(255 46 110 / .2) 1.15px, transparent 1.7px) 0 0 / 7px 7px,
+        radial-gradient(circle, rgb(255 46 110 / .2) 1.15px, transparent 1.7px) 3.5px 3.5px / 7px 7px,
+        var(--ink);
+      color: var(--white);
+    }
+    .lines ul { display: grid; gap: 1.6vw; }
+    .lines li + li::before, .lines li:first-child + li::before { content: none; }
+    .lines a { display: grid; gap: 8px; justify-items: start; min-height: 0; }
+    .ln-title { color: var(--yellow); font: 400 min(3.9vw, 66px)/.86 var(--gothic); letter-spacing: .01em; }
+    .ln-line, .lines li:first-child .ln-line { display: block; margin-left: 0; font: 600 14px/1.35 var(--sans); letter-spacing: normal; }
+    .ln-line .num { font-weight: 800; }
+    .lines a:focus-visible { outline-color: var(--yellow); }
+  }
+  @media (min-width: 1000px) and (hover: hover) {
+    .lines a:hover .ln-title { text-decoration: none; }
+    .lines a:hover .ln-line { text-decoration: underline; text-decoration-color: var(--pink); text-decoration-thickness: 2px; text-underline-offset: .3em; }
+  }
+
+  /* ---------- out now: the store's pieces on yellow ---------- */
+  .out {
+    --dot: rgb(11 11 11 / .1);
+    --fade: radial-gradient(70% 45% at 100% 0%, #000, transparent 75%), radial-gradient(60% 40% at 0% 100%, #000, transparent 75%);
+    padding: 30px var(--pad) 60px;
+    background: var(--yellow);
+    color: var(--ink);
+    overflow: clip;
+    scroll-margin-top: var(--header-h);
+  }
+  .out-grid { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 64px; }
+
+  /* ---------- the archive on black ---------- */
+  .arc {
+    --dot: rgb(255 46 110 / .2);
+    --fade: linear-gradient(170deg, #000, transparent 40%), linear-gradient(-10deg, #000, transparent 30%);
+    display: grid;
+    gap: 40px;
+    padding: 40px var(--pad) 64px;
+    background: var(--ink);
+    color: var(--white);
+    overflow: clip;
+    scroll-margin-top: var(--header-h);
+  }
+  .arc-head { display: grid; gap: 12px; padding-bottom: 22px; border-bottom: 3px solid var(--white); }
+  .arc-title { font: 400 clamp(84px, 24vw, 220px)/.8 var(--gothic); text-transform: uppercase; }
+  .arc-deck { max-width: 34ch; font: 700 17px/1.4 var(--sans); text-wrap: balance; }
+
+  @media (min-width: 700px) {
+    .out-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 5vw; row-gap: 8vw; }
+    .arc-head { grid-template-columns: auto minmax(0, 1fr); column-gap: 5vw; align-items: end; }
+    .arc-title { font-size: 15vw; }
+    .arc-deck { justify-self: end; padding-bottom: 6px; font-size: 18px; text-align: right; }
+  }
+  @media (min-width: 1000px) {
+    .out { padding: 3.4vw var(--pad) 5.4vw; }
+    .arc { gap: 4vw; padding: 4.4vw var(--pad) 6vw; }
+    .arc-title { font-size: min(11vw, 200px); }
+    .arc-deck { font-size: max(18px, 1.4vw); }
+  }
+</style>

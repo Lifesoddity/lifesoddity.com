@@ -4,3 +4,15 @@ dist/
 .env
 .env.*
 .DS_Store
+
+# Design and agent tooling, local only
+.bunshin/
+.impeccable/
+.claude/
+.agents/
+.codex/
+
+# Astro
+.astro/
+npm-debug.log*
+.idea/

@@ -1,0 +1,77 @@
+---
+// The title card an inner page opens with: a field of one of the magazine's colours, the page's
+// name in giant League Gothic, an optional script overlay and one deck line.
+//
+// The title's treatment changes per page, so the two pages that open with it never match (D4):
+//   slab     reversed out of a black slab (Shop, on pink)
+//   outline  outline caps over an offset second-colour pass, Riso style (Lookbook, on yellow)
+//
+// The pink script is rare (D4: at most one page head in three, where it says the most) and never
+// crosses the title (D7): below 1000px it takes its own line above the title; from 1000px it
+// hangs at the top right, clear of a title that runs no wider than about half the card.
+interface Props {
+  title: string;
+  /** A short pink script word over the card ("all the pics"). */
+  script?: string;
+  deck?: string;
+  tone: 'yellow' | 'pink';
+  treatment: 'slab' | 'outline';
+  /** Extra content under the deck (filters, a date, a stamp) goes in the default slot. */
+  class?: string;
+}
+
+const { title, script, deck, tone, treatment, class: cls } = Astro.props;
+---
+
+<header class:list={['phead', 'halftone', `tone-${tone}`, `t-${treatment}`, script && 'has-script', cls]}>
+  <h1 class="phead-title"><span class="phead-ink">{title}</span></h1>
+  {script && <p class="phead-script" aria-hidden="true">{script}</p>}
+  {deck && <p class="phead-deck">{deck}</p>}
+  <slot />
+</header>
+
+<style>
+  .phead {
+    --dot: rgb(11 11 11 / .1);
+    --fade: radial-gradient(70% 60% at 100% 0%, #000, transparent 75%);
+    position: relative;
+    display: grid;
+    gap: 12px;
+    padding: 28px var(--pad) 30px;
+    overflow: clip;
+    border-bottom: 3px solid var(--ink);
+  }
+  /* per tone: the field, and the inks each treatment prints with on it */
+  .tone-yellow { background: var(--yellow); color: var(--ink); --slab: var(--ink); --slab-ink: var(--yellow); --line: var(--ink); --pass: var(--pink); }
+  .tone-pink { background: var(--cover); color: var(--ink); --dot: rgb(81 42 52 / .34); --slab: var(--ink); --slab-ink: var(--pink); --line: var(--ink); --pass: var(--white); }
+
+  .phead-title { font: 400 clamp(84px, 24vw, 220px)/.8 var(--gothic); text-transform: uppercase; letter-spacing: .005em; text-wrap: balance; }
+  .phead-ink { display: block; }
+
+  /* slab: the caps reversed out of a black block, as wide as the words */
+  .t-slab .phead-title { justify-self: start; max-width: 100%; }
+  .t-slab .phead-ink { padding: .09em .12em .05em; background: var(--slab); color: var(--slab-ink); }
+
+  /* outline: the caps drawn in outline over a solid pass of the second ink, offset down and
+     right; the outline carries the contrast, the pass is the misregistered second colour */
+  .t-outline .phead-ink {
+    color: transparent;
+    -webkit-text-stroke: max(2px, .022em) var(--line);
+    text-shadow: .04em .035em 0 var(--pass);
+  }
+
+  /* the script: its own line above the title (it never crosses the letters) */
+  .phead-script { order: -1; justify-self: end; margin: -8px 2px -2px 0; color: var(--pink); font: 400 clamp(38px, 9vw, 72px)/1 var(--script); rotate: -5deg; }
+  .tone-pink .phead-script { color: var(--white); }
+
+  .phead-deck { max-width: 46ch; font: 700 17px/1.4 var(--sans); }
+
+  @media (min-width: 1000px) {
+    .phead { padding: 3.4vw var(--pad) 3vw; }
+    .phead-title { font-size: min(13vw, 220px); }
+    /* the title runs about half the card; the script hangs in the other half */
+    .has-script .phead-title { max-width: 58%; }
+    .phead-script { order: 0; position: absolute; right: var(--pad); top: 2.4vw; margin: 0; font-size: min(7.5vw, 110px); rotate: -8deg; }
+    .phead-deck { font-size: 19px; }
+  }
+</style>

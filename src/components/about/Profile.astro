@@ -1,0 +1,118 @@
+---
+// The title card of the profile: LIFE IS ODD, the brand's own line, in yellow caps on two black
+// bars run edge to edge across the cover's pink (D4: About's treatment is the bar). Pasted over
+// the bars, a photo from the latest campaign as a tilted print, with its caption beside it: the
+// act it comes from, the day it dropped, and the credit its caption gives. It links to that
+// act's pictures in the lookbook. Nothing about the founder is guessed or stamped (D1, D5).
+import Print from '../ui/Print.astro';
+import { acts, liveAct } from '../../content/acts';
+import { site } from '../../content/site';
+import { about } from '../../content/copy/about';
+
+/** Two lines, the last word alone: "Life Is" / "Odd". */
+const splitLast = (s: string) => {
+  const i = s.lastIndexOf(' ');
+  return i > 0 ? [s.slice(0, i), s.slice(i + 1)] : [s];
+};
+const title = splitLast(site.tagline);
+const dated = [...acts].sort((a, b) => Date.parse(a.opened) - Date.parse(b.opened));
+const span = dated.length ? about.issueSpan(dated[0].title, dated[dated.length - 1].title) : null;
+const issue = [about.issueLead, span, site.name].filter(Boolean).join(' · ');
+
+// the photo: the live act's first campaign photo, else the latest act's that has one
+const source = [liveAct(), ...[...dated].reverse()].find((a) => a?.photos.length) ?? null;
+const shot = source?.photos[0] ?? null;
+const role = shot?.credit ? source?.credits.find((c) => c.names.some((n) => `@${n}` === shot.credit))?.role : undefined;
+const credit = shot?.credit ? (role ? `${role} ${shot.credit}` : shot.credit) : null;
+const day = source?.openedLabel.match(/^[A-Za-z]+ \d{1,2}, \d{4}/)?.[0] ?? source?.openedLabel ?? '';
+const actName = source ? about.photo.actName(source.number, source.title) : '';
+---
+
+<section class:list={['pf', 'halftone', !shot && 'no-shot']} aria-labelledby="pf-title">
+  <h1 class="pf-title" id="pf-title">
+    {title.map((l, i) => <>{i > 0 && ' '}<span class="pf-bar"><span class="pf-ink">{l}</span></span></>)}
+  </h1>
+
+  {source && shot && (
+    <>
+      <Print
+        class="pf-print"
+        photo={{ kind: 'local', image: shot.image, alt: shot.alt }}
+        sizes="(min-width: 1000px) 34vw, (min-width: 700px) 38vw, 48vw"
+        href={`/lookbook/#${source.slug}`}
+        label={about.photo.see(actName)}
+        ratio={3 / 4}
+        tilt={-3}
+        eager
+        first
+      />
+      <p class="pf-cap">
+        <span class="pf-act">{actName}</span>
+        {day && <span class="pf-meta">{day}</span>}
+        {credit && <span class="pf-meta pf-credit">{credit}</span>}
+      </p>
+    </>
+  )}
+
+  <p class="pf-issue">{issue}</p>
+</section>
+
+<style>
+  .pf {
+    --dot: rgb(81 42 52 / .34);
+    --fade: radial-gradient(95% 55% at 0% 100%, #000 5%, transparent 72%), radial-gradient(70% 45% at 100% 0%, #000, transparent 70%);
+    --shadow: rgb(60 0 18 / .55);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 14px;
+    padding: 18px var(--pad) 22px;
+    background: var(--cover);
+    color: var(--ink);
+    overflow: clip;
+  }
+  .pf > * { position: relative; z-index: 1; }
+
+  /* the bar: each line its own black bar, from the left edge of the page to the right */
+  .pf-title {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: grid;
+    row-gap: .03em;
+    margin-inline: calc(-1 * var(--pad));
+    color: var(--yellow);
+    font: 400 min(44vw, 360px, 38svh)/.8 var(--gothic);
+    letter-spacing: .005em;
+    text-transform: uppercase;
+  }
+  .pf-bar { display: block; padding: .1em var(--pad) .06em; background: var(--ink); }
+  .pf-ink { display: block; width: max-content; max-width: 100%; }
+
+  /* the print: on a phone under the bars, its top edge tucked into the last bar below the
+     letters; from 700 up it is pasted over the bars' right ends, clear of the letters */
+  .pf :global(.pf-print) { grid-column: 2; grid-row: 2; z-index: 2; width: 100%; margin-top: -8px; }
+  .pf-cap { grid-column: 1; grid-row: 2; display: grid; gap: 8px; align-content: start; justify-items: start; padding-top: 18px; }
+  .pf-act { font: 400 clamp(34px, 9.6vw, 44px)/.86 var(--gothic); text-transform: uppercase; text-wrap: balance; }
+  .pf-meta { font: 800 11px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+  .pf-credit { max-width: 22ch; padding-top: 8px; border-top: 2px solid var(--ink); font-weight: 700; letter-spacing: .06em; }
+
+  .pf-issue { grid-column: 1 / -1; grid-row: 3; margin-top: 26px; padding: 6px 0 5px; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); font: 800 10.5px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+  .no-shot .pf-issue { grid-row: 2; }
+
+  @media (min-width: 700px) {
+    .pf { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); column-gap: 28px; padding-top: 26px; }
+    .pf-title { font-size: min(25vw, 360px, 38svh); }
+    .pf :global(.pf-print) { grid-column: 2; grid-row: 1 / span 2; align-self: start; justify-self: end; width: 86%; margin: 1.4vw 0 0; }
+    .pf-cap { padding-top: 26px; }
+    .pf-act { font-size: min(6vw, 56px); }
+    .pf-issue { margin-top: 30px; font-size: 11px; }
+  }
+
+  @media (min-width: 1000px) {
+    .pf { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); column-gap: 4vw; padding: 2.6vw var(--pad) 2.4vw; }
+    .pf :global(.pf-print) { width: min(88%, 520px); margin-top: .6vw; }
+    .pf-cap { grid-template-columns: auto minmax(0, 1fr); column-gap: 18px; row-gap: 6px; align-items: end; padding-top: 1.8vw; }
+    .pf-act { grid-row: 1 / span 2; font-size: min(4.4vw, 68px); }
+    .pf-credit { grid-column: 2; padding-top: 6px; }
+    .pf-issue { margin-top: 2vw; font-size: 12px; }
+  }
+</style>
